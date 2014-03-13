@@ -1,0 +1,6 @@
+GAIIX-601_0003:5:62:3991:20675: Edit distance 0, unique, MAPQ 60, start 779202, end 779301, mean qual 31.11, nr bases >= 30: 51
+GAIIX-601_0003:5:88:10861:11926: Edit distance 0, multiple mapping, MAPQ 5, start 229280, end 229379, mean qual 38.09, nr bases >= 30: 99
+GAIIX-601_0003:5:4:14132:5738: Edit distance 5, multiple mapping, MAPQ 3, start 1184929, end 1185028, mean qual 22.27, nr bases >= 30: 50
+GAIIX-601_0003:1:8:16703:10645: Edit distance NA, Unmapped, MAPQ 1, start 1173930, end 1174029, mean qual 2.0, nr bases >= 30: 0
+GAIIX-789_0007:6:71:19026:6682: Edit distance 1, multiple mapping, MAPQ 3, start 3171372, end 3171471, mean qual 35.23, nr bases >= 30: 80
+GAIIX-789_0007:7:46:14471:10439: Edit distance 0, unique, MAPQ 43, start 751714, end 751813, mean qual 37.69, nr bases >= 30: 97
