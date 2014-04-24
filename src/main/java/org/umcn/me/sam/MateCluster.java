@@ -8,6 +8,7 @@ import java.util.Vector;
 import org.umcn.gen.sam.QualityProcessing;
 import org.umcn.gen.sam.SAMDefinitions;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.SampleBam;
 
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileWriter;
@@ -26,11 +27,12 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 	private int unique_hits;
 	private int unmapped_hits;
 	private Map<String, Integer> sample_count;
+	private SampleBam sample_calling;
 	
-	public MateCluster(SAMFileHeader header, boolean split, boolean sorted){
+	public MateCluster(SAMFileHeader header, boolean split, boolean sorted, SampleBam sample){
 		
 		super();
-		
+		this.sample_calling = sample;
 		this.assume_sorted = sorted;
 		this.record = new SAMRecord(header);
 		this.split_read = split;
@@ -144,7 +146,18 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		int old_count;
 		
 		for (SAMRecord rec : this){
-			name = rec.getAttribute(MobileDefinitions.SAM_TAG_SAMPLENAME).toString();
+			if (this.sample_calling.equals(SampleBam.MULTISAMPLE)){
+				if(rec.getReadGroup() == null){
+					System.err.println("[MateCluster] WARNING Multisample calling enabled but read does not contain @RG. Read will be counted as 'NoRG': " + rec.getReadName());
+					name = "NoRG";
+				}else{
+					name = rec.getReadGroup().getSample();
+				}
+			}else if(this.sample_calling.equals(SampleBam.SINGLESAMPLE)){
+				name = rec.getAttribute(MobileDefinitions.SAM_TAG_SAMPLENAME).toString();
+			}else{
+				name = rec.getAttribute(MobileDefinitions.SAM_TAG_SAMPLENAME).toString();
+			}
 			if (this.sample_count.containsKey(name)){
 				old_count = this.sample_count.get(name);
 				this.sample_count.put(name, old_count + 1);

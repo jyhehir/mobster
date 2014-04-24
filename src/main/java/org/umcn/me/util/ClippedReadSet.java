@@ -34,9 +34,17 @@ import org.umcn.me.splitread.ClippedRead;
 public class ClippedReadSet<T extends ClippedRead> extends Vector<T>{
 
 	private static final long serialVersionUID = -1303033868736365325L;
+	private SampleBam sample_calling;
+	
+	
+	public ClippedReadSet(SampleBam sample){
+		
+		super();
+		this.sample_calling = sample;		
+	}
 	
 	public ClippedReadSet<ClippedRead> getClippedReadsAtOnePosition(boolean left){
-		ClippedReadSet<ClippedRead> subset = new ClippedReadSet<ClippedRead>();
+		ClippedReadSet<ClippedRead> subset = new ClippedReadSet<ClippedRead>(this.sample_calling);
 		
 		for (ClippedRead c : this){
 			if(left && c.isStartClipped()){
@@ -486,7 +494,18 @@ public class ClippedReadSet<T extends ClippedRead> extends Vector<T>{
 		int old_count;
 		
 		for (ClippedRead read : this) {
-			name = read.getSAMRecord().getAttribute(MobileDefinitions.SAM_TAG_SAMPLENAME).toString();
+			if (this.sample_calling.equals(SampleBam.MULTISAMPLE)){
+				if(read.getSAMRecord().getReadGroup() == null){
+					System.err.println("[ClippedReadSet] WARNING Multisample calling enabled but read does not contain @RG. Read will be counted as 'NoRG': " + read.getSAMRecord().getReadName());
+					name = "NoRG";
+				}else{
+					name = read.getSAMRecord().getReadGroup().getSample();
+				}
+			}else if(this.sample_calling.equals(SampleBam.SINGLESAMPLE)){
+				name = read.getSAMRecord().getAttribute(MobileDefinitions.SAM_TAG_SAMPLENAME).toString();
+			}else{
+				name = read.getSAMRecord().getAttribute(MobileDefinitions.SAM_TAG_SAMPLENAME).toString();
+			}
 			if (sampleCountMap.containsKey(name)) {
 				old_count = sampleCountMap.get(name);
 				sampleCountMap.put(name, old_count + 1);

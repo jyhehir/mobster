@@ -10,28 +10,37 @@ import java.util.Set;
 import java.util.Vector;
 import net.sf.samtools.*;
 
+import org.umcn.gen.sam.SAMSilentReader;
 import org.umcn.me.util.CollectionUtil;
 
 public class Testing {
 	public static void main(String[] args) {
 		
-		Map<String, String> map = new HashMap<String, String>();
+		SAMFileReader input = new SAMFileReader(new File("D:/bams/mobster-multiplesample/A141.subsetchr21.noreadgroup.sam"));
 		
-		map.put("a", "a");
-		map.put("b", "b");
+		for (SAMRecord rec : input){
+			System.out.println(rec.getReadGroup());
+			System.out.println("hois");
+		}
+		input.close();
 		
-		messWithMap(map);
-		
-		System.out.println(map);
-		
-		int a = 5;
-		int b = -5;
-		
-		int a_r = - Math.abs(a);
-		int b_r = - Math.abs(b);
-		
-		System.out.println(a_r);
-		System.out.println(b_r);
+//		Map<String, String> map = new HashMap<String, String>();
+//		
+//		map.put("a", "a");
+//		map.put("b", "b");
+//		
+//		messWithMap(map);
+//		
+//		System.out.println(map);
+//		
+//		int a = 5;
+//		int b = -5;
+//		
+//		int a_r = - Math.abs(a);
+//		int b_r = - Math.abs(b);
+//		
+//		System.out.println(a_r);
+//		System.out.println(b_r);
 	}
 
 	private static void messWithMap(Map<String, String> map) {

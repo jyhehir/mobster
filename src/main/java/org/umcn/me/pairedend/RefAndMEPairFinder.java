@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.commons.cli.*;
 import org.umcn.gen.sam.SAMDefinitions;
@@ -76,7 +77,7 @@ public class RefAndMEPairFinder {
 		
 		
 		HelpFormatter formatter = new HelpFormatter();
-		//BasicConfigurator.configure();
+		BasicConfigurator.configure();
 		
 		options = createCmdOptions();
 		

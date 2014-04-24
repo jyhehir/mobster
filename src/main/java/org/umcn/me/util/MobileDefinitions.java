@@ -89,6 +89,10 @@ public abstract class MobileDefinitions {
 	public static final String MOBIOME_MAPPING_CMD = "MOBIOME_MAPPING_CMD";
 	public static final String PICARD_COLLECT_INSERT_METRICS = "PICARD_COLLECT_INSERT_SIZE_METRICS_JAR";
 	public static final String USE_PICARD = "USE_PICARD";
+
+	public static final String MULTIPLE_SAMPLE_CALLING = "MULTIPLE_SAMPLE_CALLING";
+
+	public static final String MULTIPLE_SAMPLE_CALLING_STRINGENT = "MULTIPLE_SAMPLE_CALLING_STRINGENT";
 	
 	
 	

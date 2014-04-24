@@ -2,6 +2,7 @@ package org.umcn.me.pairedend;
 
 import net.sf.samtools.*;
 
+import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.commons.cli.*;
 import org.umcn.gen.annotation.AnnotatedRegionSet;
@@ -16,6 +17,7 @@ import org.umcn.me.splitread.InvalidHardClipCigarException;
 import org.umcn.me.util.ClippedReadSet;
 import org.umcn.me.util.CollectionUtil;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.SampleBam;
 
 
 import java.io.File;
@@ -69,6 +71,9 @@ import java.util.concurrent.TimeUnit;
  * This information is written to a prediction file.
  * 
  * 
+ * #Version 0.1.6MULTI
+ * Added multi sample support for bam files with read groups and sample names
+ * 
  * @author Djie Thung
  *
  */
@@ -77,7 +82,7 @@ public class AnchorClusterer {
 	public static Logger logger = Logger.getLogger("AnchorClusterer");
 	
 	private static final int FILTER_REGION = 90;
-	private static final String VERSION = "0.1.5MERGE";
+	private static final String VERSION = "0.1.6";
 	
 	private static int mean_frag_size = 470;
 	private static int sd_frag_size = 35;
@@ -91,6 +96,8 @@ public class AnchorClusterer {
 	private static int search = 180;
 	private static int min_total_hits = 5;
 	private static int min_initial_cluster_size_split = 2;
+	private static boolean multiple_sample_calling = false;
+	private static boolean filter_by_read_counts_single_sample = false;
 	private static boolean lenient_search = false;
 	private static String tmp;
 	private static int memory;
@@ -258,6 +265,14 @@ public class AnchorClusterer {
 			splitAnchorIndex = new File(props.getProperty(MobileDefinitions.SPLIT_ANCHOR_FILE).trim().replaceAll(".bam$", ".bai"));
 		}
 		
+		if (props.containsKey(MobileDefinitions.MULTIPLE_SAMPLE_CALLING) && "true".equals(props.getProperty(MobileDefinitions.MULTIPLE_SAMPLE_CALLING).toLowerCase())){
+			multiple_sample_calling = true;
+		}
+		if (props.containsKey(MobileDefinitions.MULTIPLE_SAMPLE_CALLING_STRINGENT)  &&
+				"true".equals(props.getProperty(MobileDefinitions.MULTIPLE_SAMPLE_CALLING_STRINGENT).toLowerCase())){
+			filter_by_read_counts_single_sample = true;	
+		}
+		
 		memory = Integer.parseInt(props.getProperty(MobileDefinitions.MEMORY).trim());
 		
 		//TODO this is a copy and paste of the main function, needs refactoring
@@ -336,7 +351,7 @@ public class AnchorClusterer {
 		int maxdist;
 		Properties prop = new Properties();
 		
-		//BasicConfigurator.configure();
+		BasicConfigurator.configure();
 		HelpFormatter formatter = new HelpFormatter();
 		options = createCmdOptions();
 		
@@ -368,6 +383,8 @@ public class AnchorClusterer {
 				//samdir = line.getOptionValue("samdir", "");
 				//lenient_search = line.hasOption("lenient");
 				sample = line.getOptionValue("sample", "");
+				multiple_sample_calling = line.hasOption("multiplesample");
+				filter_by_read_counts_single_sample = line.hasOption("multisample_stringent");
 				percentile_99_fragment = Integer.parseInt(line.getOptionValue("maxclust", Integer.toString(percentile_99_fragment)));
 				tmp = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
 				memory = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));				
@@ -462,12 +479,14 @@ public class AnchorClusterer {
 			
 			pass = false;
 			
-			if (pred.getSampleNames().size() <= 1){
+			if (!multiple_sample_calling || !filter_by_read_counts_single_sample){
 				if (pred.getLeftTotalHits() + pred.getRightTotalHits() >= min_total_hits2){
 					copy_preds.add(pred);
 					pass = true;
 				}
-			}else{
+			}
+			
+			else{
 				Map<String, Integer> sampleCounts = pred.getSampleCounts();
 				for (String sample : sampleCounts.keySet()){
 					if (sampleCounts.get(sample) >= min_total_hits2){
@@ -650,7 +669,7 @@ public class AnchorClusterer {
 		OptionBuilder.withArgName("Integer");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Number of total required reads for a mobile prediction (default: "+
-				min_total_hits);
+				min_total_hits + ")");
 		
 		options.addOption(OptionBuilder.create("mintotal"));
 		
@@ -733,6 +752,18 @@ public class AnchorClusterer {
 		
 		options.addOption(OptionBuilder.create("max_memory"));
 		
+		OptionBuilder.withDescription("Turn this option on if you want to do multiple sample calling. Note that the bam file should have @RG tags and each @RG tag should have a SM (sample field)");
+		
+		options.addOption(OptionBuilder.create("multiplesample"));
+		
+		OptionBuilder.withDescription("Only checked if -multiplesample is used. Filter predictions by read counts from a " +
+		"single sample. I.e. if a prediction is supported by 3 reads from sample1 and 4 reads by sample2 and -mintotal equals 5, " +
+				"then the prediction is filtered because both samples do not have 5 supporting reads. If the option is not turned on, " +
+				"the prediction is kept because the 3 reads from sample1 and 4 reads from sample2 are added.");
+		
+		options.addOption(OptionBuilder.create("multisample_stringent"));
+		
+		
 		return options;
 	}
 	
@@ -760,6 +791,7 @@ public class AnchorClusterer {
 
 		SAMFileReader input = new SAMSilentReader(anchor, index);
 		SAMFileHeader header = input.getFileHeader();
+		SampleBam sampleCalling = SampleBam.SINGLESAMPLE;
 		
 		header = editSAMFileHeader(header);
 		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(clusterBam, header, new File(tmp), memory, SAMFileHeader.SortOrder.coordinate);
@@ -768,7 +800,11 @@ public class AnchorClusterer {
 		
 		int c = 0;
 		
-		mobileClusters.add(new MateCluster<SAMRecord>(header, false, true));
+		if (multiple_sample_calling){
+			sampleCalling = SampleBam.MULTISAMPLE;
+		}
+		
+		mobileClusters.add(new MateCluster<SAMRecord>(header, false, true, sampleCalling));
 		Iterator<MateCluster<SAMRecord>> iter = mobileClusters.iterator();
 		for(SAMRecord record : input){
 			boolean added = false;
@@ -789,7 +825,7 @@ public class AnchorClusterer {
 			}
 			
 			if (!added){
-				MateCluster<SAMRecord> newCluster = new MateCluster<SAMRecord>(header, false, true);
+				MateCluster<SAMRecord> newCluster = new MateCluster<SAMRecord>(header, false, true, sampleCalling);
 				newCluster.add(record);
 				mobileClusters.add(newCluster);
 			}
@@ -804,8 +840,14 @@ public class AnchorClusterer {
 	
 	public static void clusterSplitAnchorsToBAM(File anchor, File index, File outBam, int minClustersize){
 		
+		SampleBam sampleCalling = SampleBam.SINGLESAMPLE;
+		
+		if (multiple_sample_calling){
+			sampleCalling = SampleBam.MULTISAMPLE;
+		}
+		
 		Set<String> alreadyClustered = new HashSet<String>();
-		ClippedReadSet<ClippedRead> cluster = new ClippedReadSet<ClippedRead>();
+		ClippedReadSet<ClippedRead> cluster = new ClippedReadSet<ClippedRead>(sampleCalling);
 		
 		SAMFileReader input = new SAMSilentReader(anchor, index);
 		SAMFileReader input2 = new SAMSilentReader(anchor, index);
@@ -848,7 +890,14 @@ public class AnchorClusterer {
 	private static ClippedReadSet<ClippedRead> clusterClippedReads(Set<String> alreadyClustered,
 			SAMFileReader input2, ClippedRead read)
 			throws InvalidHardClipCigarException {
-		ClippedReadSet<ClippedRead> splitCluster = new ClippedReadSet<ClippedRead>();
+		
+		SampleBam sampleCalling = SampleBam.SINGLESAMPLE;
+		
+		if (multiple_sample_calling){
+			sampleCalling = SampleBam.MULTISAMPLE;
+		}
+		
+		ClippedReadSet<ClippedRead> splitCluster = new ClippedReadSet<ClippedRead>(sampleCalling);
 		SAMRecordIterator iter;
 		if (!alreadyClustered.contains(read.getSAMRecord().getReadName())) {
 			int clippedEnd = read.getClippedPosition();

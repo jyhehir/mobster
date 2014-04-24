@@ -16,6 +16,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.umcn.gen.sam.NrMappingsSAMRecordHolder;
 import org.umcn.gen.sam.SAMDefinitions;
@@ -35,6 +36,8 @@ public class PotentialMEIReadFinder {
 	private static int min_avg_qual = 20;
 	
 	public static void main(String[] args) {
+		
+		BasicConfigurator.configure();
 		
 		Options options = addCmdOptions();
 		HelpFormatter formatter = new HelpFormatter();	

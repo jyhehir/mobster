@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Properties;
 
+import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.umcn.me.util.MobileDefinitions;
 
@@ -18,12 +19,13 @@ public class Mobster {
 	public static String inFile = null;
 	public static String outFile = null;
 	public static String sampleName = null;
+	public static final String VERSION = "0.1.6";
 	
 	public static void main(String[] args) {
 		
 		Properties props = new Properties();
 		
-		//BasicConfigurator.configure();
+		BasicConfigurator.configure();
 		
 		checkParams(args);
 		
@@ -183,6 +185,9 @@ public class Mobster {
 		System.out.println("##########################");
 		System.out.println("#MOBSTER                 #");
 		System.out.println("##########################");
+		System.out.println("Version: " + VERSION);
+		System.out.println("Author: Djie Tjwan Thung");
+		System.out.println("");
 		System.out.println("Predict non-reference Mobile Element Insertion (MEI) events using one properties file.");
 		System.out.println("\t-properties [properties]");
 		System.out.println("\t-in [input .bam file]. This value will override corresponding value in properties file.");
