@@ -15,21 +15,44 @@
     </parent>
 	
 	<dependencies>
-		<dependency>
-            <groupId>org.umcn.gen.ngs</groupId>
-            <artifactId>NGSResearch</artifactId>
-            <version>1.0-SNAPSHOT</version>
-		</dependency>
-        <dependency>
-            <groupId>java-yield</groupId>
-            <artifactId>java-yield</artifactId>
+	    <dependency>
+            <groupId>org.umcn.gen</groupId>
+            <artifactId>BioInfoBase2</artifactId>
             <version>1.0</version>
         </dependency>
         <dependency>
+            <groupId>org.umcn.gen</groupId>
+            <artifactId>ExternalInterfaces2</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.16</version>
+     	</dependency>
+     	<dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.8.2</version>
             <scope>test</scope>
         </dependency>
-    </dependencies>
+        <dependency>
+            <groupId>commons-cli</groupId>
+            <artifactId>commons-cli</artifactId>
+            <version>1.2</version>
+        </dependency>
+    	<dependency>
+  			<groupId>java-yield</groupId>
+  			<artifactId>java-yield</artifactId>
+  			<version>1.0</version>
+		</dependency>
+		<dependency>
+  			<groupId>net.sf.samtools</groupId>
+  			<artifactId>samtools</artifactId>
+  			<version>1.90</version>
+		</dependency>
+		
+     </dependencies>
+     
+        
 </project>
