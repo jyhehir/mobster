@@ -14,6 +14,12 @@
     	<version>1.1-SNAPSHOT</version>
     </parent>
 	
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+	
+	
+	
 	<dependencies>
 	    <dependency>
             <groupId>org.umcn.gen</groupId>
@@ -23,7 +29,7 @@
         <dependency>
             <groupId>org.umcn.gen</groupId>
             <artifactId>ExternalInterfaces2</artifactId>
-            <version>1.0</version>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
@@ -53,6 +59,46 @@
 		</dependency>
 		
      </dependencies>
-     
+         <scm>
+		<connection>scm:svn:svn://russell/srv/svnrepo/MobileInsertions/trunk</connection>
+		<developerConnection>scm:svn:svn://russell/srv/svnrepo/MobileInsertions/trunk</developerConnection>
+   </scm>
+   
+      <build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+				   <archive>
+					  <manifest>
+						 <mainClass>org.umcn.me.pairedend.Mobster</mainClass>
+						 <addClasspath>true</addClasspath>
+					  </manifest>
+					  <manifestEntries>
+						<Class-Path>*</Class-Path>
+					  </manifestEntries>
+				   </archive>
+				</configuration>
+			 </plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+				  <descriptors>
+					<descriptor>src/main/assembly/assembly.xml</descriptor>
+				  </descriptors>
+				</configuration>
+				<executions>
+				<execution>
+				  <phase>package</phase>
+				  <goals>
+					<goal>single</goal>
+				  </goals>
+				</execution>
+			  </executions>
+			</plugin>
+		</plugins>
+	</build>
         
 </project>
