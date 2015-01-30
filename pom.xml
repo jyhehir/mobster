@@ -11,7 +11,7 @@
     <parent>
     	<groupId>org.umcn.gen</groupId>
     	<artifactId>SuperPOM</artifactId>
-    	<version>1.1-SNAPSHOT</version>
+    	<version>1.1</version>
     </parent>
 	
 	<properties>
@@ -26,6 +26,7 @@
             <artifactId>BioInfoBase2</artifactId>
             <version>1.0</version>
         </dependency>
+        
         <dependency>
             <groupId>org.umcn.gen</groupId>
             <artifactId>ExternalInterfaces2</artifactId>
