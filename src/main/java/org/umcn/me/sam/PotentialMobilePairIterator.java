@@ -80,10 +80,18 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 		NrMappingsSAMRecordHolder potentialMobileRead2;
 		SAMRecordHolderPair<NrMappingsSAMRecordHolder> potentialReadPair;
 		
-		
+		//Skip reads which are unmapped
 		if((rec.getReadUnmappedFlag() && rec.getMateUnmappedFlag())){
 			return;
-		}		
+		}
+		
+		//In addition skip reads which are flagged as duplicate, are not primary or are supplemental
+		//Note this will lead to memory hogging if from a pair one end is marked as duplicate and the other end isn't.
+		//Although I think this should not happen.
+		if (rec.getDuplicateReadFlag() || rec.getNotPrimaryAlignmentFlag() || rec.getSupplementaryAlignmentFlag()){
+			return;
+		}
+		
 		readName = rec.getReadName();
 		
 		if(!potential_mobile_read_SAMRec_map.containsKey(readName)){
