@@ -8,45 +8,30 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import net.sf.samtools.*;
 
 import org.umcn.gen.sam.SAMSilentReader;
+import org.umcn.me.sam.InvalidCategoryException;
 import org.umcn.me.util.CollectionUtil;
+import org.umcn.me.util.MobileDefinitions;
 
 public class Testing {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws InvalidCategoryException {
+		String[] categorySplit;
+		String mobileCategory;
+		String category = "Sadhu10-1.ME_CAT.SINE";
 		
-		SAMFileReader input = new SAMFileReader(new File("D:/bams/mobster-multiplesample/A141.subsetchr21.noreadgroup.sam"));
-		
-		for (SAMRecord rec : input){
-			System.out.println(rec.getReadGroup());
-			System.out.println("hois");
+		categorySplit = category.split(MobileDefinitions.OTHER_MOBILE_CATEGORY_ATTRIBUTE, -1);
+		mobileCategory = categorySplit[categorySplit.length - 1].trim();
+		if ( mobileCategory.length() == 0 ) {
+			throw new InvalidCategoryException (category + "can not be categorized\n." +  
+		 " Tried to split on " + MobileDefinitions.OTHER_MOBILE_CATEGORY_ATTRIBUTE);
 		}
-		input.close();
+		System.out.println(mobileCategory);
 		
-//		Map<String, String> map = new HashMap<String, String>();
-//		
-//		map.put("a", "a");
-//		map.put("b", "b");
-//		
-//		messWithMap(map);
-//		
-//		System.out.println(map);
-//		
-//		int a = 5;
-//		int b = -5;
-//		
-//		int a_r = - Math.abs(a);
-//		int b_r = - Math.abs(b);
-//		
-//		System.out.println(a_r);
-//		System.out.println(b_r);
 	}
 
-	private static void messWithMap(Map<String, String> map) {
-		//map.put("b", "a");
-		
-		String s1 = map.get("b");
-
-	}
 }

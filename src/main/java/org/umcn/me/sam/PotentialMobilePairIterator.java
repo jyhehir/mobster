@@ -29,6 +29,7 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 	private int min_avg_qual = 0;
 	
 	private boolean include_split;
+	private int min_anchor_mapq;
 	
 	public static Logger logger = Logger.getLogger("PotentialMobilePairIterator");
 	
@@ -41,11 +42,12 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 	}
 	
 	public PotentialMobilePairIterator(File samFile, String tool, boolean includeSplitReads,
-			int minClipping, int maxClipping, int minQual){
+			int minClipping, int maxClipping, int minQual, int minMapq){
 		this(samFile, tool, includeSplitReads);
 		this.min_clipping_split = minClipping;
 		this.max_clipping_split_other_side = maxClipping;
 		this.min_avg_qual = minQual;
+		this.min_anchor_mapq = minMapq;
 	}
 	
 	public SAMFileReader getSAMReader(){
@@ -89,9 +91,9 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 		}else{
 			potentialMobileRead1 = NrMappingsSAMRecordHolderFactory.makeNrMappingsSAMRecordHolder(
 					potential_mobile_read_SAMRec_map.get(readName), this.mapping_tool, this.min_clipping_split,
-					this.max_clipping_split_other_side);
+					this.max_clipping_split_other_side, this.min_anchor_mapq);
 			potentialMobileRead2 = NrMappingsSAMRecordHolderFactory.makeNrMappingsSAMRecordHolder(
-					rec, this.mapping_tool, this.min_clipping_split, this.max_clipping_split_other_side);
+					rec, this.mapping_tool, this.min_clipping_split, this.max_clipping_split_other_side, this.min_anchor_mapq);
 			
 			if (this.min_avg_qual != 0){
 				potentialMobileRead1.setMinAvgQual(this.min_avg_qual);

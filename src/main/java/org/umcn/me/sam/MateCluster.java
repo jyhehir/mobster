@@ -177,7 +177,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		MobileSAMTag meTag = new MobileSAMTag();
 		String reference = this.firstElement().getReferenceName();
 		
-		try {
+
 			meTag.parse(this.firstElement().getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString());
 			
 			if (!reference.startsWith("chr")){
@@ -226,10 +226,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 			cigar.setLength(0);
 			
 			writer.addAlignment(record);
-		} catch (InvalidCategoryException e) {
-			System.err.println("Could not write cluster: " + this.record.getReadName() +
-					"to BAM file, because of invalid ME tag.");
-		}
+
 		
 	}
 	

@@ -3,7 +3,9 @@ package org.umcn.me.util;
 
 public abstract class MobileDefinitions {
 	
-	public static final String[] MOBILE_CATEGORIES = {"ALU", "SVA", "L1", "HERV", "gi"};
+	public static final String[] MOBILE_CATEGORIES = {"ALU", "SVA", "L1", "HERV"};
+	
+	public static final String OTHER_MOBILE_CATEGORY_ATTRIBUTE = ".ME_CAT.";
 	
 	public static final String SAM_TAG_MOBILE_HIT = "MH";
 	public static final String SAM_TAG_CLUSTER_LENGTH = "CL";
@@ -48,6 +50,7 @@ public abstract class MobileDefinitions {
 	public static final String MAX_CLIPPING = "MAXIMUM_CLIP_LENGTH";
 	public static final String MEMORY = "MAX_RECORDS_IN_RAM";
 	public static final String MIN_QUAL = "MINIMUM_AVG_QUALITY";
+	public static final String MIN_MAPQ_ANCHOR = "MINIMUM_MAPQ_ANCHOR";
 	
 	//properties RefAndMEPairFinder
 	

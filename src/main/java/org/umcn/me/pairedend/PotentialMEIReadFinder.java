@@ -34,6 +34,7 @@ public class PotentialMEIReadFinder {
 	
 	public static Logger logger = Logger.getLogger("PotentialMEIReadFinder");
 	private static int min_avg_qual = 20;
+	private static int min_anchor_mapq = 20;
 	
 	public static void main(String[] args) {
 		
@@ -70,7 +71,8 @@ public class PotentialMEIReadFinder {
 					if (props.containsKey(MobileDefinitions.MAPPING_TOOL)){
 						tool = props.getProperty(MobileDefinitions.MAPPING_TOOL).trim();
 					}else{
-						tool = SAMDefinitions.MAPPING_TOOL_MOSAIK;
+						//3-12-2014:Changed from mosaik to unspecified
+						tool = SAMDefinitions.MAPPING_TOOL_UNSPECIFIED;
 					}
 					useSplit = Boolean.parseBoolean(props.getProperty(MobileDefinitions.USE_SPLIT).trim());
 					
@@ -86,18 +88,22 @@ public class PotentialMEIReadFinder {
 					memory = Integer.parseInt(props.getProperty(MobileDefinitions.MEMORY).trim());
 					
 					min_avg_qual = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_QUAL).trim());
+					if (props.containsKey(MobileDefinitions.MIN_MAPQ_ANCHOR)){
+						min_anchor_mapq = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_MAPQ_ANCHOR).trim());
+					}
 					
 					
 				}else{
 					infile = line.getOptionValue("in");
 					outfile = line.getOptionValue("out");
-					tool = line.getOptionValue("tool", SAMDefinitions.MAPPING_TOOL_MOSAIK);
+					tool = line.getOptionValue("tool", SAMDefinitions.MAPPING_TOOL_UNSPECIFIED); //3-12-2014:Changed from mosaik to unspecified
 					useSplit = line.hasOption("split");
 					tmp = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
-					minClipping = Integer.parseInt(line.getOptionValue("min", "35"));
-					maxClipping = Integer.parseInt(line.getOptionValue("max", "7"));
+					minClipping = Integer.parseInt(line.getOptionValue("minclip", "35")); //30-1-2015: typo in option parsing min --> minclip
+					maxClipping = Integer.parseInt(line.getOptionValue("maxclip", "7")); //30-1-2015: typo in option parsing max --> maxclip
 					memory = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));
 					min_avg_qual = Integer.parseInt(line.getOptionValue("min_avg_qual", Integer.toString(min_avg_qual)));
+					min_anchor_mapq = Integer.parseInt(line.getOptionValue("mapq",Integer.toString(min_anchor_mapq)));
 				}
 				
 				logger.info("Using infile: " + infile);
@@ -113,6 +119,9 @@ public class PotentialMEIReadFinder {
 					logger.info("Maximum clipping of other side: " + maxClipping);
 				}
 				
+				if (tool.equals(SAMDefinitions.MAPPING_TOOL_UNSPECIFIED)){
+					logger.info("Using mapq of: " + min_anchor_mapq +  "for defining anchors");
+				}
 				
 				runPotentialMEIFinder(infile, outfile, tool, tmp, useSplit, minClipping, maxClipping, memory); 
 				
@@ -159,8 +168,10 @@ public class PotentialMEIReadFinder {
 		if (props.containsKey(MobileDefinitions.MAPPING_TOOL)){
 			tool = props.getProperty(MobileDefinitions.MAPPING_TOOL).trim();
 		}else{
-			tool = SAMDefinitions.MAPPING_TOOL_MOSAIK;
+			//3-12-2014:Changed from mosaik to unspecified
+			tool = SAMDefinitions.MAPPING_TOOL_UNSPECIFIED;
 		}
+		
 		useSplit = Boolean.parseBoolean(props.getProperty(MobileDefinitions.USE_SPLIT).trim());
 		
 		if (props.containsKey(MobileDefinitions.TMP)){
@@ -189,6 +200,10 @@ public class PotentialMEIReadFinder {
 			logger.info("Maximum clipping of other side: " + maxClipping);
 		}
 		
+		if (tool.equals(SAMDefinitions.MAPPING_TOOL_UNSPECIFIED)){
+			min_anchor_mapq = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_MAPQ_ANCHOR));
+			logger.info("Using mapq of: " + min_anchor_mapq +  "for defining anchors");
+		}
 		
 		try {
 			runPotentialMEIFinder(infile, outfile, tool, tmp, useSplit, minClipping, maxClipping, memory);
@@ -214,7 +229,7 @@ public class PotentialMEIReadFinder {
 		
 		File inBam = new File(inFile);
 		PotentialMobilePairIterator potentialMEIReads = new PotentialMobilePairIterator(inBam, mappingTool, useSplit,
-																minClipping, maxClipping, min_avg_qual);
+																minClipping, maxClipping, min_avg_qual, min_anchor_mapq);
 		SAMFileHeader samFileHeader = potentialMEIReads.getSAMReader().getFileHeader();
 		
 		File tmpFile = new File(tmp);
@@ -314,6 +329,12 @@ public class PotentialMEIReadFinder {
 		OptionBuilder.withDescription("Use property file instead of command line arguments, command line arguments will be skipt. Values in property file will be used");
 		
 		options.addOption(OptionBuilder.create("properties"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Minimum mapq needed for anchors. ONLY USED when -tool is unspecified. Default: " + min_anchor_mapq );
+		
+		options.addOption(OptionBuilder.create("mapq"));
 		
 		return options;
 		

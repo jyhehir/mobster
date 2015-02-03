@@ -69,7 +69,7 @@ public class MobileSAMTag {
 		}
 	}
 	
-	public void parse(String MEValueAttribute) throws InvalidCategoryException{
+	public void parse(String MEValueAttribute){
 		String[] meValues = MEValueAttribute.split(DELIMITER, -1);
 		
 //		System.err.println(MEValueAttribute);
@@ -88,9 +88,10 @@ public class MobileSAMTag {
 		
 	}
 	
-	public void parseMobileCategories(String[] categories) throws InvalidCategoryException{
+	public void parseMobileCategories(String[] categories){
+		//do not do any checking anymore on the validness of the category when calling this function
 		for (String category : categories){
-			this.addMobileCategory(category);
+			this.mobile_categories.add(category);
 		}
 	}
 	
@@ -122,36 +123,35 @@ public class MobileSAMTag {
 	}
 
 
-	public boolean addMobileCategory(String category) throws InvalidCategoryException{
-		
-		//The exception case where category == "", when read maps to polyA for instance
-		if ("".equals(category)){
-			if (this.mobile_categories.contains("")){
-				return false;
-			}else{
-				return this.mobile_categories.add(category);
-			}
-		}
-		
-		for (String validCategory : MobileDefinitions.MOBILE_CATEGORIES){
-			if (this.mobile_categories.contains(validCategory)){
-				return false;
-			}else if (validCategory.equalsIgnoreCase(category)){
-				return this.mobile_categories.add(validCategory);
-			}
-		}
-		throw new InvalidCategoryException("Wrong category: " + category + ". Must be one of: " + 
-				Arrays.toString(MobileDefinitions.MOBILE_CATEGORIES));
-	}
-
-
 	public boolean addMobileCategoryByReference(String reference) throws InvalidCategoryException{
 		
-		for (String validCategory : MobileDefinitions.MOBILE_CATEGORIES){
-			if (this.mobile_categories.contains(validCategory)){
+		String[] referenceSplit;
+		String mobileCategory;
+		
+		//First check if the reference sequence contains substring OTHER_MOBILE_CATEGORY_ATTRIBUTE;
+		//This allows for ME categorization outside the default Alu, L1, SVA, HERV categories.
+		if (reference.contains(MobileDefinitions.OTHER_MOBILE_CATEGORY_ATTRIBUTE)){
+			referenceSplit = reference.split(MobileDefinitions.OTHER_MOBILE_CATEGORY_ATTRIBUTE, -1);
+			mobileCategory = referenceSplit[referenceSplit.length - 1].trim();
+			if ( mobileCategory.length() == 0 ) {
+				throw new InvalidCategoryException (reference + "can not be categorized\n." +  
+			 " Tried to split on " + MobileDefinitions.OTHER_MOBILE_CATEGORY_ATTRIBUTE);
+			}
+			if (this.mobile_categories.contains(mobileCategory)){
 				return false;
-			}else if(reference.toUpperCase().startsWith(validCategory.toUpperCase())){
-				return this.mobile_categories.add(validCategory);
+			}else{
+				return this.mobile_categories.add(mobileCategory);	
+			}
+
+		}
+		//If reference does not contain substring OTHER_MOBILE_CATEGORY_ATTRIBUTE
+		else{
+			for (String validCategory : MobileDefinitions.MOBILE_CATEGORIES){
+				if (this.mobile_categories.contains(validCategory)){
+					return false;
+				}else if(reference.toUpperCase().startsWith(validCategory.toUpperCase())){
+					return this.mobile_categories.add(validCategory);
+				}
 			}
 		}
 		throw new InvalidCategoryException(reference + "can not be categorized into one of these" +

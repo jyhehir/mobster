@@ -9,7 +9,7 @@ import java.util.Properties;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-//import org.umcn.gen.sam.SAMDefinitions;
+import org.umcn.gen.sam.SAMDefinitions;
 import org.umcn.me.util.MobileDefinitions;
 
 public class Mobster {
@@ -20,7 +20,7 @@ public class Mobster {
 	public static String inFile = null;
 	public static String outFile = null;
 	public static String sampleName = null;
-	public static final String VERSION = "0.1.6-Test";
+	public static final String VERSION = "0.1.6-MultipleOrganism";
 	
 	public static void main(String[] args) {
 		
@@ -194,7 +194,7 @@ public class Mobster {
 		System.out.println("\t-in [input .bam file]. This value will override corresponding value in properties file.");
 		System.out.println("\t-out [output prefix]. This value will override corresponding value in properties file.");
 		System.out.println(("\t-sn [sample name]. This value will override corresponding value in properties file."));
-		//System.out.println("Default mapping tool: " + SAMDefinitions.MAPPING_TOOL_UNSPECIFIED);
+		System.out.println("Default mapping tool: " + SAMDefinitions.MAPPING_TOOL_UNSPECIFIED);
 	}
 	
 	

@@ -183,42 +183,33 @@ public class ClippedRead  {
 	public String getPrimaryMobileMapping(){
 		MobileSAMTag mobileTag = new MobileSAMTag();
 		String mobileMapping = "";
-		try {
-			mobileTag.parse(this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString());
-			mobileMapping = mobileTag.getMobileCategoryNames().get(0);
-		} catch (InvalidCategoryException e) {
-			System.err.println("ClippedRead has unparseable Mobile Mapping SAM Tag for calling" +
-					" getMobileMapping. Returning empty String...");
-		}
+
+		mobileTag.parse(this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString());
+		mobileMapping = mobileTag.getMobileCategoryNames().get(0);
+
 		return mobileMapping;
 	}
 	
 	public String getHomoPolymerMappingBasedOnMobileSAMTag(){
 		MobileSAMTag mobileTag = new MobileSAMTag();
 
-		try {
-			if (this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString() != null){
-				mobileTag.parse(this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString());
-				return mobileTag.getHomoPolymer();
-			}
-		} catch (InvalidCategoryException e) {
-			System.err.println("ClippedRead has unparseable Mobile Mapping SAM Tag for calling" +
-					" getMobileMapping. Returning false...");
+
+		if (this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString() != null){
+			mobileTag.parse(this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString());
+			return mobileTag.getHomoPolymer();
 		}
+
 		return "";
 	}
 	
 	public boolean hasCertainHomoPolymerMappingBasedOnMobileSAMTag(String polymer){
 		MobileSAMTag mobileTag = new MobileSAMTag();
-		try {
-			if (this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString() != null){
-				mobileTag.parse(this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString());
-				return (polymer.equalsIgnoreCase(mobileTag.getHomoPolymer()));
-			}
-		} catch (InvalidCategoryException e) {
-			System.err.println("ClippedRead has unparseable Mobile Mapping SAM Tag for calling" +
-					" getMobileMapping. Returning false...");
+
+		if (this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString() != null){
+			mobileTag.parse(this.rec.getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString());
+			return (polymer.equalsIgnoreCase(mobileTag.getHomoPolymer()));
 		}
+		
 		
 		return false;	
 	}

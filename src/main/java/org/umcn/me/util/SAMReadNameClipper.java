@@ -28,15 +28,12 @@ public class SAMReadNameClipper {
 		for (SAMRecord rec : samReader){
 			MobileSAMTag tag = new MobileSAMTag();
 			System.out.println(rec.getAttribute("ME").toString());
-			try {
-				tag.parse(rec.getAttribute("ME").toString());
-				System.out.println(tag.getMobileCigar());
-				System.out.println(tag.getMobileElementName());
-				System.out.println(tag.getNrOfMappings());
-				System.out.println(tag.getMobileCategoryNames());
-			} catch (InvalidCategoryException e) {
-				
-			}
+
+			tag.parse(rec.getAttribute("ME").toString());
+			System.out.println(tag.getMobileCigar());
+			System.out.println(tag.getMobileElementName());
+			System.out.println(tag.getNrOfMappings());
+
 			
 		}
 		
