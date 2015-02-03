@@ -56,7 +56,7 @@
 		<dependency>
   			<groupId>net.sf.samtools</groupId>
   			<artifactId>samtools</artifactId>
-  			<version>1.90</version>
+  			<version>1.113</version>
 		</dependency>
 		
      </dependencies>
