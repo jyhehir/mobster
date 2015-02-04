@@ -46,11 +46,11 @@ public class Mobster {
 					props.put(MobileDefinitions.SAMPLE_NAME, sampleName);
 				}
 				
-				if (sampleName.split(MobileDefinitions.DEFAULT_SEP, 0).length != inFile.split(MobileDefinitions.DEFAULT_SEP, 0).length
-						){
+				if (props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0).length !=
+						props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0).length){
 					logger.fatal("Number of supplied samples does not equal the number of supplied bams. Exiting");
 					System.exit(1);
-				}else if (sampleName.split(MobileDefinitions.DEFAULT_SEP, 0).length > 1){
+				}else if (props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0).length > 1){
 					logger.info("Detected multiple samples. Multiple sample calling will be turned ON even if this property was set to false in the properties file");
 					props.put(MobileDefinitions.MULTIPLE_SAMPLE_CALLING, "true");
 				}
