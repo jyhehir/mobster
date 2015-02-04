@@ -97,7 +97,7 @@ public abstract class MobileDefinitions {
 
 	public static final String MULTIPLE_SAMPLE_CALLING_STRINGENT = "MULTIPLE_SAMPLE_CALLING_STRINGENT";
 	
-	
+	public static final String DEFAULT_SEP=",";
 	
 	
 	

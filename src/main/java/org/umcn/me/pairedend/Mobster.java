@@ -20,7 +20,7 @@ public class Mobster {
 	public static String inFile = null;
 	public static String outFile = null;
 	public static String sampleName = null;
-	public static final String VERSION = "0.1.6-MultipleOrganism";
+	public static final String VERSION = "0.1.6-MultipleOrganismandSample";
 	
 	public static void main(String[] args) {
 		
@@ -44,6 +44,15 @@ public class Mobster {
 				
 				if (sampleName != null){
 					props.put(MobileDefinitions.SAMPLE_NAME, sampleName);
+				}
+				
+				if (sampleName.split(MobileDefinitions.DEFAULT_SEP, 0).length != inFile.split(MobileDefinitions.DEFAULT_SEP, 0).length
+						){
+					logger.fatal("Number of supplied samples does not equal the number of supplied bams. Exiting");
+					System.exit(1);
+				}else if (sampleName.split(MobileDefinitions.DEFAULT_SEP, 0).length > 1){
+					logger.info("Detected multiple samples. Multiple sample calling will be turned ON even if this property was set to false in the properties file");
+					props.put(MobileDefinitions.MULTIPLE_SAMPLE_CALLING, "true");
 				}
 				
 				if(props.containsKey(MobileDefinitions.PICARD_COLLECT_INSERT_METRICS) &&

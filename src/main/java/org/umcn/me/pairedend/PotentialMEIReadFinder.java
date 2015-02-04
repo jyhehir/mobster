@@ -6,6 +6,8 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -23,6 +25,7 @@ import org.umcn.gen.sam.SAMDefinitions;
 import org.umcn.gen.sam.SAMRecordHolderPair;
 import org.umcn.gen.sam.SAMWriting;
 import org.umcn.me.sam.PotentialMobilePairIterator;
+import org.umcn.me.util.BAMCollection;
 import org.umcn.me.util.MobileDefinitions;
 
 import com.google.code.jyield.YieldUtils;
@@ -123,7 +126,13 @@ public class PotentialMEIReadFinder {
 					logger.info("Using mapq of: " + min_anchor_mapq +  "for defining anchors");
 				}
 				
-				runPotentialMEIFinder(infile, outfile, tool, tmp, useSplit, minClipping, maxClipping, memory); 
+				//TODO1: Open up the .fq and .bam writer here, then run the potential MEIFinder
+				
+				//Loop over runPotentialMEIFinder depending on the number of BAM files given
+				//runPotentialMEIFinder(infile, outfile, tool, tmp, useSplit, minClipping, maxClipping, memory); 
+				
+				
+				//TODO3: Close the .fq and .bam writer here.
 				
 				long end = System.currentTimeMillis();
 				long millis = end - start;
@@ -150,8 +159,8 @@ public class PotentialMEIReadFinder {
 	//TODO remove duplicate code for this function
 	public static void runFromProperties(Properties props){
 		
-		
-		String infile;
+		//TODO
+//		String infile;
 		String outfile;
 		String tool;
 		String tmp;
@@ -160,9 +169,13 @@ public class PotentialMEIReadFinder {
 		int maxClipping;
 		int memory;
 		
+		String[] samples;
+		String[] bams;
+		
 		long start = System.currentTimeMillis();
 		
-		infile = props.getProperty(MobileDefinitions.INFILE).trim();
+		//TODO
+		//infile = props.getProperty(MobileDefinitions.INFILE).trim();
 		outfile = props.getProperty(MobileDefinitions.OUTFILE).trim();
 		
 		if (props.containsKey(MobileDefinitions.MAPPING_TOOL)){
@@ -180,6 +193,19 @@ public class PotentialMEIReadFinder {
 			tmp = System.getProperty("java.io.tmpdir");
 		}
 		
+		//TODO: Sample parsing
+		samples = props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0);
+		bams = props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0);
+		
+		//Check to see whether all values are actually unique
+		if (samples.length != new HashSet<String>(Arrays.asList(samples)).size() ||
+				bams.length != new HashSet<String>(Arrays.asList(bams)).size()){
+			logger.error("Supplied bams and/or supplied sample names are not unique");
+			System.exit(1);
+		}
+		
+		//TODO: If multiple samples were found, turn on the multiple_sample_calling option in the properties from Mobster.java
+		
 		minClipping = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_CLIPPING).trim());
 		maxClipping = Integer.parseInt(props.getProperty(MobileDefinitions.MAX_CLIPPING).trim());
 		
@@ -187,13 +213,14 @@ public class PotentialMEIReadFinder {
 		
 		min_avg_qual = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_QUAL).trim());
 		
-		logger.info("Using infile: " + infile);
+		logger.info("Using infile(s): " + props.getProperty(MobileDefinitions.INFILE));
 		logger.info("Using out prefix: " + outfile);
 		logger.info("Used mapping tool: " + tool);
 		logger.info("Including split reads: " + useSplit);
 		logger.info("Maximum records in memory: " + memory);
 		logger.info("Temp directory: " + tmp);
 		logger.info("Split reads should have min avg qual of: " + min_avg_qual);
+		logger.info("Number of samples detected: " + samples.length);
 		
 		if(useSplit){
 			logger.info("Minimum clipping of: " + minClipping);
@@ -205,12 +232,37 @@ public class PotentialMEIReadFinder {
 			logger.info("Using mapq of: " + min_anchor_mapq +  "for defining anchors");
 		}
 		
+		
+		PrintWriter outFq = null;
+		SAMFileWriter outputSam = null;
+		
 		try {
-			runPotentialMEIFinder(infile, outfile, tool, tmp, useSplit, minClipping, maxClipping, memory);
-		} catch (FileNotFoundException e) {
+			
+			//TODO:
+			SAMFileHeader samFileHeader = new BAMCollection(bams, samples).getMergedHeader(SAMFileHeader.SortOrder.unsorted);
+			
+			//TODO: Open up the .fq and .bam writer here, then run the potential MEIFinder
+			outFq = new PrintWriter(new FileWriter(outfile + "_potential.fq"), true);
+			outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, new File(tmp), memory, SAMFileHeader.SortOrder.unsorted, true);
+			
+			//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
+			for (String file : bams){
+				runPotentialMEIFinder(file, outFq, outputSam, tool, useSplit, minClipping, maxClipping);
+			}
+			
+			
+
+		} catch (IOException e) {
 			logger.error("[PMRF] Could not create or find file / directory");
 			logger.error(e.getMessage());
-		} 
+		} finally {
+			if (outFq != null){
+				outFq.close();
+			}
+			if (outputSam != null){
+				outputSam.close();
+			}
+		}
 		
 		long end = System.currentTimeMillis();
 		long millis = end - start;
@@ -224,44 +276,42 @@ public class PotentialMEIReadFinder {
 		
 	}
 
-	public static void runPotentialMEIFinder(String inFile, String outPrefix, String mappingTool, String tmp,
-			boolean useSplit, int minClipping, int maxClipping, int maxMemory) throws FileNotFoundException {
+	public static void runPotentialMEIFinder(String inFile, PrintWriter outFq, SAMFileWriter outSam, String mappingTool,
+			boolean useSplit, int minClipping, int maxClipping) {
 		
 		File inBam = new File(inFile);
 		PotentialMobilePairIterator potentialMEIReads = new PotentialMobilePairIterator(inBam, mappingTool, useSplit,
 																minClipping, maxClipping, min_avg_qual, min_anchor_mapq);
-		SAMFileHeader samFileHeader = potentialMEIReads.getSAMReader().getFileHeader();
+		//SAMFileHeader samFileHeader = potentialMEIReads.getSAMReader().getFileHeader();
 		
-		File tmpFile = new File(tmp);
+		//File tmpFile = new File(tmp);
 		
 		
-		try{
-			PrintWriter outFq = new PrintWriter(new FileWriter(outPrefix + "_potential.fq"), true);
-			SAMFileWriter outputSam = SAMWriting.makeSAMWriter(new File(outPrefix + "_potential.bam"), samFileHeader, tmpFile, maxMemory, SAMFileHeader.SortOrder.unsorted, true);
-			
 
-			int c = 0;
-			int d = 0;
+		//If file already exists for 1st time then maybe program should issue an error?
+		//PrintWriter outFq = new PrintWriter(new FileWriter(outPrefix + "_potential.fq"), true);
+		//SAMFileWriter outputSam = SAMWriting.makeSAMWriter(new File(outPrefix + "_potential.bam"), samFileHeader, tmpFile, maxMemory, SAMFileHeader.SortOrder.unsorted, true);
 		
-			for (SAMRecordHolderPair<NrMappingsSAMRecordHolder> pair : YieldUtils.toIterable(potentialMEIReads)){
 
-					pair.writeMobileReadsToFastQAndPotentialPairsToSAM(outFq, outputSam, useSplit, true);
-					c++;
-					if(pair.hasSplitReadOfCertainSize()){
-						d++;
-					}
+		int c = 0;
+		int d = 0;
+	
+		for (SAMRecordHolderPair<NrMappingsSAMRecordHolder> pair : YieldUtils.toIterable(potentialMEIReads)){
 
-			}
-		
-			outFq.close();
-			outputSam.close();
-			logger.info("Found nr of potential mobile pairs supporting MEI events: " + c);
-			logger.info("Of which " + d + " are of split-read nature.");
-
-			}
-		catch (IOException e){
+				pair.writeMobileReadsToFastQAndPotentialPairsToSAM(outFq, outSam, useSplit, true);
+				c++;
+				if(pair.hasSplitReadOfCertainSize()){
+					d++;
+				}
 
 		}
+	
+		//outFq.close();
+		//outputSam.close();
+		logger.info("Found nr of potential mobile pairs supporting MEI events: " + c);
+		logger.info("Of which " + d + " are of split-read nature.");
+
+
 	}
 	
 	private static Options addCmdOptions(){
