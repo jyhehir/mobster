@@ -58,9 +58,10 @@ public class Mobster {
 				if(props.containsKey(MobileDefinitions.PICARD_COLLECT_INSERT_METRICS) &&
 						"true".equals(props.getProperty(MobileDefinitions.USE_PICARD).trim())){
 					
+					//NOTE if multiple BAM Files are provided, only the insert size is investigated of the 1st BAM
 					String picardCommand = "java -Xmx4g -jar " + props.getProperty(MobileDefinitions.PICARD_COLLECT_INSERT_METRICS) +
 							" VALIDATION_STRINGENCY=LENIENT HISTOGRAM_FILE=" + props.getProperty(MobileDefinitions.OUTFILE).trim() + "_hist.pdf" +
-							" INPUT=" + props.getProperty(MobileDefinitions.INFILE) + " OUTPUT=" + props.getProperty(MobileDefinitions.OUTFILE).trim() + "_insertstats" +
+							" INPUT=" + props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP,0)[0] + " OUTPUT=" + props.getProperty(MobileDefinitions.OUTFILE).trim() + "_insertstats" +
 							" STOP_AFTER=50000000";
 
 					execUnixCommand(picardCommand);
@@ -200,9 +201,9 @@ public class Mobster {
 		System.out.println("");
 		System.out.println("Predict non-reference Mobile Element Insertion (MEI) events using one properties file.");
 		System.out.println("\t-properties [properties]");
-		System.out.println("\t-in [input .bam file]. This value will override corresponding value in properties file.");
+		System.out.println("\t-in [input .bam file]. This value will override corresponding value in properties file. Multiple BAM files may be specified if seperated by a comma");
 		System.out.println("\t-out [output prefix]. This value will override corresponding value in properties file.");
-		System.out.println(("\t-sn [sample name]. This value will override corresponding value in properties file."));
+		System.out.println(("\t-sn [sample name]. This value will override corresponding value in properties file. Multiple sample names may be specified if seperated by a comma"));
 		System.out.println("Default mapping tool: " + SAMDefinitions.MAPPING_TOOL_UNSPECIFIED);
 	}
 	
