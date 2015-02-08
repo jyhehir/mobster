@@ -30,7 +30,7 @@
         <dependency>
             <groupId>org.umcn.gen</groupId>
             <artifactId>ExternalInterfaces2</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.5.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
@@ -63,7 +63,6 @@
 			<artifactId>picard</artifactId>
 			<version>1.113</version>
 		</dependency>
-		
      </dependencies>
          <scm>
 		<connection>scm:svn:svn://russell/srv/svnrepo/MobileInsertions/trunk</connection>
