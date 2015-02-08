@@ -85,6 +85,11 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 			return;
 		}
 		
+		//Skip single-end reads for now; will hog all the memory
+		if (!rec.getReadPairedFlag()){
+			return;
+		}
+		
 		//In addition skip reads which are flagged as duplicate, are not primary or are supplemental
 		//Note this will lead to memory hogging if from a pair one end is marked as duplicate and the other end isn't.
 		//Although I think this should not happen.
