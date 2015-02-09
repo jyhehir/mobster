@@ -24,6 +24,7 @@ import org.umcn.me.sam.PotentialMobilePairIterator;
 import org.umcn.me.samexternal.NrMappingsSAMRecordHolder;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.samexternal.SAMRecordHolderPair;
+import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.util.BAMCollection;
 import org.umcn.me.util.MobileDefinitions;
@@ -236,11 +237,17 @@ public class PotentialMEIReadFinder {
 		
 		PrintWriter outFq = null;
 		SAMFileWriter outputSam = null;
-		
+		SAMFileHeader samFileHeader = null;
 		try {
 			
 			//TODO:
-			SAMFileHeader samFileHeader = new BAMCollection(bams, samples).getMergedHeader(SAMFileHeader.SortOrder.unsorted);
+			if (bams.length == 1 && samples.length == 1){
+				SAMSilentReader singleBamReader = new SAMSilentReader(new File(bams[0]));
+				samFileHeader = singleBamReader.getFileHeader();
+				singleBamReader.close();
+			}else{
+				samFileHeader = new BAMCollection(bams, samples).getMergedHeader(SAMFileHeader.SortOrder.unsorted);
+			}
 			
 			//TODO: Open up the .fq and .bam writer here, then run the potential MEIFinder
 			outFq = new PrintWriter(new FileWriter(outfile + "_potential.fq"), true);
