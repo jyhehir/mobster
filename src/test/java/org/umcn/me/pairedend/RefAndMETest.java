@@ -5,9 +5,9 @@ import java.io.File;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
 
-import org.umcn.gen.sam.UnknownParamException;
 import org.umcn.me.sam.InvalidCategoryException;
 import org.umcn.me.sam.MobileSAMTag;
+import org.umcn.me.samexternal.UnknownParamException;
 
 public class RefAndMETest {
 	

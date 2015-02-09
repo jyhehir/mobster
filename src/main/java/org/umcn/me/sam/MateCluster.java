@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 
-import org.umcn.gen.sam.QualityProcessing;
-import org.umcn.gen.sam.SAMDefinitions;
+import org.umcn.me.samexternal.QualityProcessing;
+import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.util.MobileDefinitions;
 import org.umcn.me.util.SampleBam;
 

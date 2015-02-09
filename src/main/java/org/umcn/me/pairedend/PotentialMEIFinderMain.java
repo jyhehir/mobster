@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -12,8 +11,8 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.umcn.gen.sam.SAMDefinitions;
-import org.umcn.gen.sam.UnknownParamException;
+import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.samexternal.UnknownParamException;
 
 
 public class PotentialMEIFinderMain {

@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
-import org.umcn.gen.sam.IllegalSAMPairException;
+import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.util.CollectionUtil;
 import org.umcn.me.util.MobileDefinitions;
 
