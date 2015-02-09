@@ -253,7 +253,11 @@ public class PotentialMEIReadFinder {
 			
 			
 
-		} catch (IOException e) {
+		} catch (IllegalArgumentException e){
+			logger.fatal(e.getMessage());
+		}
+		
+		catch (IOException e) {
 			logger.error("[PMRF] Could not create or find file / directory");
 			logger.error(e.getMessage());
 		} finally {

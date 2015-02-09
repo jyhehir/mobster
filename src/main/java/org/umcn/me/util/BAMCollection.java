@@ -41,28 +41,31 @@ public class BAMCollection {
 		
 	}
 	
-	public SAMFileHeader getMergedHeader(SAMFileHeader.SortOrder order){
+	public SAMFileHeader getMergedHeader(SAMFileHeader.SortOrder order) throws IllegalArgumentException{
 		
 		List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();		
-		int c = 0;
+
 		for (BAMSample sample : this.bams){
-			c++;
+
+			boolean success = true;
 			SAMSilentReader reader = new SAMSilentReader(sample.bam);
 			SAMFileHeader header = reader.getFileHeader();
 			
-			//TODO: Maybe throw an exception as an alternative.
 			if (header.getReadGroups().isEmpty()){
-				SAMReadGroupRecord newRg = new SAMReadGroupRecord(Integer.toString(c));
-				newRg.setSample(sample.sample);
-				header.addReadGroup(newRg);
+				success = false;
 			}else{
 				for (SAMReadGroupRecord rg : header.getReadGroups()){
 					rg.setSample(sample.sample);
 				}
 			}
+			reader.close();
+			
+			if (!success){
+				throw new IllegalArgumentException("Header must contain a read group for merging. Bam: " + sample.bam.toString() + "does not contain a @RG");	
+			}			
 			
 			headers.add(header);
-			reader.close();
+
 		}
 		
 		SamFileHeaderMerger merger = new SamFileHeaderMerger(order, headers, true);//true: do merge the sequence dictionaries
