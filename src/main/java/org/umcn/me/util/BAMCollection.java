@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.io.File;
 import java.io.FileNotFoundException;
 
-import org.umcn.gen.sam.SAMSilentReader;
+import org.umcn.me.samexternal.SAMSilentReader;
 
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMReadGroupRecord;
@@ -44,16 +44,24 @@ public class BAMCollection {
 	public SAMFileHeader getMergedHeader(SAMFileHeader.SortOrder order){
 		
 		List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();		
-		
+		int c = 0;
 		for (BAMSample sample : this.bams){
+			c++;
 			SAMSilentReader reader = new SAMSilentReader(sample.bam);
 			SAMFileHeader header = reader.getFileHeader();
 			
-			for (SAMReadGroupRecord rg : header.getReadGroups()){
-				rg.setSample(sample.sample);
+			//TODO: Maybe throw an exception as an alternative.
+			if (header.getReadGroups().isEmpty()){
+				SAMReadGroupRecord newRg = new SAMReadGroupRecord(Integer.toString(c));
+				newRg.setSample(sample.sample);
+				header.addReadGroup(newRg);
+			}else{
+				for (SAMReadGroupRecord rg : header.getReadGroups()){
+					rg.setSample(sample.sample);
+				}
 			}
-			headers.add(header);
 			
+			headers.add(header);
 			reader.close();
 		}
 		

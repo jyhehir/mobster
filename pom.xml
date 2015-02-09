@@ -28,11 +28,6 @@
         </dependency>
         
         <dependency>
-            <groupId>org.umcn.gen</groupId>
-            <artifactId>ExternalInterfaces2</artifactId>
-            <version>1.5.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.16</version>
@@ -63,7 +58,16 @@
 			<artifactId>picard</artifactId>
 			<version>1.113</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>org.biojava</groupId>
+			<artifactId>core</artifactId>
+			<version>1.9.1</version>
+		</dependency>
+		
      </dependencies>
+     
+	
          <scm>
 		<connection>scm:svn:svn://russell/srv/svnrepo/MobileInsertions/trunk</connection>
 		<developerConnection>scm:svn:svn://russell/srv/svnrepo/MobileInsertions/trunk</developerConnection>

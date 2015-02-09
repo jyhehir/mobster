@@ -3,9 +3,9 @@ package org.umcn.me.sam;
 import java.util.Arrays;
 import java.util.Vector;
 
-import org.umcn.gen.sam.NrMappingsSAMRecordHolder;
-import org.umcn.gen.sam.NrMappingsSAMRecordHolderFactory;
-import org.umcn.gen.sam.UnknownParamException;
+import org.umcn.me.samexternal.NrMappingsSAMRecordHolder;
+import org.umcn.me.samexternal.NrMappingsSAMRecordHolderFactory;
+import org.umcn.me.samexternal.UnknownParamException;
 import org.umcn.me.util.MobileDefinitions;
 
 import net.sf.samtools.SAMRecord;

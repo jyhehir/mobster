@@ -5,12 +5,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.umcn.gen.sam.IllegalSAMPairException;
-import org.umcn.gen.sam.NrMappingsSAMRecordHolder;
-import org.umcn.gen.sam.NrMappingsSAMRecordHolderFactory;
-import org.umcn.gen.sam.SAMRecordHolderPair;
-import org.umcn.gen.sam.SAMSilentReader;
-import org.umcn.gen.sam.UnknownParamException;
+import org.umcn.me.samexternal.IllegalSAMPairException;
+import org.umcn.me.samexternal.NrMappingsSAMRecordHolder;
+import org.umcn.me.samexternal.NrMappingsSAMRecordHolderFactory;
+import org.umcn.me.samexternal.SAMRecordHolderPair;
+import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.samexternal.UnknownParamException;
 
 import com.google.code.jyield.Generator;
 import com.google.code.jyield.Yieldable;

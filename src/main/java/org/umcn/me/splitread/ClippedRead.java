@@ -4,9 +4,9 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.umcn.gen.sam.QualityProcessing;
 import org.umcn.me.sam.InvalidCategoryException;
 import org.umcn.me.sam.MobileSAMTag;
+import org.umcn.me.samexternal.QualityProcessing;
 import org.umcn.me.util.MobileDefinitions;
 
 import net.sf.samtools.SAMRecord;
