@@ -39,6 +39,7 @@ public class PotentialMEIReadFinder {
 	private static int min_avg_qual = 20;
 	private static int min_anchor_mapq = 20;
 	
+	//TODO Command line calling now does not implement the multiple BAM input feature
 	public static void main(String[] args) {
 		
 		BasicConfigurator.configure();

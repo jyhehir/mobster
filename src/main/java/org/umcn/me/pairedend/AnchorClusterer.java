@@ -81,7 +81,7 @@ public class AnchorClusterer {
 	public static Logger logger = Logger.getLogger("AnchorClusterer");
 	
 	private static final int FILTER_REGION = 90;
-	private static final String VERSION = "0.1.6";
+	private static final String VERSION = "0.1.6-MultipleSampleAndOrganism";
 	
 	private static int mean_frag_size = 470;
 	private static int sd_frag_size = 35;
