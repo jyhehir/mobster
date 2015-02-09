@@ -20,11 +20,11 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.umcn.gen.sam.NrMappingsSAMRecordHolder;
-import org.umcn.gen.sam.SAMDefinitions;
-import org.umcn.gen.sam.SAMRecordHolderPair;
-import org.umcn.gen.sam.SAMWriting;
 import org.umcn.me.sam.PotentialMobilePairIterator;
+import org.umcn.me.samexternal.NrMappingsSAMRecordHolder;
+import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.samexternal.SAMRecordHolderPair;
+import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.util.BAMCollection;
 import org.umcn.me.util.MobileDefinitions;
 

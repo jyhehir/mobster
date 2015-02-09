@@ -15,14 +15,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.commons.cli.*;
-import org.umcn.gen.sam.SAMDefinitions;
-import org.umcn.gen.sam.SAMSilentReader;
-import org.umcn.gen.sam.SAMWriting;
-import org.umcn.gen.sam.UnknownParamException;
 import org.umcn.gen.sequence.InvalidSequenceException;
 import org.umcn.gen.sequence.Sequence;
 import org.umcn.me.sam.InvalidCategoryException;
 import org.umcn.me.sam.MobileSAMTag;
+import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.samexternal.SAMWriting;
+import org.umcn.me.samexternal.UnknownParamException;
 import org.umcn.me.util.MobileDefinitions;
 
 /*

@@ -9,7 +9,7 @@ import java.util.Properties;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.umcn.gen.sam.SAMDefinitions;
+import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.util.MobileDefinitions;
 
 public class Mobster {

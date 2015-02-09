@@ -11,9 +11,9 @@ import java.util.Vector;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMRecord;
 
-import org.umcn.gen.sam.QualityProcessing;
 import org.umcn.me.sam.InvalidCategoryException;
 import org.umcn.me.sam.MobileSAMTag;
+import org.umcn.me.samexternal.QualityProcessing;
 import org.umcn.me.splitread.ClippedRead;
 
 /**

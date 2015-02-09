@@ -8,17 +8,16 @@ import org.apache.commons.cli.*;
 import org.umcn.gen.annotation.AnnotatedRegionSet;
 import org.umcn.gen.region.LabeledRegion;
 import org.umcn.gen.region.RegionComparator;
-import org.umcn.gen.sam.IllegalSAMPairException;
-import org.umcn.gen.sam.SAMSilentReader;
-import org.umcn.gen.sam.SAMWriting;
 import org.umcn.me.sam.MateCluster;
+import org.umcn.me.samexternal.IllegalSAMPairException;
+import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.splitread.ClippedRead;
 import org.umcn.me.splitread.InvalidHardClipCigarException;
 import org.umcn.me.util.ClippedReadSet;
 import org.umcn.me.util.CollectionUtil;
 import org.umcn.me.util.MobileDefinitions;
 import org.umcn.me.util.SampleBam;
-
 
 import java.io.File;
 import java.io.BufferedReader;
