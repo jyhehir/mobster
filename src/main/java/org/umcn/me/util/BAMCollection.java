@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.io.File;
 import java.io.FileNotFoundException;
 
-import org.umcn.gen.sam.SAMSilentReader;
+import org.umcn.me.samexternal.SAMSilentReader;
 
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMReadGroupRecord;
@@ -41,20 +41,31 @@ public class BAMCollection {
 		
 	}
 	
-	public SAMFileHeader getMergedHeader(SAMFileHeader.SortOrder order){
+	public SAMFileHeader getMergedHeader(SAMFileHeader.SortOrder order) throws IllegalArgumentException{
 		
 		List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();		
-		
+
 		for (BAMSample sample : this.bams){
+
+			boolean success = true;
 			SAMSilentReader reader = new SAMSilentReader(sample.bam);
 			SAMFileHeader header = reader.getFileHeader();
 			
-			for (SAMReadGroupRecord rg : header.getReadGroups()){
-				rg.setSample(sample.sample);
+			if (header.getReadGroups().isEmpty()){
+				success = false;
+			}else{
+				for (SAMReadGroupRecord rg : header.getReadGroups()){
+					rg.setSample(sample.sample);
+				}
 			}
-			headers.add(header);
-			
 			reader.close();
+			
+			if (!success){
+				throw new IllegalArgumentException("Header must contain a read group for merging. Bam: " + sample.bam.toString() + "does not contain a @RG");	
+			}			
+			
+			headers.add(header);
+
 		}
 		
 		SamFileHeaderMerger merger = new SamFileHeaderMerger(order, headers, true);//true: do merge the sequence dictionaries

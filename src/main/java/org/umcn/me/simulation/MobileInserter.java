@@ -29,11 +29,10 @@ import java.util.HashSet;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.commons.cli.*;
-
-import org.umcn.gen.parsers.FastaParserFast;
 import org.umcn.gen.sequence.FastaSequence;
 import org.umcn.gen.sequence.InvalidSequenceException;
 import org.umcn.gen.sequence.Sequence;
+import org.umcn.me.parsers.FastaParserFast;
 
 /**
  * Class for simulating Mobile Element Insertion events in DNA Sequences (TargetSequences)
