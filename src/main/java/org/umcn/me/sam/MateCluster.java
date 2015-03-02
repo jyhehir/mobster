@@ -91,7 +91,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 	}
 	
 	private boolean isSameReference(T originalRec, T newRec){
-		return (originalRec.getReferenceName() == newRec.getReferenceName());
+		return (originalRec.getReferenceName().equals(newRec.getReferenceName()));
 	}
 	
 	//TODO now this function returns only true when the first added mobile category
@@ -120,7 +120,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		}else{
 			//Bugfix: Should check for both reference and range as some clusters may not be written if
 			//no subsequent anchors are found with higher coordinates.
-			sameReference = (record.getReferenceName() == this.lastElement().getReferenceName());
+			sameReference = (record.getReferenceName().equals(this.lastElement().getReferenceName()));
 			sameRange = (record.getAlignmentStart() <= this.lastElement().getAlignmentStart() + searchArea
 					&& record.getAlignmentStart() >= this.lastElement().getAlignmentStart() - wiggle);
 			
