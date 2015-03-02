@@ -60,6 +60,7 @@ public class RefAndMEPairFinder {
 	public static Logger logger = Logger.getLogger("RefAndMEPairFinder"); 
 	private static int MIN_POLYA_LEN = 9;
 	private static int MAX_POLYA_MM = 1;
+	private static int MAX_MAPPINGS = -1; // -1 do not use max mobiome mappings
 	
 	private static int MEMORY;
 	private static String TMP;
@@ -108,6 +109,10 @@ public class RefAndMEPairFinder {
 					}else{
 						TMP = System.getProperty("java.io.tmpdir");
 					}
+					if (prop.containsKey(MobileDefinitions.GRIPS_MAX_REFSEQ_MAPPING)){
+						MAX_MAPPINGS = Integer.parseInt(prop.getProperty(MobileDefinitions.GRIPS_MAX_REFSEQ_MAPPING));
+					}
+					
 					MEMORY = Integer.parseInt(prop.getProperty(MobileDefinitions.MEMORY).trim());
 					
 					
@@ -124,6 +129,7 @@ public class RefAndMEPairFinder {
 					tool = line.getOptionValue("tool", SAMDefinitions.MAPPING_TOOL_MOSAIK);
 					sampleName = line.getOptionValue("samplename", sampleName);
 					paired = line.hasOption("p");
+					MAX_MAPPINGS = Integer.parseInt(line.getOptionValue("max_mapping", Integer.toString(MAX_MAPPINGS)));
 					TMP = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
 					MEMORY = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));
 				}
@@ -177,6 +183,10 @@ public class RefAndMEPairFinder {
 		paired = Boolean.parseBoolean(prop.getProperty(MobileDefinitions.PAIRED_END).trim());
 		MIN_POLYA_LEN = Integer.parseInt(prop.getProperty(MobileDefinitions.POLY_A_LENGTH).trim());
 		MAX_POLYA_MM = Integer.parseInt(prop.getProperty(MobileDefinitions.POLY_A_MAX_MISMATCHES).trim());
+		
+		if (prop.containsKey(MobileDefinitions.GRIPS_MAX_REFSEQ_MAPPING)){
+			MAX_MAPPINGS = Integer.parseInt(prop.getProperty(MobileDefinitions.GRIPS_MAX_REFSEQ_MAPPING));
+		}
 		
 		if (prop.containsKey(MobileDefinitions.TMP)){
 			TMP = prop.getProperty(MobileDefinitions.TMP).trim();
@@ -308,11 +318,30 @@ public class RefAndMEPairFinder {
 		Map<String, MobileSAMTag> meReads = new HashMap<String, MobileSAMTag>();
 		SAMFileReader inputSam = new SAMSilentReader(bam);	
 		int mobileReadCounter = 0;
+		int skippedReadsBecauseOfMultiMappings = 0;
 		
 		for (SAMRecord samRecord : inputSam){
 			
 			String recordName = samRecord.getReadName();
 			boolean splitRead = recordName.startsWith(SAMDefinitions.SPLIT_MAPPING);
+			
+			logger.info("Using max mobiome mappings of (-1 is disabled) : " + MAX_MAPPINGS);
+			
+			if(MAX_MAPPINGS != -1){
+				MobileSAMTag tempTag = new MobileSAMTag();
+				try {
+					tempTag.build(samRecord, tool);
+					if (tempTag.getNrOfMappings() > MAX_MAPPINGS){
+						skippedReadsBecauseOfMultiMappings++;
+						continue;
+					}
+				} catch (InvalidCategoryException e) {
+					logger.error(e.getMessage());
+				} catch (UnknownParamException e) {
+					logger.error(e.getMessage());
+				}
+				
+			}
 			
 			if (!samRecord.getReadUnmappedFlag() && !exclusion.contains(samRecord.getReadName())){
 				mobileReadCounter++;
@@ -370,6 +399,7 @@ public class RefAndMEPairFinder {
 			}
 		}
 		logger.info(mobileReadCounter + " reads map to at least 1 mobile element");
+		logger.info("Skipped reads because of mobiome multimappings: " + skippedReadsBecauseOfMultiMappings);
 		inputSam.close();
 		return meReads;
 	}
@@ -549,6 +579,11 @@ public class RefAndMEPairFinder {
 		OptionBuilder.withDescription("Use property file instead of command line arguments, command line arguments will be skipt. Values in property file will be used");
 		
 		options.addOption(OptionBuilder.create("properties"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Maximum number of mappings a read may map to the mobiome");
+		options.addOption(OptionBuilder.create("max_mapping"));
 		
 		return options;
 	}
