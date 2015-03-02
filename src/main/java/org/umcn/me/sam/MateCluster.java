@@ -110,10 +110,20 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 	}
 	
 	public boolean isWithinSearchArea(T record, int searchArea){
+		
+		boolean sameReference;
+		boolean sameRange;
+		
 		if(this.size() == 0){
 			return true;
 		}else{
-			return (record.getAlignmentStart() <= this.lastElement().getAlignmentStart() + searchArea);
+			sameReference = (record.getReferenceName() == this.lastElement().getReferenceName());
+			sameRange = (record.getAlignmentStart() <= this.lastElement().getAlignmentStart() + searchArea);
+			
+			return (sameReference && sameRange);
+			
+			//Old return method in 0.1.6
+			//return (record.getAlignmentStart() <= this.lastElement().getAlignmentStart() + searchArea);
 		}
 	}
 	

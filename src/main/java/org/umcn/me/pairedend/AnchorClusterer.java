@@ -830,7 +830,12 @@ public class AnchorClusterer {
 			}
 			iter = mobileClusters.iterator();
 		}
-		
+		for (MateCluster<SAMRecord> cluster : mobileClusters){
+			if (cluster.size() >= minReads){
+				c++;
+				cluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
+			}
+		}
 		logger.info("Number of non-written clusters:" + mobileClusters.size());
 		logger.info("Found nr of clusters: " + c);
 
