@@ -39,6 +39,7 @@ public class PotentialMEIReadFinder {
 	public static Logger logger = Logger.getLogger("PotentialMEIReadFinder");
 	private static int min_avg_qual = 20;
 	private static int min_anchor_mapq = 20;
+	private static boolean skip_um_pairs = false; //um --> unique - multiply mapped pairs
 	
 	//TODO Command line calling now does not implement the multiple BAM input feature
 	public static void main(String[] args) {
@@ -96,7 +97,9 @@ public class PotentialMEIReadFinder {
 					if (props.containsKey(MobileDefinitions.MIN_MAPQ_ANCHOR)){
 						min_anchor_mapq = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_MAPQ_ANCHOR).trim());
 					}
-					
+					if (props.containsKey(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE)){
+						skip_um_pairs = Boolean.parseBoolean(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE.trim());
+					}
 					
 				}else{
 					infile = line.getOptionValue("in");
@@ -109,6 +112,8 @@ public class PotentialMEIReadFinder {
 					memory = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));
 					min_avg_qual = Integer.parseInt(line.getOptionValue("min_avg_qual", Integer.toString(min_avg_qual)));
 					min_anchor_mapq = Integer.parseInt(line.getOptionValue("mapq",Integer.toString(min_anchor_mapq)));
+					
+					//TODO: add in skip um pair as an cli option
 				}
 				
 				logger.info("Using infile: " + infile);
@@ -185,6 +190,10 @@ public class PotentialMEIReadFinder {
 		}else{
 			//3-12-2014:Changed from mosaik to unspecified
 			tool = SAMDefinitions.MAPPING_TOOL_UNSPECIFIED;
+		}
+		
+		if (props.containsKey(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE)){
+			skip_um_pairs = Boolean.parseBoolean(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE.trim());
 		}
 		
 		useSplit = Boolean.parseBoolean(props.getProperty(MobileDefinitions.USE_SPLIT).trim());
@@ -294,6 +303,7 @@ public class PotentialMEIReadFinder {
 		File inBam = new File(inFile);
 		PotentialMobilePairIterator potentialMEIReads = new PotentialMobilePairIterator(inBam, mappingTool, useSplit,
 																minClipping, maxClipping, min_avg_qual, min_anchor_mapq);
+		potentialMEIReads.setSkippingOfUMPairs(skip_um_pairs);
 		//SAMFileHeader samFileHeader = potentialMEIReads.getSAMReader().getFileHeader();
 		
 		//File tmpFile = new File(tmp);

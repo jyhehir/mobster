@@ -64,6 +64,24 @@ public class SAMRecordHolderPair<T extends NrMappingsSAMRecordHolder>{
 		return false;
 	}
 	
+	/**
+	 * Unlike isPotentialMobilePair, does not check for UM pairs
+	 * @param includeSplit
+	 * @return
+	 */
+	public boolean isPotentialGRIPPair(boolean includeSplit){
+		if (this.isMappedUUDiscordantly()){
+			return true;
+		}else if (this.hasUnmappedRead() && this.hasAnchor()){
+			return true;
+			//TODO: test leaving out this.hasMultipleMappedRead() --> when definining multiple and unique
+			//using MAPQ this might not return all inproperly paired pairs.
+		} else if (includeSplit && this.hasSplitReadOfCertainSize()){
+			return true;
+		}
+		return false;
+	}
+	
 	public boolean hasSplitReadOfCertainSize(){
 		return (this.read1.isSoftClippedMappedProperAndCertainSizeAndCertainQual() ||
 				this.read2.isSoftClippedMappedProperAndCertainSizeAndCertainQual());
