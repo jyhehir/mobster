@@ -113,12 +113,16 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		
 		boolean sameReference;
 		boolean sameRange;
+		final int wiggle = 10;
 		
 		if(this.size() == 0){
 			return true;
 		}else{
+			//Bugfix: Should check for both reference and range as some clusters may not be written if
+			//no subsequent anchors are found with higher coordinates.
 			sameReference = (record.getReferenceName() == this.lastElement().getReferenceName());
-			sameRange = (record.getAlignmentStart() <= this.lastElement().getAlignmentStart() + searchArea);
+			sameRange = (record.getAlignmentStart() <= this.lastElement().getAlignmentStart() + searchArea
+					&& record.getAlignmentStart() >= this.lastElement().getAlignmentStart() - wiggle);
 			
 			return (sameReference && sameRange);
 			
