@@ -103,6 +103,8 @@ public class AnchorClusterer {
 	
 	private static String repmask_file = "./hg19_alul1svaerv.txt";
 	
+	private static Properties mobster_properties;
+	
 	
 	public static String getVersionAndParameterInfo(String[] params){
 		StringBuilder sb = new StringBuilder();
@@ -120,7 +122,7 @@ public class AnchorClusterer {
 		sb.append("#Creation date: ");
 		sb.append(date.toString());
 		sb.append("\n");
-		
+
 		return sb.toString();
 	}
 	
@@ -183,6 +185,8 @@ public class AnchorClusterer {
 		int maxdist; // default 450
 		
 		//anchorIndex = new File(line.getOptionValue("in").replaceAll(".bam$", ".bai"));
+		
+		mobster_properties = props;
 		
 		anchor = new File(props.getProperty(MobileDefinitions.ANCHOR_FILE).trim());
 		anchorIndex = new File(props.getProperty(MobileDefinitions.ANCHOR_FILE).trim().replaceAll(".bam$", ".bai"));
@@ -798,6 +802,14 @@ public class AnchorClusterer {
 		Vector<MateCluster<SAMRecord>> mobileClusters = new Vector<MateCluster<SAMRecord>>();
 		
 		int c = 0;
+		int skippedClustersBecauseOfNotSameRefMapping = 0;
+		double minPercentSameMateRefMapping = 0.0;
+		
+		if (mobster_properties.containsKey(MobileDefinitions.GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING)){
+			minPercentSameMateRefMapping = Double.parseDouble(mobster_properties.getProperty(MobileDefinitions.GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING));
+		}
+		
+		logger.info("Using a minPercentSameMateRefMapping threshold of: " + minPercentSameMateRefMapping);
 		
 		if (multiple_sample_calling){
 			sampleCalling = SampleBam.MULTISAMPLE;
@@ -815,8 +827,12 @@ public class AnchorClusterer {
 						break;
 					}
 				}else if(currentCluster.size() >= minReads){
-					c++;
-					currentCluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
+					if (currentCluster.getHighestPercentageOfMateAlignmentsToSameChrosome(true) >= minPercentSameMateRefMapping){
+						currentCluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
+						c++;
+					}else{
+						skippedClustersBecauseOfNotSameRefMapping++;
+					}
 					iter.remove();
 				}else{
 					iter.remove();
@@ -831,15 +847,14 @@ public class AnchorClusterer {
 			iter = mobileClusters.iterator();
 		}
 		
-		int d = 0; //number of nonwritten clusters
+
 		//Write anchors to clusters.bam which have not been written yet.
 		for (MateCluster<SAMRecord> cluster : mobileClusters){
 			if (cluster.size() >= minReads){
-				d++;
 				cluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
 			}
 		}
-		logger.info("Number of non-written clusters, written to disk at the end:" + d);
+		logger.info("Number of skipped clusters because mates do not align to same chromosome:" + skippedClustersBecauseOfNotSameRefMapping);
 		logger.info("Found nr of clusters: " + c);
 
 		input.close();

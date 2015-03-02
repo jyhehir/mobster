@@ -77,7 +77,56 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		}
 	}
 	
+	private Map<String, Integer> retrieveMateAlignments(boolean skipUnmapped){
+		Map<String, Integer> countMap = new HashMap<String, Integer>();
+		String ref;
+		
+		for (T record : this){
+			if(skipUnmapped && record.getMateUnmappedFlag()){
+				continue;
+			}
+			
+			ref = record.getMateReferenceName();
+			if (countMap.containsKey(ref)){
+				countMap.put(ref, countMap.get(ref) + 1);
+			}else{
+				countMap.put(ref, 1);
+			}
+		}
+		
+		return countMap;
+	}
+	
+	public double getHighestPercentageOfMateAlignmentsToSameChrosome(boolean skipUnmapped){
+		
+		Map<String, Integer> countMap = this.retrieveMateAlignments(skipUnmapped);
+		int total = 0;
+		int highestCount = 0;
+
+		for (String ref : countMap.keySet()){
+			int currentcount = countMap.get(ref);
+			
+			if (currentcount > highestCount){
+				highestCount = currentcount;
+			}
+			total += currentcount;
+		}
+		
+		//if total is 0, e.g. due to all mates being unmapped just set percentage to 100%
+		if (total == 0){
+			return 100.0;
+		}
+		
+		double highestPercentage = (double) highestCount / (double) total * 100; 
+		
+		return highestPercentage;
+	}
+	
+	
 	private boolean isValidAddition(T originalRec, T newRec) throws InvalidCategoryException{
+		
+		//When modifying for GRIPs do not forget to check whether the mates are unmapped
+		
 		if(!this.split_read){
 			return (isSameStrand(originalRec, newRec) && isSameReference(originalRec, newRec) &&
 			isSameMobileMapping(originalRec, newRec));
@@ -93,6 +142,24 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 	private boolean isSameReference(T originalRec, T newRec){
 		return (originalRec.getReferenceName().equals(newRec.getReferenceName()));
 	}
+	
+	public boolean isMateSameReference(T originalRec, T newRec){
+		return (originalRec.getMateReferenceName().equals(newRec.getMateReferenceName()));
+	}
+	
+	public boolean isMateSameReferenceWithinRegion(T originalRec, T newRec, int region){
+		boolean sameReference = this.isMateSameReference(originalRec, newRec);
+		int startSearchRegion = originalRec.getMateAlignmentStart() - region;
+		int endSearchRegion = originalRec.getMateAlignmentStart() + region;
+		boolean withinRegion = (newRec.getMateAlignmentStart() >= startSearchRegion 
+				&& newRec.getMateAlignmentStart() <= endSearchRegion);
+		
+		return (sameReference && withinRegion);
+		
+		
+	}
+	
+	
 	
 	//TODO now this function returns only true when the first added mobile category
 	//for two SAMRecords is the same (usually the best hit). Could make this more lenient
