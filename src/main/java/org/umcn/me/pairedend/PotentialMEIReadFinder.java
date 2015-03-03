@@ -98,7 +98,7 @@ public class PotentialMEIReadFinder {
 						min_anchor_mapq = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_MAPQ_ANCHOR).trim());
 					}
 					if (props.containsKey(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE)){
-						skip_um_pairs = Boolean.parseBoolean(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE.trim());
+						skip_um_pairs = Boolean.parseBoolean(props.getProperty(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE).trim());
 					}
 					
 				}else{
@@ -193,7 +193,7 @@ public class PotentialMEIReadFinder {
 		}
 		
 		if (props.containsKey(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE)){
-			skip_um_pairs = Boolean.parseBoolean(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE.trim());
+			skip_um_pairs = Boolean.parseBoolean(props.getProperty(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE).trim());
 		}
 		
 		useSplit = Boolean.parseBoolean(props.getProperty(MobileDefinitions.USE_SPLIT).trim());
@@ -303,6 +303,7 @@ public class PotentialMEIReadFinder {
 		File inBam = new File(inFile);
 		PotentialMobilePairIterator potentialMEIReads = new PotentialMobilePairIterator(inBam, mappingTool, useSplit,
 																minClipping, maxClipping, min_avg_qual, min_anchor_mapq);
+		logger.info("Skipping UM pairs?: " + skip_um_pairs);
 		potentialMEIReads.setSkippingOfUMPairs(skip_um_pairs);
 		//SAMFileHeader samFileHeader = potentialMEIReads.getSAMReader().getFileHeader();
 		
