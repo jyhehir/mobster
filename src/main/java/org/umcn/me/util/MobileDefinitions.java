@@ -52,6 +52,9 @@ public abstract class MobileDefinitions {
 	public static final String MIN_QUAL = "MINIMUM_AVG_QUALITY";
 	public static final String MIN_MAPQ_ANCHOR = "MINIMUM_MAPQ_ANCHOR";
 	
+	public static final String QUERY_SORT_INPUT = "QUERY_SORT_INPUT";
+	
+	
 	//properties RefAndMEPairFinder
 	
 //	File single = null;
