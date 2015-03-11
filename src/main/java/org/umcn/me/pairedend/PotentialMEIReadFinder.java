@@ -33,6 +33,7 @@ import com.google.code.jyield.YieldUtils;
 
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileWriter;
+import net.sf.samtools.SAMFileHeader.SortOrder;
 
 public class PotentialMEIReadFinder {
 	
@@ -40,6 +41,7 @@ public class PotentialMEIReadFinder {
 	private static int min_avg_qual = 20;
 	private static int min_anchor_mapq = 20;
 	private static boolean skip_um_pairs = false; //um --> unique - multiply mapped pairs
+	private static boolean query_sort_input = false; //query sort input for lower RAM usage
 	
 	//TODO Command line calling now does not implement the multiple BAM input feature
 	public static void main(String[] args) {
@@ -196,6 +198,10 @@ public class PotentialMEIReadFinder {
 			skip_um_pairs = Boolean.parseBoolean(props.getProperty(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE).trim());
 		}
 		
+		if (props.containsKey(MobileDefinitions.QUERY_SORT_INPUT)){
+			query_sort_input = Boolean.parseBoolean(props.getProperty(MobileDefinitions.QUERY_SORT_INPUT).trim());
+		}
+		
 		useSplit = Boolean.parseBoolean(props.getProperty(MobileDefinitions.USE_SPLIT).trim());
 		
 		if (props.containsKey(MobileDefinitions.TMP)){
@@ -247,6 +253,7 @@ public class PotentialMEIReadFinder {
 		PrintWriter outFq = null;
 		SAMFileWriter outputSam = null;
 		SAMFileHeader samFileHeader = null;
+		File nameSortedBam = null;
 		try {
 			
 			//TODO:
@@ -264,7 +271,17 @@ public class PotentialMEIReadFinder {
 			
 			//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
 			for (String file : bams){
-				runPotentialMEIFinder(file, outFq, outputSam, tool, useSplit, minClipping, maxClipping);
+			
+				//Query sort input if user wants this
+				if (query_sort_input){
+					nameSortedBam = new File(file.toString() + ".query_sorted");
+					SAMWriting.writeSortedSAMorBAM(new File(file), nameSortedBam, new File(tmp), memory, SortOrder.queryname);
+					runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping);
+					nameSortedBam.delete();
+				}else{
+					runPotentialMEIFinder(file, outFq, outputSam, tool, useSplit, minClipping, maxClipping);
+				}
+				
 			}
 			
 			
@@ -282,6 +299,9 @@ public class PotentialMEIReadFinder {
 			}
 			if (outputSam != null){
 				outputSam.close();
+			}
+			if (nameSortedBam != null){
+				nameSortedBam.delete();
 			}
 		}
 		
