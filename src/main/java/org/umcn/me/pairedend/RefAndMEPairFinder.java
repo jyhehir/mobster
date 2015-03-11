@@ -320,12 +320,12 @@ public class RefAndMEPairFinder {
 		int mobileReadCounter = 0;
 		int skippedReadsBecauseOfMultiMappings = 0;
 		
+		logger.info("Using max mobiome mappings of (-1 is disabled) : " + MAX_MAPPINGS);
+		
 		for (SAMRecord samRecord : inputSam){
 			
 			String recordName = samRecord.getReadName();
 			boolean splitRead = recordName.startsWith(SAMDefinitions.SPLIT_MAPPING);
-			
-			logger.info("Using max mobiome mappings of (-1 is disabled) : " + MAX_MAPPINGS);
 			
 			if(MAX_MAPPINGS != -1){
 				MobileSAMTag tempTag = new MobileSAMTag();
