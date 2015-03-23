@@ -257,7 +257,7 @@ public class PotentialMEIReadFinder {
 		try {
 			
 			
-			BAMCollection collection = new BAMCollection(bams, samples);
+			BAMCollection collection = new BAMCollection(bams, samples, true);
 			
 			samFileHeader = collection.getMergedHeader(SAMFileHeader.SortOrder.unsorted);
 			
