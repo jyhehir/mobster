@@ -223,7 +223,7 @@ public class SAMRecordHolderPair<T extends NrMappingsSAMRecordHolder>{
 			} else{
 				StringBuilder readGroup1 = new StringBuilder(rgPrefix);
 				readGroup1.append((String) this.read1.getSAMRecord().getAttribute("RG"));
-				this.read2.getSAMRecord().setAttribute("RG", rgPrefix);
+				this.read2.getSAMRecord().setAttribute("RG", readGroup1.toString());
 			}
 			
 			if (this.read2.getSAMRecord().getAttribute("RG") == null){
@@ -231,7 +231,7 @@ public class SAMRecordHolderPair<T extends NrMappingsSAMRecordHolder>{
 			}else{
 				StringBuilder readGroup2 = new StringBuilder(rgPrefix);
 				readGroup2.append((String) this.read2.getSAMRecord().getAttribute("RG"));
-				this.read2.getSAMRecord().setAttribute("RG", readGroup2);
+				this.read2.getSAMRecord().setAttribute("RG", readGroup2.toString());
 			}
 			
 		}
