@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
-import org.umcn.gen.annotation.AnnotatedRegionSet;
 import org.umcn.gen.region.InvalidRegionException;
 import org.umcn.gen.region.LabeledRegion;
 import org.umcn.me.pairedend.MobilePrediction;

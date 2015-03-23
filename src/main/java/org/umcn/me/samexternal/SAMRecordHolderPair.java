@@ -166,14 +166,14 @@ public class SAMRecordHolderPair<T extends NrMappingsSAMRecordHolder>{
 	}
 	
 	public void writeMobileReadsToFastQAndPotentialPairsToSAM(PrintWriter fq,
-			SAMFileWriter samWriter, boolean includeSplitReads, boolean prefix){
+			SAMFileWriter samWriter, boolean includeSplitReads, boolean prefix, String rgPrefix){
 		
 		if (prefix){
 			prefixReadNames(includeSplitReads);
 		}
 		
 		if (this.writePotentialMobileReadsToFastQ(fq, includeSplitReads)){
-			this.writeToSAMFileWriter(samWriter);
+			this.writeToSAMFileWriter(samWriter, rgPrefix);
 		}
 		
 	}
@@ -213,8 +213,29 @@ public class SAMRecordHolderPair<T extends NrMappingsSAMRecordHolder>{
 		this.read2.getSAMRecord().setReadName(readName2.toString());
 	}
 	
-	public void writeToSAMFileWriter(SAMFileWriter samWriter){
+	public void writeToSAMFileWriter(SAMFileWriter samWriter, String rgPrefix){
 
+		
+		
+		if (rgPrefix != null && ! rgPrefix.equals("")){
+			if (this.read1.getSAMRecord().getAttribute("RG") == null){
+				this.read1.getSAMRecord().setAttribute("RG", rgPrefix);
+			} else{
+				StringBuilder readGroup1 = new StringBuilder(rgPrefix);
+				readGroup1.append((String) this.read1.getSAMRecord().getAttribute("RG"));
+				this.read2.getSAMRecord().setAttribute("RG", rgPrefix);
+			}
+			
+			if (this.read2.getSAMRecord().getAttribute("RG") == null){
+				this.read2.getSAMRecord().setAttribute("RG", rgPrefix);
+			}else{
+				StringBuilder readGroup2 = new StringBuilder(rgPrefix);
+				readGroup2.append((String) this.read2.getSAMRecord().getAttribute("RG"));
+				this.read2.getSAMRecord().setAttribute("RG", readGroup2);
+			}
+			
+		}
+		
 		samWriter.addAlignment(this.read1.getSAMRecord());
 		samWriter.addAlignment(this.read2.getSAMRecord());
 	}

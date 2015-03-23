@@ -24,10 +24,10 @@ import org.umcn.me.sam.PotentialMobilePairIterator;
 import org.umcn.me.samexternal.NrMappingsSAMRecordHolder;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.samexternal.SAMRecordHolderPair;
-import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.util.BAMCollection;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.BAMSample;
 
 import com.google.code.jyield.YieldUtils;
 
@@ -256,30 +256,26 @@ public class PotentialMEIReadFinder {
 		File nameSortedBam = null;
 		try {
 			
-			//TODO:
-			if (bams.length == 1 && samples.length == 1){
-				SAMSilentReader singleBamReader = new SAMSilentReader(new File(bams[0]));
-				samFileHeader = singleBamReader.getFileHeader();
-				singleBamReader.close();
-			}else{
-				samFileHeader = new BAMCollection(bams, samples).getMergedHeader(SAMFileHeader.SortOrder.unsorted);
-			}
+			
+			BAMCollection collection = new BAMCollection(bams, samples);
+			
+			samFileHeader = collection.getMergedHeader(SAMFileHeader.SortOrder.unsorted);
 			
 			//TODO: Open up the .fq and .bam writer here, then run the potential MEIFinder
 			outFq = new PrintWriter(new FileWriter(outfile + "_potential.fq"), true);
 			outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, new File(tmp), memory, SAMFileHeader.SortOrder.unsorted, true);
 			
 			//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
-			for (String file : bams){
+			for (BAMSample bamSample : collection.getCloneOfBAMSampleList()){
 			
 				//Query sort input if user wants this
 				if (query_sort_input){
-					nameSortedBam = new File(file.toString() + ".query_sorted");
-					SAMWriting.writeSortedSAMorBAM(new File(file), nameSortedBam, new File(tmp), memory, SortOrder.queryname);
-					runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping);
+					nameSortedBam = new File(bamSample.getBam().toString() + ".query_sorted");
+					SAMWriting.writeSortedSAMorBAM(bamSample.getBam(), nameSortedBam, new File(tmp), memory, SortOrder.queryname);
+					runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
 					nameSortedBam.delete();
 				}else{
-					runPotentialMEIFinder(file, outFq, outputSam, tool, useSplit, minClipping, maxClipping);
+					runPotentialMEIFinder(bamSample.getBam().getAbsolutePath(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
 				}
 				
 			}
@@ -318,7 +314,7 @@ public class PotentialMEIReadFinder {
 	}
 
 	public static void runPotentialMEIFinder(String inFile, PrintWriter outFq, SAMFileWriter outSam, String mappingTool,
-			boolean useSplit, int minClipping, int maxClipping) {
+			boolean useSplit, int minClipping, int maxClipping, String readGroupPrefix) {
 		
 		File inBam = new File(inFile);
 		PotentialMobilePairIterator potentialMEIReads = new PotentialMobilePairIterator(inBam, mappingTool, useSplit,
@@ -341,7 +337,7 @@ public class PotentialMEIReadFinder {
 	
 		for (SAMRecordHolderPair<NrMappingsSAMRecordHolder> pair : YieldUtils.toIterable(potentialMEIReads)){
 
-				pair.writeMobileReadsToFastQAndPotentialPairsToSAM(outFq, outSam, useSplit, true);
+				pair.writeMobileReadsToFastQAndPotentialPairsToSAM(outFq, outSam, useSplit, true, readGroupPrefix);
 				c++;
 				if(pair.hasSplitReadOfCertainSize()){
 					d++;
