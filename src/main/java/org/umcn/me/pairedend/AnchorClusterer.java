@@ -98,7 +98,7 @@ public class AnchorClusterer {
 	private static boolean multiple_sample_calling = false;
 	private static boolean filter_by_read_counts_single_sample = false;
 	private static boolean lenient_search = false;
-	private static String tmp;
+	private static String TMP;
 	private static int memory;
 	
 	private static String repmask_file = "./hg19_alul1svaerv.txt";
@@ -153,7 +153,7 @@ public class AnchorClusterer {
 	}
 	
 	
-	public static void runFromPropertiesFile(Properties props){
+	public static void runFromPropertiesFile(Properties props) throws IOException{
 //		public static final String ANCHOR_FILE = "ANCHOR_BAM_FILE"; DONE
 //		public static final String SPLIT_ANCHOR_FILE = "ANCHOR_SPLIT_BAM_FILE";
 //		public static final String READS_PER_CLUSTER = "READS_PER_CLUSTER"; DONE
@@ -254,11 +254,16 @@ public class AnchorClusterer {
 		}
 		
 		if (props.containsKey(MobileDefinitions.TMP)){
-			tmp = props.getProperty(MobileDefinitions.TMP).trim();
+			TMP = props.getProperty(MobileDefinitions.TMP).trim() + File.separator + "mob_" + Long.toString(System.nanoTime());			
 		}else{
-			tmp = System.getProperty("java.io.tmpdir");
+			TMP = System.getProperty("java.io.tmpdir") + File.separator + "mob_" + Long.toString(System.nanoTime());
 		}
 		
+		File tmp = new File(TMP);
+		
+		if ( ! tmp.mkdir() ){
+			throw new IOException("Can not create tmp directory: " + tmp);
+		}
 		if (props.containsKey(MobileDefinitions.REPEAT_MASK_FILE)){
 			repmask_file = props.getProperty(MobileDefinitions.REPEAT_MASK_FILE).trim();
 		}
@@ -336,7 +341,12 @@ public class AnchorClusterer {
 			logger.info("Anchorclusterer ran in : " + time);
 		} catch (IOException e) {
 			logger.error("Anchorclusterer: Error in opening files: " + e.getMessage());
+		} finally {
+			if (tmp != null && ! tmp.delete() ){
+				logger.error("Anchor Clusterer: Could not delete temp: " + tmp);
+			}
 		}
+
 		
 	}
 	
@@ -389,7 +399,7 @@ public class AnchorClusterer {
 				multiple_sample_calling = line.hasOption("multiplesample");
 				filter_by_read_counts_single_sample = line.hasOption("multisample_stringent");
 				percentile_99_fragment = Integer.parseInt(line.getOptionValue("maxclust", Integer.toString(percentile_99_fragment)));
-				tmp = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
+				TMP = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
 				memory = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));				
 				
 				if(line.hasOption("insplit")){
@@ -797,7 +807,7 @@ public class AnchorClusterer {
 		SampleBam sampleCalling = SampleBam.SINGLESAMPLE;
 		
 		header = editSAMFileHeader(header);
-		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(clusterBam, header, new File(tmp), memory, SAMFileHeader.SortOrder.coordinate);
+		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(clusterBam, header, new File(TMP), memory, SAMFileHeader.SortOrder.coordinate);
 		
 		Vector<MateCluster<SAMRecord>> mobileClusters = new Vector<MateCluster<SAMRecord>>();
 		
@@ -884,7 +894,7 @@ public class AnchorClusterer {
 		//convert reference names in SAM header from 1 to -> chr1 etc.
 		header = editSAMFileHeader(header);
 		header2 = editSAMFileHeader(header2);
-		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(outBam, header, new File(tmp), memory, SAMFileHeader.SortOrder.coordinate);
+		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(outBam, header, new File(TMP), memory, SAMFileHeader.SortOrder.coordinate);
 				
 		for (SAMRecord record : input){
 			

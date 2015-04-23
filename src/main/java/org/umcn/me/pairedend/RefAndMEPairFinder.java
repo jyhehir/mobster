@@ -161,7 +161,7 @@ public class RefAndMEPairFinder {
 	}
 	
 	//TODO remove the duplicated code associated with this code
-	public static void runFromPropertiesFile(Properties prop){
+	public static void runFromPropertiesFile(Properties prop) throws IOException{
 		
 		File single = null;
 		File multiple = null;
@@ -189,9 +189,15 @@ public class RefAndMEPairFinder {
 		}
 		
 		if (prop.containsKey(MobileDefinitions.TMP)){
-			TMP = prop.getProperty(MobileDefinitions.TMP).trim();
+			TMP = prop.getProperty(MobileDefinitions.TMP).trim() + File.separator + "mob_" + Long.toString(System.nanoTime());			
 		}else{
-			TMP = System.getProperty("java.io.tmpdir");
+			TMP = System.getProperty("java.io.tmpdir") + File.separator + "mob_" + Long.toString(System.nanoTime());
+		}
+		
+		File tmp = new File(TMP);
+		
+		if ( ! tmp.mkdir() ){
+			throw new IOException("Can not create tmp directory: " + tmp);
 		}
 		MEMORY = Integer.parseInt(prop.getProperty(MobileDefinitions.MEMORY).trim());
 		
@@ -213,7 +219,11 @@ public class RefAndMEPairFinder {
 			
 			logger.info("RefAndMEPairFinder ran in : " + time);
 		} catch (IOException e) {
-			logger.error("[RMPF] Error in finding files: " + e.getMessage());
+			logger.error("RefAndMEPairFinder -> Error in finding files: " + e.getMessage());
+		} finally{
+			if (tmp != null && ! tmp.delete() ){
+				logger.error("RefAndMEPairFinder -> Could not delete temp: " + tmp);
+			}
 		}
 	}
 	
