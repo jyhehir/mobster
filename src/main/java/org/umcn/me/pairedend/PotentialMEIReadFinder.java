@@ -166,13 +166,13 @@ public class PotentialMEIReadFinder {
 	}
 	
 	//TODO remove duplicate code for this function
-	public static void runFromProperties(Properties props){
+	public static void runFromProperties(Properties props) throws IOException{
 		
 		//TODO
 //		String infile;
 		String outfile;
 		String tool;
-		String tmp;
+		File tmp;
 		Boolean useSplit;
 		int minClipping;
 		int maxClipping;
@@ -205,11 +205,15 @@ public class PotentialMEIReadFinder {
 		useSplit = Boolean.parseBoolean(props.getProperty(MobileDefinitions.USE_SPLIT).trim());
 		
 		if (props.containsKey(MobileDefinitions.TMP)){
-			tmp = props.getProperty(MobileDefinitions.TMP).trim();
+			tmp = new File(props.getProperty(MobileDefinitions.TMP).trim() + File.pathSeparator + "mob_" + Long.toString(System.nanoTime()));			
 		}else{
-			tmp = System.getProperty("java.io.tmpdir");
+			tmp = new File(System.getProperty("java.io.tmpdir") + File.pathSeparator + "mob_" + Long.toString(System.nanoTime()));
 		}
 		
+		
+		if ( ! tmp.mkdir() ){
+			throw new IOException("Can not create tmp directory: " + tmp);
+		}
 		//TODO: Sample parsing
 		samples = props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0);
 		bams = props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0);
@@ -220,7 +224,7 @@ public class PotentialMEIReadFinder {
 			logger.error("Supplied bams and/or supplied sample names are not unique");
 			System.exit(1);
 		}
-		
+
 		//TODO: If multiple samples were found, turn on the multiple_sample_calling option in the properties from Mobster.java
 		
 		minClipping = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_CLIPPING).trim());
@@ -263,7 +267,7 @@ public class PotentialMEIReadFinder {
 			
 			//TODO: Open up the .fq and .bam writer here, then run the potential MEIFinder
 			outFq = new PrintWriter(new FileWriter(outfile + "_potential.fq"), true);
-			outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, new File(tmp), memory, SAMFileHeader.SortOrder.unsorted, true);
+			outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, tmp, memory, SAMFileHeader.SortOrder.unsorted, true);
 			
 			//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
 			for (BAMSample bamSample : collection.getCloneOfBAMSampleList()){
@@ -271,7 +275,7 @@ public class PotentialMEIReadFinder {
 				//Query sort input if user wants this
 				if (query_sort_input){
 					nameSortedBam = new File(bamSample.getBam().toString() + ".query_sorted");
-					SAMWriting.writeSortedSAMorBAM(bamSample.getBam(), nameSortedBam, new File(tmp), memory, SortOrder.queryname);
+					SAMWriting.writeSortedSAMorBAM(bamSample.getBam(), nameSortedBam, tmp, memory, SortOrder.queryname);
 					runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
 					nameSortedBam.delete();
 				}else{

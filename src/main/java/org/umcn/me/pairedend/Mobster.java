@@ -132,7 +132,6 @@ public class Mobster {
 				AnchorClusterer.runFromPropertiesFile(props);
 				
 			}  catch (IOException e) {
-				logger.error("[Mobster] Can not locate properties file: " + propertiesFile);
 				logger.error(e.getMessage());
 			}
 		}
