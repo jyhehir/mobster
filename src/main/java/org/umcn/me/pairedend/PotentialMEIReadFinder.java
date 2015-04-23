@@ -205,9 +205,9 @@ public class PotentialMEIReadFinder {
 		useSplit = Boolean.parseBoolean(props.getProperty(MobileDefinitions.USE_SPLIT).trim());
 		
 		if (props.containsKey(MobileDefinitions.TMP)){
-			tmp = new File(props.getProperty(MobileDefinitions.TMP).trim() + File.pathSeparator + "mob_" + Long.toString(System.nanoTime()));			
+			tmp = new File(props.getProperty(MobileDefinitions.TMP).trim() + File.separator + "mob_" + Long.toString(System.nanoTime()));			
 		}else{
-			tmp = new File(System.getProperty("java.io.tmpdir") + File.pathSeparator + "mob_" + Long.toString(System.nanoTime()));
+			tmp = new File(System.getProperty("java.io.tmpdir") + File.separator + "mob_" + Long.toString(System.nanoTime()));
 		}
 		
 		
