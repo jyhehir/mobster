@@ -303,6 +303,9 @@ public class PotentialMEIReadFinder {
 			if (nameSortedBam != null){
 				nameSortedBam.delete();
 			}
+			if (tmp != null && ! tmp.delete() ){
+				logger.error("[PMRF] Could not delete temp: " + tmp);
+			}
 		}
 		
 		long end = System.currentTimeMillis();
