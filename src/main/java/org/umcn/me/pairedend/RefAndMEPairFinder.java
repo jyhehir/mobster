@@ -206,6 +206,7 @@ public class RefAndMEPairFinder {
 		logger.info("Mapping tool used for mobile mapping: " + tool);
 		logger.info("Paired-end reads: " + paired);
 		logger.info("Setting sample name to: " + sampleName);
+		logger.info("Using temp: " + tmp);
 		
 		try {
 			runRefAndMePairFinder(single, multiple, filtered, out, tool, paired, sampleName);

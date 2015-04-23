@@ -289,6 +289,7 @@ public class AnchorClusterer {
 		logger.info("Using max overlap for double clusters: " + overlap);
 		logger.info("Using max distance between 5 and 3 end clusters for double clusters of: " +
 				maxdist);
+		logger.info("using tmp: " + tmp);
 		
 		
 		//Step 1: Clustering
