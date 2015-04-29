@@ -184,6 +184,7 @@ public class AnchorClusterer {
 		int overlap; // default 50 
 		int maxdist; // default 450
 		
+		
 		//anchorIndex = new File(line.getOptionValue("in").replaceAll(".bam$", ".bai"));
 		
 		mobster_properties = props;
@@ -328,6 +329,14 @@ public class AnchorClusterer {
 			matePredictions = mergePredictions(matePredictions, overlap, maxdist);
 			matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
 			matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
+			
+			//Filter for multiple occuring source genes if detection is done using GRIPS
+			if (props.containsKey(MobileDefinitions.GRIPS_MAX_SOURCE_GENES)){
+				int maxSourceGenes = Integer.parseInt(props.getProperty(MobileDefinitions.GRIPS_MAX_SOURCE_GENES));
+				logger.info("Filtering GRIPS for max source genes: " + maxSourceGenes);
+				matePredictions = GRIPFunctions.reducePredictionsBasedOnSource(matePredictions, maxSourceGenes);
+			}
+			
 			commentHeader = getVersionAndParameterInfo(props);
 			writePredictionsToFile(outPrefix + "_predictions.txt", matePredictions, commentHeader, sample);
 			

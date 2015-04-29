@@ -108,6 +108,7 @@ public abstract class MobileDefinitions {
 	public static final String GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING = "GRIPS_MIN_PERC_SAME_REF_MAPPING";
 	public static final String GRIPS_DISCARD_UNIQUE_MULTIPLE = "GRIPS_NO_UM_PAIRS";
 	public static final String GRIPS_MAX_REFSEQ_MAPPING = "GRIPS_MAX_REFSEQ";
+	public static final String GRIPS_MAX_SOURCE_GENES = "GRIPS_MAX_SOURCE_GENES";
 	
 	
 	

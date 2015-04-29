@@ -27,7 +27,6 @@ public class Mobster {
 		Properties props = new Properties();
 		
 		BasicConfigurator.configure();
-		
 		checkParams(args);
 		
 		if (propertiesFile != null){
