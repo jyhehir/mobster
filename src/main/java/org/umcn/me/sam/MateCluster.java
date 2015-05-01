@@ -122,6 +122,12 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		return highestPercentage;
 	}
 	
+	public int getNumberOfDifferentChromosomeMappingsOfMates(boolean skipUnmapped){
+		
+		Map<String, Integer> countMap = this.retrieveMateAlignments(skipUnmapped);
+		return countMap.size();
+		
+	}
 	
 	private boolean isValidAddition(T originalRec, T newRec) throws InvalidCategoryException{
 		

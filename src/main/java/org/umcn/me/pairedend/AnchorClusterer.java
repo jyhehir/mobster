@@ -824,12 +824,18 @@ public class AnchorClusterer {
 		int c = 0;
 		int skippedClustersBecauseOfNotSameRefMapping = 0;
 		double minPercentSameMateRefMapping = 0.0;
+		int maxDiffMateMapping = Integer.MAX_VALUE;
 		
 		if (mobster_properties.containsKey(MobileDefinitions.GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING)){
 			minPercentSameMateRefMapping = Double.parseDouble(mobster_properties.getProperty(MobileDefinitions.GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING));
 		}
 		
+		if (mobster_properties.containsKey(MobileDefinitions.GRIPS_MAX_DIFF_MATE_MAPPINGS)){
+			maxDiffMateMapping = Integer.parseInt(mobster_properties.getProperty(MobileDefinitions.GRIPS_MAX_DIFF_MATE_MAPPINGS));
+		}
+		
 		logger.info("Using a minPercentSameMateRefMapping threshold of: " + minPercentSameMateRefMapping);
+		logger.info("Using a max different mate chr threshold of: " + minPercentSameMateRefMapping);
 		
 		if (multiple_sample_calling){
 			sampleCalling = SampleBam.MULTISAMPLE;
@@ -847,7 +853,8 @@ public class AnchorClusterer {
 						break;
 					}
 				}else if(currentCluster.size() >= minReads){
-					if (currentCluster.getHighestPercentageOfMateAlignmentsToSameChrosome(true) >= minPercentSameMateRefMapping){
+					if (currentCluster.getHighestPercentageOfMateAlignmentsToSameChrosome(true) >= minPercentSameMateRefMapping
+							&& currentCluster.getNumberOfDifferentChromosomeMappingsOfMates(true) <= maxDiffMateMapping){
 						currentCluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
 						c++;
 					}else{
