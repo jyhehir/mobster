@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
+import org.umcn.me.util.SimpleRegion;
 
 public class GRIPFunctions {
 	
@@ -49,6 +50,35 @@ public class GRIPFunctions {
 		return predictionsToKeep;
 
 
+	}
+	
+	public static Vector<MobilePrediction> removeOverlappingPredictions(Vector<MobilePrediction> predictions){
+		
+		Vector<MobilePrediction> predictionsCopy = new Vector<MobilePrediction>(predictions);
+		Vector<MobilePrediction> predictionsToReturn = new Vector<MobilePrediction>();
+	
+		
+		for (MobilePrediction pred : predictions){
+			boolean foundOverlap = false;
+			
+			SimpleRegion currentPred = pred.predictionWindowToRegion();
+			
+			for (MobilePrediction predCopy : predictionsCopy){
+				if (!pred.equals(predCopy) && currentPred.hasOverlapInBP(predCopy.predictionWindowToRegion()) > 0){
+					foundOverlap = true;
+					break;
+				}
+			}
+			
+			if (! foundOverlap){
+				predictionsToReturn.add(pred);
+			}
+		}
+		
+		logger.info("Number of predictions removed because they were overlapping: " + (predictions.size() - predictionsToReturn.size()));
+		
+		return predictionsToReturn;
+		
 	}
 	
 	public static Map<String, Integer> getSourceGeneCounts(Vector<MobilePrediction> predictions){

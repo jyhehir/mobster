@@ -110,6 +110,7 @@ public abstract class MobileDefinitions {
 	public static final String GRIPS_MAX_REFSEQ_MAPPING = "GRIPS_MAX_REFSEQ";
 	public static final String GRIPS_MAX_SOURCE_GENES = "GRIPS_MAX_SOURCE_GENES";
 	public static final String GRIPS_MAX_DIFF_MATE_MAPPINGS = "GRIPS_MAX_DIFF_MATE_MAPPINGS";
+	public static final String FILTER_OVERLAPPING_PREDICTIONS = "FILTER_OVERLAPPING_PREDICTIONS";
 	
 	
 	

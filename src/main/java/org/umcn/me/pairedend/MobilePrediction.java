@@ -12,6 +12,7 @@ import org.apache.log4j.Logger;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.util.CollectionUtil;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.SimpleRegion;
 
 import net.sf.samtools.SAMRecord;
 
@@ -709,6 +710,10 @@ public class MobilePrediction  {
 	
 	public boolean hasRightMateCluster(){
 		return (this.right_mate_hits > 0);
+	}
+	
+	public SimpleRegion predictionWindowToRegion(){
+		return new SimpleRegion(this.getOriginalReference(), this.getLeftPredictionBorder(), this.getRightPredictionBorder());
 	}
 	
 	public SAMRecord getSplitSAMRecord(){
