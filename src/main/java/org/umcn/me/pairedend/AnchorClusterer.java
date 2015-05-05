@@ -327,6 +327,13 @@ public class AnchorClusterer {
 			}
 			
 			matePredictions = mergePredictions(matePredictions, overlap, maxdist);
+			
+			if (mobster_properties.containsKey(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS) &&
+					Boolean.parseBoolean(mobster_properties.getProperty(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS))){
+				logger.info("Anchorclusterer: will remove overlapping predictions");
+				matePredictions = GRIPFunctions.removeOverlappingPredictions(matePredictions);
+			}
+			
 			matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
 			matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
 			
@@ -465,12 +472,6 @@ public class AnchorClusterer {
 				}
 				
 				matePredictions = mergePredictions(matePredictions, overlap, maxdist);
-				
-				if (mobster_properties.containsKey(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS) &&
-						Boolean.parseBoolean(mobster_properties.getProperty(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS))){
-					logger.info("Anchorclusterer: will remove overlapping predictions");
-					matePredictions = GRIPFunctions.removeOverlappingPredictions(matePredictions);
-				}
 				
 				matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
 				matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
