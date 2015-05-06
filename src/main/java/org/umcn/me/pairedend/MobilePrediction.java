@@ -713,7 +713,20 @@ public class MobilePrediction  {
 	}
 	
 	public SimpleRegion predictionWindowToRegion(){
-		return new SimpleRegion(this.getOriginalReference(), this.getLeftPredictionBorder(), this.getRightPredictionBorder());
+		
+		int leftBorder = this.getLeftPredictionBorder();
+		int rightBorder = this.getRightPredictionBorder();
+		
+		//TODO: this correction should be moved into .getLeftPrediction and .getRightPrediction
+		if (leftBorder < 0){
+			leftBorder = 0;
+		}
+		
+		if (rightBorder < 1){
+			rightBorder = 1;
+		}
+		
+		return new SimpleRegion(this.getOriginalReference(), leftBorder, rightBorder);
 	}
 	
 	public SAMRecord getSplitSAMRecord(){
