@@ -718,12 +718,12 @@ public class MobilePrediction  {
 		int rightBorder = this.getRightPredictionBorder();
 		
 		//TODO: this correction should be moved into .getLeftPrediction and .getRightPrediction
-		if (leftBorder < 0){
-			leftBorder = 0;
+		if (leftBorder < 1){
+			leftBorder = 1;
 		}
 		
-		if (rightBorder < 1){
-			rightBorder = 1;
+		if (rightBorder < 2){
+			rightBorder = 2;
 		}
 		
 		return new SimpleRegion(this.getOriginalReference(), leftBorder, rightBorder);
