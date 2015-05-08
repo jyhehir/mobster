@@ -843,7 +843,7 @@ public class AnchorClusterer {
 		}
 		
 		logger.info("Using a minPercentSameMateRefMapping threshold of: " + minPercentSameMateRefMapping);
-		logger.info("Using a max different mate chr threshold of: " + minPercentSameMateRefMapping);
+		logger.info("Using a max different mate chr threshold of: " + maxDiffMateMapping);
 		
 		if (multiple_sample_calling){
 			sampleCalling = SampleBam.MULTISAMPLE;
