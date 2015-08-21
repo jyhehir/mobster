@@ -1,19 +1,29 @@
 package org.umcn.me.pairedend;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
+import org.umcn.gen.util.NumberFunctions;
 import org.umcn.me.samexternal.IllegalSAMPairException;
+import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.tabix.BlacklistAnnotation;
+import org.umcn.me.tabix.RefGeneAnnotation;
+import org.umcn.me.tabix.RepMaskAnnotation;
 import org.umcn.me.util.CollectionUtil;
+import org.umcn.me.util.MathFunction;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.ReadName;
 import org.umcn.me.util.SimpleRegion;
 
+import net.sf.picard.util.MathUtil;
 import net.sf.samtools.SAMRecord;
 
 public class MobilePrediction  {
@@ -61,11 +71,28 @@ public class MobilePrediction  {
 	private Set<String> discordant_read_names = new HashSet<String>();
 	private Map<String, Integer> sample_counts = new HashMap<String, Integer>();
 	
+	private Map<String, Integer> refseqMateCounts = new HashMap<String, Integer>();
+	private Map<String, Integer> repMaskAnchor_counts = new HashMap<String, Integer>();
+	private Map<String, Integer> repMaskMate_counts = new HashMap<String, Integer>();
+	private Set<String> refSeqAnchorLocations = new HashSet<String>();
+	private Map<String, Integer> blacklistAnchorCounts = new HashMap<String, Integer>();
+	private Map<String, Integer> blacklistMateCounts = new HashMap<String, Integer>();
+	private Map<String, Integer> repFamilyAnchorCounts = new HashMap<String, Integer>();
+	private Map<String, Integer> repFamilyMateCounts = new HashMap<String, Integer>();
+	private List<Double> chainScores = new ArrayList<Double>();
+	private List<Integer> insertSizes = new ArrayList<Integer>();
+	
 	private SAMRecord samrecord_splitcluster = null;
 
 	private SAMRecord right_cluster_sam_record;
 
 	private SAMRecord left_cluster_sam_record;
+
+	private int selfChainOverlap = 0;
+	private String selfChainOverlapString = "";
+
+	private Map<String, Integer> refSeqMateUUCounts = new HashMap<String, Integer>();
+
 	
 	public static Logger logger = Logger.getLogger("MobilePrediction");
 	
@@ -110,6 +137,10 @@ public class MobilePrediction  {
 	                                        COLUMN_LEFTCLIPPED_MAX_DISTANCE, COLUMN_RIGHTCLIPPED_MAX_DISTANCE,
 	                                        COLUMN_LEFTCLIPPED_FRAC_DISTANCE, COLUMN_RIGHTCLIPPED_FRAC_DISTANCE,
 	                                        COLUMN_CLIPPED_AVG_QUAL, COLUMN_AVG_CLIPPED_LEN, COLUMN_TSD};
+	
+//	private final static String[] GRIPS_HEADER = {COLUMN_GRIP_REFSEQ, COLUMN_GRIP_REPNAME_ANCHOR, COLUMN_GRIP_REPCLASS_ANCHOR,
+//												  COLUMN_GRIP_REPFAMILY_ANCHOR, COLUMN_GRIP_REPNAME_MATE, COLUMN_GRIP_REPCLASS_MATE,
+//												  COLUMN_GRIP_REPFAMILY_MATE};
 	
 	private static Map<String, String> features = new HashMap<String, String>();
 	
@@ -257,6 +288,158 @@ public class MobilePrediction  {
 		
 		return success;
 			
+	}
+	
+	public void parseReadNames(Map<String,ReadName> readnameMap){
+		
+		List<String> mateClusterReadNames = this.getReadNamesFromMateClusters();
+		List<String> splitClusterReadNames = this.getReadNamesFromSplitClusters();
+		
+		//Step 1: parse the refseq mappings from reads
+		parseReadNamesForRefSeq(mateClusterReadNames, readnameMap);
+		
+		//Step 2: parse the repmask mappings from reads
+		parseReadNamesForRepMask(mateClusterReadNames, readnameMap, true);
+		parseReadNamesForRepMask(splitClusterReadNames, readnameMap, false);
+		
+		//Step 3: parse blacklist mappings
+		parseReadNamesForBlackList(mateClusterReadNames, readnameMap);
+		parseReadNamesForBlackList(splitClusterReadNames, readnameMap);
+		
+		//Step 4: parse selfchain mappings
+		parseReadNamesForSelfChain(mateClusterReadNames, readnameMap);
+		
+		//Step 5: parse inferred insert sizes
+		parseReadNamesForInsertSize(mateClusterReadNames, readnameMap);
+	}
+	
+	private void parseReadNamesForInsertSize(List<String> readNames,
+			Map<String, ReadName> map) {
+		
+		for (String readName : readNames){
+			ReadName read = map.get(readName);
+			
+			if (read != null){
+				this.insertSizes.add(read.insertSize);
+			}
+			
+		}
+		
+	}
+
+	private void parseReadNamesForSelfChain(List<String> readNames,
+			Map<String, ReadName> map) {
+		
+		for (String readName : readNames){
+			ReadName read = map.get(readName);
+			
+			if (read != null){
+				if (read.selfChainOverlapsMate()){
+					this.selfChainOverlap++;
+					this.chainScores.add(read.returnScoreOfOverlappingSelfChain());
+					if (this.selfChainOverlapString.equals("")){
+						this.selfChainOverlapString += read.overlappingSelfChain();
+					}else{
+						this.selfChainOverlapString += ", " + read.overlappingSelfChain();
+					}
+				}
+			}
+			
+		}
+		
+	}
+
+	private void parseReadNamesForBlackList(List<String> readNames,
+			Map<String, ReadName> map) {
+		
+		for (String readName : readNames){
+			ReadName read = map.get(readName);
+			
+			if (read != null){
+				for (BlacklistAnnotation ann : read.getBlacklist()){
+					CollectionUtil.addKeyToCountMap(ann.component, this.blacklistAnchorCounts);
+				}
+				for (BlacklistAnnotation ann : read.getMateBlacklist()){
+					CollectionUtil.addKeyToCountMap(ann.component, this.blacklistMateCounts);
+				}
+			}
+		}
+		
+	}
+
+	private void parseReadNamesForRepMask(List<String> readNames, Map<String, ReadName> map, boolean parseMate) {
+		for (String readName : readNames){
+			ReadName read = map.get(readName);
+			if (read != null){
+				for (RepMaskAnnotation repmask : read.getRepMaskAnnotation()){
+					String repClass = repmask.repeatClass;
+					String repFamily = repmask.repeatFamily;
+					CollectionUtil.addKeyToCountMap(repClass, this.repMaskAnchor_counts);
+					CollectionUtil.addKeyToCountMap(repFamily, this.repFamilyAnchorCounts);
+				}
+				
+				if (parseMate){
+					for (RepMaskAnnotation repmask : read.getMateRepMaskAnnotation()){
+						String repClass = repmask.repeatClass;
+						String repFamily = repmask.repeatFamily;
+						CollectionUtil.addKeyToCountMap(repClass, this.repMaskMate_counts);
+						CollectionUtil.addKeyToCountMap(repFamily, this.repFamilyMateCounts);
+					}
+				}
+
+			}
+		}
+		
+	}
+
+	private void parseReadNamesForRefSeq(List<String> readNames, Map<String, ReadName> map) {
+		for (String readName : readNames){
+			ReadName read = map.get(readName);
+			if (read != null){
+				for (RefGeneAnnotation gene : read.getMateRefGeneAnnotation()){
+					String symbol = gene.geneSymbol;
+					CollectionUtil.addKeyToCountMap(symbol, this.refseqMateCounts); //keep track of the gene symbol counts
+					
+					if (readName.startsWith(SAMDefinitions.UNIQUE_UNIQUE_MAPPING)){
+						CollectionUtil.addKeyToCountMap(symbol, this.refSeqMateUUCounts ); // keep track of gene symbols for uu reads
+					}
+					
+				}
+				for (RefGeneAnnotation gene : read.getRefGeneAnnotation()){
+					String symbol = gene.geneSymbol;
+					this.refSeqAnchorLocations.add(symbol);
+				}
+			}
+		}
+	}
+
+	public List<String> getReadNamesFromMateClusters(){
+		
+		List<String> readNames = new ArrayList<String>();
+		
+		if(this.hasLeftMateCluster()){
+			String names = this.left_cluster_sam_record.getAttribute(MobileDefinitions.SAM_TAG_READNAMES).toString();
+			List<String> leftReads = Arrays.asList(names.split(",", -1));
+			readNames.addAll(leftReads);
+		}
+		if(this.hasRightMateCluster()){
+			String names = this.right_cluster_sam_record.getAttribute(MobileDefinitions.SAM_TAG_READNAMES).toString();
+			List<String> rightReads = Arrays.asList(names.split(",", -1));
+			readNames.addAll(rightReads);
+		}
+		
+		return readNames;
+		
+		
+	}
+	
+	public List<String> getReadNamesFromSplitClusters(){
+		List<String> readNames = new ArrayList<String>();		
+		if (this.samrecord_splitcluster != null){
+			String names = this.samrecord_splitcluster.getAttribute(MobileDefinitions.SAM_TAG_READNAMES).toString();
+			readNames = Arrays.asList(names.split(",", -1));
+		}
+		return readNames;
 	}
 	
 	public void parseSAMRecordCluster(SAMRecord cluster) throws IllegalSAMPairException {
@@ -493,6 +676,18 @@ public class MobilePrediction  {
 	
 	public Set<String> getSampleNames(){
 		return this.sample_names;
+	}
+	
+	public String getSamplesNamesAsString(){
+		String sampleNames = this.sample_names.toString();
+		sampleNames = sampleNames.substring(1, sampleNames.length() - 1);
+		return sampleNames;
+	}
+	
+	public String getSampleCountsAsString(){
+		String sampleCount = this.sample_counts.toString();
+		sampleCount = sampleCount.substring(1, sampleCount.length() - 1);
+		return sampleCount;
 	}
 	
 	public int getLeftMateClusterLength(){
@@ -763,6 +958,79 @@ public class MobilePrediction  {
 		}
 		return sb.toString();
 	}
+	
+	public String toGripsString(){
+		Set<String> overlappingRepClass = CollectionUtil.returnOverlappingKeysInMap(this.repMaskAnchor_counts, this.repMaskMate_counts);
+		Set<String> overlappingRepFamily = CollectionUtil.returnOverlappingKeysInMap(this.repFamilyAnchorCounts, this.repFamilyMateCounts);
+		
+		List<Integer> insertsNoZeros = new ArrayList<Integer>();
+		
+		//remove 0s from insertsizes
+		for (int i : this.insertSizes){
+			if (i != 0){
+				insertsNoZeros.add(i);
+			}
+		}
+		
+		return this.getChromosome() + "\t" + this.getLeftPredictionBorder() + "\t" + this.getRightPredictionBorder() +
+				"\t" + Integer.toString(this.getLeftTotalHits() + this.getRightTotalHits()) + "\t" + CollectionUtil.toString(this.mobile_mappings) + "\t" + this.getInsertionEstimate() + "\t"
+				+ this.getSamplesNamesAsString() + "\t" + this.getSampleCountsAsString() + "\t" + CollectionUtil.mapToString(this.refseqMateCounts) + "\t" + CollectionUtil.mapToString(this.repMaskAnchor_counts) +
+				"\t" +  CollectionUtil.mapToString(this.repMaskMate_counts) + "\t" + this.sameRefSeqMappingAsPrediction() + "\t" +
+				overlappingRepClass.toString().substring(1, overlappingRepClass.toString().length() - 1) + "\t"
+				+ sameAnchorLocationAsPrediction() + "\t" + CollectionUtil.mapToString(this.blacklistAnchorCounts) + "\t" +
+				CollectionUtil.mapToString(this.blacklistMateCounts) + "\t" + CollectionUtil.mapToString(this.repFamilyAnchorCounts) + "\t" + 
+				CollectionUtil.mapToString(this.repFamilyMateCounts) + "\t" + overlappingRepFamily.toString().substring(1, overlappingRepFamily.toString().length() - 1) +
+				"\t" + this.unique_hits + "\t" + this.multiple_hits + "\t" + this.unmapped_hits + "\t" + this.selfChainOverlap + "\t" +
+				this.selfChainOverlapString + "\t" + this.chainScores.toString() + "\t" + MathFunction.getMedianFromDoubles(this.chainScores) +
+				"\t" + this.insertSizes.toString() + "\t" + MathFunction.getMedianFromIntegers(insertsNoZeros) + "\t" +
+				Boolean.toString(this.sameRefSeqMappingAsPrediction() || this.hasOnlyDiscordantUXReads(2));
+	}
+	
+	public boolean hasOnlyDiscordantUXReads(int uxThreshold){
+		return (this.multiple_hits == 0 && this.unique_hits == 0 && this.unmapped_hits >= uxThreshold);
+	}
+	
+	
+	public String toGripsHeader(){
+		return "Chr\tStart\tEnd\tReads\tPrediction\tInsertion\tSample\tSample counts\tRefSeqMateCount\tRepMaskAnchorCount\tRepMaskMateCount\tSameRefSeq\t" +
+				"OverlappingRepeatClass\tsameAnchorLocationAsPred\tBlackListAnchorCount\tBlackListMateCount\tRepFamilyAnchorCount\t" +
+				"RepFamilyMateCount\tOverlappingRepFamily\tUU\tUM\tUX\tSelfChain\tSelfChainDetailed\tSelfChainScores\tSelfChainScoresMedian\t" +
+				"insert sizes\tmedian insert\tSameRefSeqOrUX";
+	}
+	
+	public boolean sameRefSeqUUMappingAsPrediction(){
+		for (String prediction : this.mobile_mappings){
+			if (this.refSeqMateUUCounts.keySet().contains(prediction)){
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	public boolean sameRefSeqMappingAsPrediction(){
+		
+		for (String prediction : this.mobile_mappings){
+			if(this.refseqMateCounts.keySet().contains(prediction)){
+				return true;
+			}
+		}
+		
+		return false;
+
+	}
+	
+	public boolean sameAnchorLocationAsPrediction(){
+		for (String prediction : this.mobile_mappings){
+			if(this.refSeqAnchorLocations.contains(prediction)){
+				return true;
+			}
+		}
+		
+		return false;
+
+	}
+	
 
 	@Override
 	public int hashCode() {

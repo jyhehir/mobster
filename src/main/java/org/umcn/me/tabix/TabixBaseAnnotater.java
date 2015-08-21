@@ -23,9 +23,17 @@ public class TabixBaseAnnotater<T extends Annotation> {
 	
 	@SuppressWarnings("unchecked")
 	public List<T> queryOverlapping(String region) throws IOException, ParseException{
-		TabixReader.Iterator iter = tr.query(region);
 		String s;
 		List<T> annots = new ArrayList<T>();
+		
+		TabixReader.Iterator iter = null;
+		try {
+			iter = tr.query(region);
+		} catch (IndexOutOfBoundsException e) {
+			System.err.println("Could not query region: " + region);
+			return annots;
+		}
+		
 		while (iter != null && (s = iter.next()) != null){
 			T annotation = (T) dummy.parseFromLine(s);
 			annots.add(annotation);

@@ -254,6 +254,19 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		}
 	}
 	
+	public String getReadNames(){
+		
+		StringBuilder sb = new StringBuilder();
+		
+		for (T record : this){
+			sb.append(record.getReadName());
+			sb.append(",");
+		}
+		
+		return sb.substring(0, sb.length() - 1);
+		
+	}
+	
 	public int getClusterSize(){
 		return getClusterEnd() - getClusterStart() + 1;
 	}
@@ -299,6 +312,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 			record.setAttribute(MobileDefinitions.SAM_TAG_CLUSTER_LENGTH, Integer.toString(clusterSize));
 			record.setAttribute(MobileDefinitions.SAM_TAG_MOBILE_HIT, meTag.getMobileCategoryNames().get(0));
 			record.setAttribute(MobileDefinitions.SAM_TAG_SPLIT_CLUSTER, Boolean.toString(this.split_read));
+			record.setAttribute(MobileDefinitions.SAM_TAG_READNAMES, this.getReadNames());
 			
 			this.countCategories();
 			record.setAttribute(MobileDefinitions.SAM_TAG_UNIQUE_HITS, this.unique_hits);

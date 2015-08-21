@@ -36,6 +36,7 @@ public class ReadNameRetriever implements Iterable<ReadName> {
 			public boolean hasNext() {
 				if (! recordIter.hasNext()){
 					this.close();
+					return false;
 				}
 				return recordIter.hasNext();
 			}

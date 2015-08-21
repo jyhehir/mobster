@@ -34,6 +34,7 @@ public abstract class MobileDefinitions {
 	public static final String SAM_TAG_SPLIT_RIGHTCLIPPED_POLYA = "YU";
 	public static final String SAM_TAG_SAMPLENAME = "YY";
 	public static final String SAM_TAG_SAMPLECOUNT = "YX";
+	public static final String SAM_TAG_READNAMES = "YZ";
 	
 	//properties Mobster
 	public static final String READ_LENGTH = "READ_LENGTH";
@@ -111,6 +112,15 @@ public abstract class MobileDefinitions {
 	public static final String GRIPS_MAX_SOURCE_GENES = "GRIPS_MAX_SOURCE_GENES";
 	public static final String GRIPS_MAX_DIFF_MATE_MAPPINGS = "GRIPS_MAX_DIFF_MATE_MAPPINGS";
 	public static final String FILTER_OVERLAPPING_PREDICTIONS = "FILTER_OVERLAPPING_PREDICTIONS";
+	public static final String GRIPS_MODE = "GRIPS_MODE";
+	
+	public static final String GRIPS_SELFCHAIN = "SELFCHAIN";
+	public static final String GRIPS_TRANSCRIPT = "TRANSCRIPT";
+	public static final String GRIPS_BLACKLIST = "BLACKLIST";
+	public static final String GRIPS_REPMASK = "GRIPS_REPMASK";
+	
+	
+	
 	
 	
 	

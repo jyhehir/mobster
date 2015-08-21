@@ -14,9 +14,18 @@ import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.splitread.ClippedRead;
 import org.umcn.me.splitread.InvalidHardClipCigarException;
+import org.umcn.me.tabix.BlacklistAnnotation;
+import org.umcn.me.tabix.RefGeneAnnotation;
+import org.umcn.me.tabix.RepMaskAnnotation;
+import org.umcn.me.tabix.SelfChainAnnotation;
+import org.umcn.me.tabix.TabixBaseAnnotater;
+import org.umcn.me.tabix.TabixReader;
 import org.umcn.me.util.ClippedReadSet;
 import org.umcn.me.util.CollectionUtil;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.ReadName;
+import org.umcn.me.util.ReadNameOption;
+import org.umcn.me.util.ReadNameRetriever;
 import org.umcn.me.util.SampleBam;
 
 import java.io.File;
@@ -27,7 +36,9 @@ import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -98,6 +109,7 @@ public class AnchorClusterer {
 	private static boolean multiple_sample_calling = false;
 	private static boolean filter_by_read_counts_single_sample = false;
 	private static boolean lenient_search = false;
+	private static boolean grips_mode = false;
 	private static String TMP;
 	private static int memory;
 	
@@ -183,7 +195,9 @@ public class AnchorClusterer {
 		int rpc; //default 2
 		int overlap; // default 50 
 		int maxdist; // default 450
-		
+		List<ReadName> anchorReads;
+		List<ReadName> splitAnchorReads;
+		Map<String, ReadName> readnameMap = new HashMap<String, ReadName>();
 		
 		//anchorIndex = new File(line.getOptionValue("in").replaceAll(".bam$", ".bai"));
 		
@@ -282,6 +296,10 @@ public class AnchorClusterer {
 			filter_by_read_counts_single_sample = true;	
 		}
 		
+		if (props.containsKey(MobileDefinitions.GRIPS_MODE) && "true".equals(props.getProperty(MobileDefinitions.GRIPS_MODE).toLowerCase())){
+			grips_mode = true;
+		}
+		
 		memory = Integer.parseInt(props.getProperty(MobileDefinitions.MEMORY).trim());
 		
 		//TODO this is a copy and paste of the main function, needs refactoring
@@ -291,8 +309,8 @@ public class AnchorClusterer {
 		logger.info("Using max distance between 5 and 3 end clusters for double clusters of: " +
 				maxdist);
 		logger.info("using tmp: " + tmp);
-		
-		
+		logger.info("using GRIPs mode: " + grips_mode);
+
 		//Step 1: Clustering
 		//Run simple clustering algorithm
 
@@ -345,8 +363,58 @@ public class AnchorClusterer {
 			}
 			
 			commentHeader = getVersionAndParameterInfo(props);
-			writePredictionsToFile(outPrefix + "_predictions.txt", matePredictions, commentHeader, sample);
 			
+			if (grips_mode){
+				//Prestep 1 for GRIPS: extracting the read names
+				anchorReads = extractReadnames(anchor);
+				splitAnchorReads = extractReadnames(splitAnchor);
+				
+				
+				System.out.println("Anchor reads size: " + anchorReads.size());
+				System.out.println("Split anchor reads size: " + splitAnchorReads.size());
+				readnameMap = CollectionUtil.readNamesToMap(anchorReads);
+				System.out.println("read name map size 1: " + readnameMap.size());
+				readnameMap.putAll(CollectionUtil.readNamesToMap(splitAnchorReads));
+				System.out.println("read name map size 2: " + readnameMap.size());
+				
+				
+				//Now only keep the reads in map which made it to the clusters supporting the predictions
+				Set<String> reads = new HashSet<String>();
+				for (MobilePrediction pred : matePredictions){
+					reads.addAll(pred.getReadNamesFromMateClusters());
+					reads.addAll(pred.getReadNamesFromSplitClusters());
+				}
+				System.out.println("Number of total supporting reads from clusters: " + reads.size());
+				Set<String> keys = readnameMap.keySet();
+				keys.retainAll(reads);
+				System.out.println("Number of keys in map: " + readnameMap.size());
+				
+				//annotate the predictions
+				String refGeneLoc = props.getProperty(MobileDefinitions.GRIPS_TRANSCRIPT);
+				String repMaskLoc = props.getProperty(MobileDefinitions.GRIPS_REPMASK);
+				String blackListLoc = props.getProperty(MobileDefinitions.GRIPS_BLACKLIST);
+				String selfChainLoc = props.getProperty(MobileDefinitions.GRIPS_SELFCHAIN);
+				
+				try {
+					annotateRefGene(readnameMap.values(), refGeneLoc);
+					annotateRepMask(readnameMap.values(), repMaskLoc, true);
+					annotateBlacklist(readnameMap.values(), blackListLoc);
+					annotateSelfChain(readnameMap.values(), selfChainLoc);
+				} catch (java.text.ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				
+				//Add in the repmask / refgene annotation
+				for (MobilePrediction pred : matePredictions){
+					pred.parseReadNames(readnameMap);
+				}
+				writeGRIPSToFile(outPrefix + "_GRIPS_predictons.txt", matePredictions, commentHeader);
+			}else{
+				writePredictionsToFile(outPrefix + "_predictions.txt", matePredictions, commentHeader, sample);
+			}
+
 			long end = System.currentTimeMillis();
 			long millis = end - start;
 			String time = String.format("%d min, %d sec", 
@@ -365,6 +433,72 @@ public class AnchorClusterer {
 		}
 
 		
+	}
+
+	public static void annotateSelfChain(Collection<ReadName> reads, String chainLocation) throws IOException, java.text.ParseException{
+		TabixBaseAnnotater<SelfChainAnnotation> tba = new TabixBaseAnnotater<SelfChainAnnotation>(chainLocation, new SelfChainAnnotation());
+		
+		for (ReadName name : reads){
+			if ( name.mateIsMapped ){
+				name.setSelfChain(tba.queryOverlapping(name.toPositionString())); //intentionally query from the anchor position
+			}
+			
+		}
+		
+	}
+	
+	public static void annotateRefGene(Collection<ReadName> reads, String transcriptLocation)
+			throws IOException, java.text.ParseException {
+		TabixBaseAnnotater<RefGeneAnnotation> tba = new TabixBaseAnnotater<RefGeneAnnotation>(transcriptLocation, new RefGeneAnnotation());
+		
+		
+		for (ReadName name : reads){
+			if( name.mateIsMapped){
+				name.setMateRefGeneAnnotation(tba.queryOverlapping(name.mateToPositionString()));
+			}
+			if (name.isMapped){
+				name.setRefGeneAnnotation(tba.queryOverlapping(name.toPositionString()));
+			}
+		}
+	}
+	
+	public static void annotateBlacklist(Collection<ReadName> reads, String blacklistLocation) throws IOException, java.text.ParseException{
+		TabixBaseAnnotater<BlacklistAnnotation> tba = new TabixBaseAnnotater<BlacklistAnnotation>(blacklistLocation, new BlacklistAnnotation());
+		
+		for (ReadName name : reads){
+			if (name.isMapped){
+				name.setBlacklist(tba.queryOverlapping(name.toPositionString()));
+			}
+			if (name.mateIsMapped){
+				name.setMateBlacklist(tba.queryOverlapping(name.mateToPositionString()));
+			}
+		}
+		
+	}
+	
+	public static void annotateRepMask(Collection<ReadName> reads, String repmaskLocation, boolean annotateMates)
+			throws IOException, java.text.ParseException {
+		TabixBaseAnnotater<RepMaskAnnotation> tba = new TabixBaseAnnotater<RepMaskAnnotation>(repmaskLocation, new RepMaskAnnotation());
+		
+		for (ReadName name : reads){
+			if(name.isMapped){
+				name.setRepMaskAnnotation(tba.queryOverlapping(name.toPositionString()));
+			}
+			if(annotateMates && name.mateIsMapped){
+				name.setMateRepMaskAnnotation(tba.queryOverlapping(name.mateToPositionString()));
+			}
+		}
+	}
+
+	public static List<ReadName> extractReadnames(File anchor) {
+		ReadNameOption option = new ReadNameOption.Builder().addRegion(true).autoPrefixReference(true).build();
+		ReadNameRetriever retriever = new ReadNameRetriever(anchor, option);
+		List<ReadName> reads = new ArrayList<ReadName>();
+		
+		for (ReadName read : retriever){
+			reads.add(read);
+		}
+		return reads;
 	}
 	
 	public static void main(String[] args) {
@@ -418,6 +552,7 @@ public class AnchorClusterer {
 				percentile_99_fragment = Integer.parseInt(line.getOptionValue("maxclust", Integer.toString(percentile_99_fragment)));
 				TMP = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
 				memory = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));				
+				grips_mode = line.hasOption("grips");
 				
 				if(line.hasOption("insplit")){
 					splitAnchor = new File(line.getOptionValue("insplit"));
@@ -431,6 +566,7 @@ public class AnchorClusterer {
 				logger.info("Using max overlap for double clusters: " + overlap);
 				logger.info("Using max distance between 5 and 3 end clusters for double clusters of: " +
 						maxdist);
+				logger.info("Using GRIPs mode: " + grips_mode);
 				
 				//Step 1: Clustering
 				//Run simple clustering algorithm
@@ -489,10 +625,11 @@ public class AnchorClusterer {
 				logger.info("Anchorclusterer ran in : " + time);
 				
 				
-			} catch (ParseException e) {
-				logger.error("Error in parsing CLI arguments: " + e.getMessage());
-			} catch (IOException e){
+			}  catch (IOException e){
 				logger.error("Error in opening files: " + e.getMessage());
+			} catch (org.apache.commons.cli.ParseException e) {
+				// TODO Auto-generated catch block
+				logger.error("Error in parsing CLI arguments: " + e.getMessage());
 			}
 			
 		}
@@ -657,6 +794,28 @@ public class AnchorClusterer {
 		
 	}
 	
+	public static void writeGRIPSToFile(String outString, Vector<MobilePrediction> predictions, String comment){
+		try {
+			PrintWriter outFile = new PrintWriter(new FileWriter(outString), true);
+			
+			boolean writtenHeader = false;
+			outFile.print(comment);
+			for(MobilePrediction pred : predictions){
+				if (! writtenHeader){
+					outFile.println(pred.toGripsHeader());
+					writtenHeader = true;
+				}
+				outFile.println(pred.toGripsString());
+			}
+			
+			outFile.close();
+		} catch (IOException e) {
+			logger.error("Failed to write prediction file: " + e.getMessage());
+		}
+		
+		
+	}
+	
 	public static Options createCmdOptions(){
 		Options options = new Options();
 		
@@ -793,6 +952,10 @@ public class AnchorClusterer {
 				"the prediction is kept because the 3 reads from sample1 and 4 reads from sample2 are added.");
 		
 		options.addOption(OptionBuilder.create("multisample_stringent"));
+		
+		
+		Option grip = new Option("grips", "Change settings specifically for GRIP clustering");
+		options.addOption(grip);
 		
 		
 		return options;
