@@ -92,7 +92,7 @@ public class AnchorClusterer {
 	public static Logger logger = Logger.getLogger("AnchorClusterer");
 	
 	private static final int FILTER_REGION = 90;
-	private static final String VERSION = "0.1.6-LiberationDay2015";
+	private static final String VERSION = "0.1.7b-GRIPS";
 	
 	private static int mean_frag_size = 470;
 	private static int sd_frag_size = 35;
@@ -410,7 +410,8 @@ public class AnchorClusterer {
 				for (MobilePrediction pred : matePredictions){
 					pred.parseReadNames(readnameMap);
 				}
-				writeGRIPSToFile(outPrefix + "_GRIPS_predictons.txt", matePredictions, commentHeader);
+				writeGRIPSToFile(outPrefix + "_GRIPS_predictons.txt", matePredictions, commentHeader, false);
+				writeGRIPSToFile(outPrefix + "_GRIPS_MORECONFIDENT_predictions.txt", matePredictions, commentHeader, true);
 			}else{
 				writePredictionsToFile(outPrefix + "_predictions.txt", matePredictions, commentHeader, sample);
 			}
@@ -794,7 +795,7 @@ public class AnchorClusterer {
 		
 	}
 	
-	public static void writeGRIPSToFile(String outString, Vector<MobilePrediction> predictions, String comment){
+	public static void writeGRIPSToFile(String outString, Vector<MobilePrediction> predictions, String comment, boolean filter){
 		try {
 			PrintWriter outFile = new PrintWriter(new FileWriter(outString), true);
 			
@@ -805,7 +806,13 @@ public class AnchorClusterer {
 					outFile.println(pred.toGripsHeader());
 					writtenHeader = true;
 				}
-				outFile.println(pred.toGripsString());
+
+				if (filter && ! pred.gripNeedsFiltering()){
+					outFile.println(pred.toGripsString());
+				}else if (! filter){
+					outFile.println(pred.toGripsString());
+				}
+
 			}
 			
 			outFile.close();

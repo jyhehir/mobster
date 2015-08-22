@@ -27,6 +27,8 @@ import net.sf.picard.util.MathUtil;
 import net.sf.samtools.SAMRecord;
 
 public class MobilePrediction  {
+	
+	private static final int MIN_DISCORDANT_UX = 2;
 
 	private String original_reference = "";
 	
@@ -137,6 +139,8 @@ public class MobilePrediction  {
 	                                        COLUMN_LEFTCLIPPED_MAX_DISTANCE, COLUMN_RIGHTCLIPPED_MAX_DISTANCE,
 	                                        COLUMN_LEFTCLIPPED_FRAC_DISTANCE, COLUMN_RIGHTCLIPPED_FRAC_DISTANCE,
 	                                        COLUMN_CLIPPED_AVG_QUAL, COLUMN_AVG_CLIPPED_LEN, COLUMN_TSD};
+
+	private static final int MIN_INSERT_SIZE = 10000;
 	
 //	private final static String[] GRIPS_HEADER = {COLUMN_GRIP_REFSEQ, COLUMN_GRIP_REPNAME_ANCHOR, COLUMN_GRIP_REPCLASS_ANCHOR,
 //												  COLUMN_GRIP_REPFAMILY_ANCHOR, COLUMN_GRIP_REPNAME_MATE, COLUMN_GRIP_REPCLASS_MATE,
@@ -959,22 +963,32 @@ public class MobilePrediction  {
 		return sb.toString();
 	}
 	
+	public List<Integer> getInsertsFromSupportingReads(boolean doNotAddZeros){
+	List<Integer> inserts = new ArrayList<Integer>();
+		
+		//remove 0s from insertsizes
+		for (int i : this.insertSizes){
+			if (i != 0 && doNotAddZeros){
+				inserts.add(i);
+			}
+		}
+		return inserts;
+	}
+	
+	public List<Integer> getInsertsFromSupportingReads(){
+		return this.getInsertsFromSupportingReads(true);
+	}
+	
 	public String toGripsString(){
 		Set<String> overlappingRepClass = CollectionUtil.returnOverlappingKeysInMap(this.repMaskAnchor_counts, this.repMaskMate_counts);
 		Set<String> overlappingRepFamily = CollectionUtil.returnOverlappingKeysInMap(this.repFamilyAnchorCounts, this.repFamilyMateCounts);
 		
-		List<Integer> insertsNoZeros = new ArrayList<Integer>();
-		
-		//remove 0s from insertsizes
-		for (int i : this.insertSizes){
-			if (i != 0){
-				insertsNoZeros.add(i);
-			}
-		}
+		List<Integer> insertsNoZeros = this.getInsertsFromSupportingReads();
 		
 		return this.getChromosome() + "\t" + this.getLeftPredictionBorder() + "\t" + this.getRightPredictionBorder() +
 				"\t" + Integer.toString(this.getLeftTotalHits() + this.getRightTotalHits()) + "\t" + CollectionUtil.toString(this.mobile_mappings) + "\t" + this.getInsertionEstimate() + "\t"
-				+ this.getSamplesNamesAsString() + "\t" + this.getSampleCountsAsString() + "\t" + CollectionUtil.mapToString(this.refseqMateCounts) + "\t" + CollectionUtil.mapToString(this.repMaskAnchor_counts) +
+				+ this.getSamplesNamesAsString() + "\t" + this.getSampleCountsAsString() + "\t" + this.left_cluster_length + "\t" + this.right_cluster_length + "\t" 
+				+ Integer.toString(this.left_aligned_split_hits + this.right_aligned_split_hits) + "\t" + this.getLeftTotalHits() + "\t" + this.getRightTotalHits() + "\t" + CollectionUtil.mapToString(this.refseqMateCounts) + "\t" + CollectionUtil.mapToString(this.repMaskAnchor_counts) +
 				"\t" +  CollectionUtil.mapToString(this.repMaskMate_counts) + "\t" + this.sameRefSeqMappingAsPrediction() + "\t" +
 				overlappingRepClass.toString().substring(1, overlappingRepClass.toString().length() - 1) + "\t"
 				+ sameAnchorLocationAsPrediction() + "\t" + CollectionUtil.mapToString(this.blacklistAnchorCounts) + "\t" +
@@ -983,7 +997,8 @@ public class MobilePrediction  {
 				"\t" + this.unique_hits + "\t" + this.multiple_hits + "\t" + this.unmapped_hits + "\t" + this.selfChainOverlap + "\t" +
 				this.selfChainOverlapString + "\t" + this.chainScores.toString() + "\t" + MathFunction.getMedianFromDoubles(this.chainScores) +
 				"\t" + this.insertSizes.toString() + "\t" + MathFunction.getMedianFromIntegers(insertsNoZeros) + "\t" +
-				Boolean.toString(this.sameRefSeqMappingAsPrediction() || this.hasOnlyDiscordantUXReads(2));
+				Boolean.toString(this.sameRefSeqMappingAsPrediction() || this.hasOnlyDiscordantUXReads(MIN_DISCORDANT_UX)) + "\t" + Integer.toString(this.left_aligned_polyA_hits + this.left_aligned_polyT_hits) +
+				"\t" + Integer.toString(this.right_aligned_polyA_hits + this.right_aligned_polyT_hits) + "\t" + this.hasTSD();
 	}
 	
 	public boolean hasOnlyDiscordantUXReads(int uxThreshold){
@@ -991,11 +1006,50 @@ public class MobilePrediction  {
 	}
 	
 	
+	public boolean gripNeedsFiltering(){
+		
+		List<Integer> inserts = this.getInsertsFromSupportingReads();
+		
+		//RefSeq prediction is same as where anchor is mapped
+		if (this.sameAnchorLocationAsPrediction()){
+			return true;
+		}
+		//If there is overlap with blacklist
+		if (! this.blacklistAnchorCounts.isEmpty() || ! this.blacklistMateCounts.isEmpty()){
+			return true;
+		}
+		//if there is selfchaining
+		if (! this.chainScores.isEmpty()){
+			return true;
+		}
+		// if there is overlapping rep family in anchor and mate
+		if (! CollectionUtil.returnOverlappingKeysInMap(this.repFamilyAnchorCounts, this.repFamilyMateCounts).isEmpty()){
+			return true;
+		}
+		
+		// if it overlaps centromeres
+		if (this.repFamilyAnchorCounts.containsKey("centr") || this.repFamilyMateCounts.containsKey("centr")){
+			return true;
+		}
+		
+		// if it is not mapping to refseq in original bam file and if this can not be explained by present UX reads
+		if (! this.sameRefSeqMappingAsPrediction() && ! this.hasOnlyDiscordantUXReads(MIN_DISCORDANT_UX)){
+			return true;
+		}
+		if (MathFunction.getMedianFromIntegers(inserts) != null && MathFunction.getMedianFromIntegers(inserts) < MIN_INSERT_SIZE){
+			return true;
+		}
+		
+		
+		
+		return false;
+	}
+	
 	public String toGripsHeader(){
-		return "Chr\tStart\tEnd\tReads\tPrediction\tInsertion\tSample\tSample counts\tRefSeqMateCount\tRepMaskAnchorCount\tRepMaskMateCount\tSameRefSeq\t" +
+		return "Chr\tStart\tEnd\tReads\tPrediction\tInsertion\tSample\tSample counts\tLeftClusterLength\tRightClusterLength\tTotalSplitHits\tLeftTotalHits\tRightTotalHits\tRefSeqMateCount\tRepMaskAnchorCount\tRepMaskMateCount\tSameRefSeq\t" +
 				"OverlappingRepeatClass\tsameAnchorLocationAsPred\tBlackListAnchorCount\tBlackListMateCount\tRepFamilyAnchorCount\t" +
 				"RepFamilyMateCount\tOverlappingRepFamily\tUU\tUM\tUX\tSelfChain\tSelfChainDetailed\tSelfChainScores\tSelfChainScoresMedian\t" +
-				"insert sizes\tmedian insert\tSameRefSeqOrUX";
+				"insert sizes\tmedian insert\tSameRefSeqOrUX\tLeftAlignedPoly\tRightAlignedPoly\tTSD";
 	}
 	
 	public boolean sameRefSeqUUMappingAsPrediction(){
@@ -1030,6 +1084,8 @@ public class MobilePrediction  {
 		return false;
 
 	}
+	
+
 	
 
 	@Override

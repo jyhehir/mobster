@@ -20,7 +20,7 @@ public class Mobster {
 	public static String inFile = null;
 	public static String outFile = null;
 	public static String sampleName = null;
-	public static final String VERSION = "0.1.6-LiberationDay2015";
+	public static final String VERSION = "0.1.7b-GRIPS";
 	
 	public static void main(String[] args) {
 		
