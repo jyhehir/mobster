@@ -118,6 +118,9 @@ public abstract class MobileDefinitions {
 	public static final String GRIPS_TRANSCRIPT = "TRANSCRIPT";
 	public static final String GRIPS_BLACKLIST = "BLACKLIST";
 	public static final String GRIPS_REPMASK = "GRIPS_REPMASK";
+	public static final String GRIPS_SKIP_UU_EXCLUSION = "GRIPS_SKIP_UU_EXCLUSION"; 
+	
+	public static final String CLEANUP_FILES = "CLEANUP";
 	
 	
 	

@@ -209,7 +209,30 @@ public class RefAndMEPairFinder {
 		logger.info("Using temp: " + tmp);
 		
 		try {
-			runRefAndMePairFinder(single, multiple, filtered, out, tool, paired, sampleName);
+			
+			if (Boolean.parseBoolean(prop.getProperty(MobileDefinitions.GRIPS_SKIP_UU_EXCLUSION))){
+				runRefAndMePairFinderSkipUUChecking(single, multiple, filtered, out, tool, paired, sampleName);
+			}else{
+				runRefAndMePairFinder(single, multiple, filtered, out, tool, paired, sampleName);
+			}
+			
+			//cleanup files if necessary:
+			
+			if(Boolean.parseBoolean(prop.getProperty(MobileDefinitions.CLEANUP_FILES))){
+				File datToDelete = new File(filtered.toString().replaceAll(".bam$", ".dat"));
+				File fqToDelete = new File(filtered.toString().replaceAll(".bam$", ".fq"));
+				
+				logger.info("Will delete: " + filtered.toString());
+				logger.info("Will delete: " + datToDelete.toString());
+				logger.info("Will delete: " + fqToDelete.toString());
+				
+				logger.info(filtered.toString() + " deleted? : " + filtered.delete());				
+				logger.info(datToDelete.toString() + " deleted? : " + datToDelete.delete());
+				logger.info(fqToDelete.toString() + " deleted? : " + fqToDelete.delete());
+				
+			}
+			
+			
 			long end = System.currentTimeMillis();
 			long millis = end - start;
 			String time = String.format("%d min, %d sec", 
@@ -256,6 +279,41 @@ public class RefAndMEPairFinder {
 		
 		exclusionReads = getUUReadsMappingBothToME(nameSortedSingleBam);
 		
+		meReads = getReadsMappingToME(nameSortedSingleBam, exclusionReads, tool);
+		
+		if(multipleBam != null){
+			updateReadsMappingToMultipleME(multipleBam, meReads, exclusionReads);
+		}
+		
+		writeRefCoordinateFile(oriBam, meReads, output, paired, sampleName);
+		
+	}
+	
+	/**
+	 * The do work function
+	 * @param singleBam: bam file containing max 1 alignment per read against mobile ref.
+	 * Should be readname sorted if paired data.
+	 * @param multipleBam: bam file containing all alignments for all reads mapping
+	 * multiple times against mobile ref. Should be readname sorted. (MOSAIK can output such a bam file)
+	 * @param oriBam: bam file before mapping against the mobile reference, but after filtering (containing potential pairs)
+	 * @param output: output bam file containing only anchors for mobile elements.
+	 * @param tool: tool used for mobile reference mapping
+	 * @param paired: true if paired-end reads are used
+	 * @throws IOException
+	 */
+	public static void runRefAndMePairFinderSkipUUChecking(File singleBam, File multipleBam, File oriBam,
+			 String output, String tool, Boolean paired, String sampleName) throws IOException{
+			
+		//TODO modify runRefAndMePairFinder to accept tool as a parameter, so different
+		//mapping tools can be used more easily with this class. Now it can still be done
+		//but multiple methods from this class need to be called seperately.
+		Vector<String> exclusionReads = new Vector<String>();
+		Map<String, MobileSAMTag> meReads;
+		
+		File nameSortedSingleBam = new File(singleBam.toString().replaceAll(".bam$",""));
+		
+		SAMWriting.writeSortedSAMorBAM(singleBam, nameSortedSingleBam, new File(TMP), MEMORY, SortOrder.queryname);
+
 		meReads = getReadsMappingToME(nameSortedSingleBam, exclusionReads, tool);
 		
 		if(multipleBam != null){
