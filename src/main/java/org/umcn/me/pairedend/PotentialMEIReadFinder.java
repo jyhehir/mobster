@@ -24,6 +24,7 @@ import org.umcn.me.sam.PotentialMobilePairIterator;
 import org.umcn.me.samexternal.NrMappingsSAMRecordHolder;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.samexternal.SAMRecordHolderPair;
+import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.util.BAMCollection;
 import org.umcn.me.util.MobileDefinitions;
@@ -260,28 +261,47 @@ public class PotentialMEIReadFinder {
 		File nameSortedBam = null;
 		try {
 			
-			
-			BAMCollection collection = new BAMCollection(bams, samples, true);
-			
-			samFileHeader = collection.getMergedHeader(SAMFileHeader.SortOrder.unsorted);
-			
-			//TODO: Open up the .fq and .bam writer here, then run the potential MEIFinder
 			outFq = new PrintWriter(new FileWriter(outfile + "_potential.fq"), true);
-			outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, tmp, memory, SAMFileHeader.SortOrder.unsorted, true);
 			
-			//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
-			for (BAMSample bamSample : collection.getCloneOfBAMSampleList()){
-			
-				//Query sort input if user wants this
+			//If more than one bam then try to make unique RG ids and associate sample name to each bam
+			if (bams.length > 1){
+				logger.info("[PMRF] detected multiple samples, modifying RG's");
+				BAMCollection collection = new BAMCollection(bams, samples, true);
+				
+				samFileHeader = collection.getMergedHeader(SAMFileHeader.SortOrder.unsorted);
+				
+				outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, tmp, memory, SAMFileHeader.SortOrder.unsorted, true);
+				
+				//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
+				for (BAMSample bamSample : collection.getCloneOfBAMSampleList()){
+				
+					//Query sort input if user wants this
+					if (query_sort_input){
+						nameSortedBam = new File(bamSample.getBam().toString() + ".query_sorted");
+						SAMWriting.writeSortedSAMorBAM(bamSample.getBam(), nameSortedBam, tmp, memory, SortOrder.queryname);
+						runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
+						nameSortedBam.delete();
+					}else{
+						runPotentialMEIFinder(bamSample.getBam().getAbsolutePath(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
+					}
+					
+				}
+			//Otherwise if there is just 1 bam, do not try to modify the read groups. 
+			}else if(bams.length == 1){
+				logger.info("[PMRF] detected one sample, not modifying RG's");
+				SAMSilentReader reader = new SAMSilentReader(new File(bams[0]));
+				samFileHeader = reader.getFileHeader();
+				outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, tmp, memory, SAMFileHeader.SortOrder.unsorted, true);
+				reader.close();
+				
 				if (query_sort_input){
-					nameSortedBam = new File(bamSample.getBam().toString() + ".query_sorted");
-					SAMWriting.writeSortedSAMorBAM(bamSample.getBam(), nameSortedBam, tmp, memory, SortOrder.queryname);
-					runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
+					nameSortedBam = new File(bams[0] + ".query_sorted");
+					SAMWriting.writeSortedSAMorBAM(new File(bams[0]), nameSortedBam, tmp, memory, SortOrder.queryname);
+					runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, "");
 					nameSortedBam.delete();
 				}else{
-					runPotentialMEIFinder(bamSample.getBam().getAbsolutePath(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
+					runPotentialMEIFinder(bams[0], outFq, outputSam, tool, useSplit, minClipping, maxClipping, "");
 				}
-				
 			}
 			
 			
