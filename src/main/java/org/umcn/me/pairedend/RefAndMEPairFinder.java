@@ -221,14 +221,19 @@ public class RefAndMEPairFinder {
 			if(Boolean.parseBoolean(prop.getProperty(MobileDefinitions.CLEANUP_FILES))){
 				File datToDelete = new File(filtered.toString().replaceAll(".bam$", ".dat"));
 				File fqToDelete = new File(filtered.toString().replaceAll(".bam$", ".fq"));
+				File multipleBam = new File(single.toString().replaceAll(".bam$", "multiple.bam"));
 				
 				logger.info("Will delete: " + filtered.toString());
 				logger.info("Will delete: " + datToDelete.toString());
 				logger.info("Will delete: " + fqToDelete.toString());
+				logger.info("Will delete: " + single.toString());
+				logger.info("Will delete: " + multipleBam.toString());
 				
 				logger.info(filtered.toString() + " deleted? : " + filtered.delete());				
 				logger.info(datToDelete.toString() + " deleted? : " + datToDelete.delete());
 				logger.info(fqToDelete.toString() + " deleted? : " + fqToDelete.delete());
+				logger.info(single.toString() + " deleted? : " + single.delete());
+				logger.info(multipleBam.toString() + " deleted? : " + multipleBam.delete());
 				
 			}
 			
@@ -272,7 +277,7 @@ public class RefAndMEPairFinder {
 		Vector<String> exclusionReads = new Vector<String>();
 		Map<String, MobileSAMTag> meReads;
 		
-		File nameSortedSingleBam = new File(singleBam.toString().replaceAll(".bam$",""));
+		File nameSortedSingleBam = new File(singleBam.toString().replaceAll(".bam$","_nsorted.bam"));
 		
 		SAMWriting.writeSortedSAMorBAM(singleBam, nameSortedSingleBam, new File(TMP), MEMORY, SortOrder.queryname);
 		//SAMWriting.writeNameSortedSAMorBAM(singleBam, nameSortedSingleBam, new File(TMP), MEMORY);
@@ -310,7 +315,7 @@ public class RefAndMEPairFinder {
 		Vector<String> exclusionReads = new Vector<String>();
 		Map<String, MobileSAMTag> meReads;
 		
-		File nameSortedSingleBam = new File(singleBam.toString().replaceAll(".bam$",""));
+		File nameSortedSingleBam = new File(singleBam.toString().replaceAll(".bam$","_nsorted.bam"));
 		
 		SAMWriting.writeSortedSAMorBAM(singleBam, nameSortedSingleBam, new File(TMP), MEMORY, SortOrder.queryname);
 
