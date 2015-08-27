@@ -1016,6 +1016,12 @@ public class MobilePrediction  {
 		return (this.multiple_hits == 0 && this.unique_hits == 0 && this.unmapped_hits >= uxThreshold);
 	}
 	
+	public boolean hasOnlyPercentageDiscordantUXReads(double uxThreshold){
+		int discordantHits = this.multiple_hits + this.unique_hits + this.unmapped_hits;
+		double perc = (double) this.unmapped_hits / (double) discordantHits * 100;
+		return perc >= uxThreshold;
+	}
+	
 	
 	public boolean gripNeedsFiltering(){
 		
@@ -1047,6 +1053,11 @@ public class MobilePrediction  {
 		if (! this.sameRefSeqMappingAsPrediction() && ! this.hasOnlyDiscordantUXReads(MIN_DISCORDANT_UX)){
 			return true;
 		}
+		
+//		if (! this.sameRefSeqMappingAsPrediction() && ! this.hasOnlyPercentageDiscordantUXReads(62)){
+//			return true;
+//		}
+		
 		if (MathFunction.getMedianFromIntegers(inserts) != null && MathFunction.getMedianFromIntegers(inserts) < MIN_INSERT_SIZE){
 			return true;
 		}
