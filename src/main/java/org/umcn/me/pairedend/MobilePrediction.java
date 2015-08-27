@@ -95,6 +95,10 @@ public class MobilePrediction  {
 
 	private Map<String, Integer> refSeqMateUUCounts = new HashMap<String, Integer>();
 
+	private int left_mate_median_mapq = -1;
+
+	private int right_mate_median_mapq = -1;
+
 	
 	public static Logger logger = Logger.getLogger("MobilePrediction");
 	
@@ -399,9 +403,13 @@ public class MobilePrediction  {
 	private void parseReadNamesForRefSeq(List<String> readNames, Map<String, ReadName> map) {
 		for (String readName : readNames){
 			ReadName read = map.get(readName);
+			Set<String> tempSymbols = new HashSet<String>();
 			if (read != null){
 				for (RefGeneAnnotation gene : read.getMateRefGeneAnnotation()){
 					String symbol = gene.geneSymbol;
+					if (!tempSymbols.add(symbol)){
+						continue; // gene has already be counted, skip to the next one
+					}
 					CollectionUtil.addKeyToCountMap(symbol, this.refseqMateCounts); //keep track of the gene symbol counts
 					
 					if (readName.startsWith(SAMDefinitions.UNIQUE_UNIQUE_MAPPING)){
@@ -523,11 +531,13 @@ public class MobilePrediction  {
 			this.left_cluster_length = Integer.parseInt(clusterLength);
 			this.left_mate_hits = Integer.parseInt(clusterHits);
 			this.left_mate_cluster_border = cluster.getAlignmentEnd();
+			this.left_mate_median_mapq = cluster.getMappingQuality();
 		}else{
 			this.right_cluster_sam_record = cluster;
 			this.right_cluster_length = Integer.parseInt(clusterLength);
 			this.right_mate_hits = Integer.parseInt(clusterHits);
 			this.right_mate_cluster_border = cluster.getAlignmentStart() - 1;
+			this.right_mate_median_mapq = cluster.getMappingQuality();
 		}
 	}
 	
@@ -998,7 +1008,8 @@ public class MobilePrediction  {
 				this.selfChainOverlapString + "\t" + this.chainScores.toString() + "\t" + MathFunction.getMedianFromDoubles(this.chainScores) +
 				"\t" + this.insertSizes.toString() + "\t" + MathFunction.getMedianFromIntegers(insertsNoZeros) + "\t" +
 				Boolean.toString(this.sameRefSeqMappingAsPrediction() || this.hasOnlyDiscordantUXReads(MIN_DISCORDANT_UX)) + "\t" + Integer.toString(this.left_aligned_polyA_hits + this.left_aligned_polyT_hits) +
-				"\t" + Integer.toString(this.right_aligned_polyA_hits + this.right_aligned_polyT_hits) + "\t" + this.hasTSD();
+				"\t" + Integer.toString(this.right_aligned_polyA_hits + this.right_aligned_polyT_hits) + "\t" + this.hasTSD() + "\t" + this.left_mate_median_mapq
+				+ "\t" + this.right_mate_median_mapq;
 	}
 	
 	public boolean hasOnlyDiscordantUXReads(int uxThreshold){
@@ -1049,7 +1060,7 @@ public class MobilePrediction  {
 		return "Chr\tStart\tEnd\tReads\tPrediction\tInsertion\tSample\tSample counts\tLeftClusterLength\tRightClusterLength\tTotalSplitHits\tLeftTotalHits\tRightTotalHits\tRefSeqMateCount\tRepMaskAnchorCount\tRepMaskMateCount\tSameRefSeq\t" +
 				"OverlappingRepeatClass\tsameAnchorLocationAsPred\tBlackListAnchorCount\tBlackListMateCount\tRepFamilyAnchorCount\t" +
 				"RepFamilyMateCount\tOverlappingRepFamily\tUU\tUM\tUX\tSelfChain\tSelfChainDetailed\tSelfChainScores\tSelfChainScoresMedian\t" +
-				"insert sizes\tmedian insert\tSameRefSeqOrUX\tLeftAlignedPoly\tRightAlignedPoly\tTSD";
+				"insert sizes\tmedian insert\tSameRefSeqOrUX\tLeftAlignedPoly\tRightAlignedPoly\tTSD\tleftMateMedianMAPQ\trightMateMedianMAPQ";
 	}
 	
 	public boolean sameRefSeqUUMappingAsPrediction(){
