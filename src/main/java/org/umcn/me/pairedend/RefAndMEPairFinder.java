@@ -221,7 +221,7 @@ public class RefAndMEPairFinder {
 			if(Boolean.parseBoolean(prop.getProperty(MobileDefinitions.CLEANUP_FILES))){
 				File datToDelete = new File(filtered.toString().replaceAll(".bam$", ".dat"));
 				File fqToDelete = new File(filtered.toString().replaceAll(".bam$", ".fq"));
-				File multipleBam = new File(single.toString().replaceAll(".bam$", "multiple.bam"));
+				File multipleBam = new File(single.toString().replaceAll(".bam$", ".multiple.bam"));
 				
 				logger.info("Will delete: " + filtered.toString());
 				logger.info("Will delete: " + datToDelete.toString());
