@@ -353,7 +353,10 @@ public class AnchorClusterer {
 			}
 			
 			matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
-			matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
+			
+			if (!grips_mode){
+				matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
+			}
 			
 			//Filter for multiple occuring source genes if detection is done using GRIPS
 			if (props.containsKey(MobileDefinitions.GRIPS_MAX_SOURCE_GENES)){
