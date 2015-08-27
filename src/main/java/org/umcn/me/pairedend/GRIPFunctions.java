@@ -65,6 +65,9 @@ public class GRIPFunctions {
 			
 			for (MobilePrediction predCopy : predictionsCopy){
 				if (!pred.equals(predCopy) && currentPred.hasOverlapInBP(predCopy.predictionWindowToRegion()) > 0){
+					logger.info("Prediction:  " + pred.getChromosome() + ":" + pred.getInsertionEstimate() + "-" + pred.getMobileMappings().toString() +
+							"and prediction: " + predCopy.getChromosome() + ":" + predCopy.getInsertionEstimate() + "-" + predCopy.getMobileMappings().toString()
+							+ " are overlapping and removed");
 					foundOverlap = true;
 					break;
 				}
