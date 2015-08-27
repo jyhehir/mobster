@@ -1,12 +1,14 @@
 package org.umcn.me.sam;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 
 import org.umcn.me.samexternal.QualityProcessing;
 import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.util.MathFunction;
 import org.umcn.me.util.MobileDefinitions;
 import org.umcn.me.util.SampleBam;
 
@@ -267,6 +269,16 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		
 	}
 	
+	public int getMedianMAPQ(){
+		ArrayList<Integer> mapq = new ArrayList<Integer>();
+		
+		for (T record : this){
+			mapq.add(record.getMappingQuality());
+		}
+		
+		return MathFunction.getMedianFromIntegers(mapq);
+	}
+	
 	public int getClusterSize(){
 		return getClusterEnd() - getClusterStart() + 1;
 	}
@@ -293,7 +305,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 			record.setFlags(0);
 			record.setReferenceName(referenceBuilder.toString());
 			record.setAlignmentStart(this.getClusterStart());
-			record.setMappingQuality(255);
+			record.setMappingQuality(this.getMedianMAPQ());
 			record.setCigarString(cigar.toString());
 			record.setMateReferenceName("*");
 			record.setInferredInsertSize(0);
@@ -322,6 +334,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 			this.countSamples();
 			String sampleCount = this.sample_count.toString();
 			record.setAttribute(MobileDefinitions.SAM_TAG_SAMPLECOUNT, sampleCount.substring(1, sampleCount.length() - 1));
+			
 			
 			
 			cigar.setLength(0);
