@@ -351,6 +351,10 @@ public class AnchorClusterer {
 				logger.info("Anchorclusterer: will remove overlapping predictions");
 				matePredictions = GRIPFunctions.removeOverlappingPredictions(matePredictions);
 			}
+			commentHeader = getVersionAndParameterInfo(props);
+			if (grips_mode){
+				writeGRIPSToFile(outPrefix + "_GRIPS_unfiltered.txt", matePredictions, commentHeader, false);
+			}
 			
 			matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
 			
@@ -365,7 +369,6 @@ public class AnchorClusterer {
 				matePredictions = GRIPFunctions.reducePredictionsBasedOnSource(matePredictions, maxSourceGenes);
 			}
 			
-			commentHeader = getVersionAndParameterInfo(props);
 			
 			if (grips_mode){
 				//Prestep 1 for GRIPS: extracting the read names
