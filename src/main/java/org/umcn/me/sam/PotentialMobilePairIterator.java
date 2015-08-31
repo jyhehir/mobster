@@ -5,12 +5,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
-import org.umcn.gen.sam.IllegalSAMPairException;
-import org.umcn.gen.sam.NrMappingsSAMRecordHolder;
-import org.umcn.gen.sam.NrMappingsSAMRecordHolderFactory;
-import org.umcn.gen.sam.SAMRecordHolderPair;
-import org.umcn.gen.sam.SAMSilentReader;
-import org.umcn.gen.sam.UnknownParamException;
+import org.umcn.me.samexternal.IllegalSAMPairException;
+import org.umcn.me.samexternal.NrMappingsSAMRecordHolder;
+import org.umcn.me.samexternal.NrMappingsSAMRecordHolderFactory;
+import org.umcn.me.samexternal.SAMRecordHolderPair;
+import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.samexternal.UnknownParamException;
 
 import com.google.code.jyield.Generator;
 import com.google.code.jyield.Yieldable;
@@ -30,6 +30,7 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 	
 	private boolean include_split;
 	private int min_anchor_mapq;
+	private boolean skip_um_pairs = false; //unique -multiple pairs
 	
 	public static Logger logger = Logger.getLogger("PotentialMobilePairIterator");
 	
@@ -52,6 +53,10 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 	
 	public SAMFileReader getSAMReader(){
 		return this.sam_reader;
+	}
+	
+	public void setSkippingOfUMPairs(boolean skip){
+		this.skip_um_pairs = skip;
 	}
 	
 	public void generate(Yieldable<SAMRecordHolderPair<NrMappingsSAMRecordHolder>> yieldable){
@@ -115,9 +120,16 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 			
 			potentialReadPair = new SAMRecordHolderPair<NrMappingsSAMRecordHolder>(potentialMobileRead1, potentialMobileRead2);
 			
-			if (potentialReadPair.isPotentialMobilePair(this.include_split)){
-				yieldable.yield(new SAMRecordHolderPair<NrMappingsSAMRecordHolder>(potentialMobileRead1, potentialMobileRead2));
-			}					
+			if (!this.skip_um_pairs){
+				if (potentialReadPair.isPotentialMobilePair(this.include_split)){
+					yieldable.yield(new SAMRecordHolderPair<NrMappingsSAMRecordHolder>(potentialMobileRead1, potentialMobileRead2));
+				}
+			}else{
+				if (potentialReadPair.isPotentialGRIPPair(this.include_split)){
+					yieldable.yield(new SAMRecordHolderPair<NrMappingsSAMRecordHolder>(potentialMobileRead1, potentialMobileRead2));
+				}
+			}
+					
 			potential_mobile_read_SAMRec_map.remove(readName);
 		}
 	}

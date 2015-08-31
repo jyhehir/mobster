@@ -20,25 +20,31 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.umcn.gen.sam.NrMappingsSAMRecordHolder;
-import org.umcn.gen.sam.SAMDefinitions;
-import org.umcn.gen.sam.SAMRecordHolderPair;
-import org.umcn.gen.sam.SAMWriting;
 import org.umcn.me.sam.PotentialMobilePairIterator;
+import org.umcn.me.samexternal.NrMappingsSAMRecordHolder;
+import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.samexternal.SAMRecordHolderPair;
+import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.util.BAMCollection;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.BAMSample;
 
 import com.google.code.jyield.YieldUtils;
 
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileWriter;
+import net.sf.samtools.SAMFileHeader.SortOrder;
 
 public class PotentialMEIReadFinder {
 	
 	public static Logger logger = Logger.getLogger("PotentialMEIReadFinder");
 	private static int min_avg_qual = 20;
 	private static int min_anchor_mapq = 20;
+	private static boolean skip_um_pairs = false; //um --> unique - multiply mapped pairs
+	private static boolean query_sort_input = false; //query sort input for lower RAM usage
 	
+	//TODO Command line calling now does not implement the multiple BAM input feature
 	public static void main(String[] args) {
 		
 		BasicConfigurator.configure();
@@ -94,7 +100,9 @@ public class PotentialMEIReadFinder {
 					if (props.containsKey(MobileDefinitions.MIN_MAPQ_ANCHOR)){
 						min_anchor_mapq = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_MAPQ_ANCHOR).trim());
 					}
-					
+					if (props.containsKey(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE)){
+						skip_um_pairs = Boolean.parseBoolean(props.getProperty(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE).trim());
+					}
 					
 				}else{
 					infile = line.getOptionValue("in");
@@ -107,6 +115,8 @@ public class PotentialMEIReadFinder {
 					memory = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));
 					min_avg_qual = Integer.parseInt(line.getOptionValue("min_avg_qual", Integer.toString(min_avg_qual)));
 					min_anchor_mapq = Integer.parseInt(line.getOptionValue("mapq",Integer.toString(min_anchor_mapq)));
+					
+					//TODO: add in skip um pair as an cli option
 				}
 				
 				logger.info("Using infile: " + infile);
@@ -157,13 +167,13 @@ public class PotentialMEIReadFinder {
 	}
 	
 	//TODO remove duplicate code for this function
-	public static void runFromProperties(Properties props){
+	public static void runFromProperties(Properties props) throws IOException{
 		
 		//TODO
 //		String infile;
 		String outfile;
 		String tool;
-		String tmp;
+		File tmp;
 		Boolean useSplit;
 		int minClipping;
 		int maxClipping;
@@ -185,14 +195,26 @@ public class PotentialMEIReadFinder {
 			tool = SAMDefinitions.MAPPING_TOOL_UNSPECIFIED;
 		}
 		
+		if (props.containsKey(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE)){
+			skip_um_pairs = Boolean.parseBoolean(props.getProperty(MobileDefinitions.GRIPS_DISCARD_UNIQUE_MULTIPLE).trim());
+		}
+		
+		if (props.containsKey(MobileDefinitions.QUERY_SORT_INPUT)){
+			query_sort_input = Boolean.parseBoolean(props.getProperty(MobileDefinitions.QUERY_SORT_INPUT).trim());
+		}
+		
 		useSplit = Boolean.parseBoolean(props.getProperty(MobileDefinitions.USE_SPLIT).trim());
 		
 		if (props.containsKey(MobileDefinitions.TMP)){
-			tmp = props.getProperty(MobileDefinitions.TMP).trim();
+			tmp = new File(props.getProperty(MobileDefinitions.TMP).trim() + File.separator + "mob_" + Long.toString(System.nanoTime()));			
 		}else{
-			tmp = System.getProperty("java.io.tmpdir");
+			tmp = new File(System.getProperty("java.io.tmpdir") + File.separator + "mob_" + Long.toString(System.nanoTime()));
 		}
 		
+		
+		if ( ! tmp.mkdir() ){
+			throw new IOException("Can not create tmp directory: " + tmp);
+		}
 		//TODO: Sample parsing
 		samples = props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0);
 		bams = props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0);
@@ -203,7 +225,7 @@ public class PotentialMEIReadFinder {
 			logger.error("Supplied bams and/or supplied sample names are not unique");
 			System.exit(1);
 		}
-		
+
 		//TODO: If multiple samples were found, turn on the multiple_sample_calling option in the properties from Mobster.java
 		
 		minClipping = Integer.parseInt(props.getProperty(MobileDefinitions.MIN_CLIPPING).trim());
@@ -235,24 +257,60 @@ public class PotentialMEIReadFinder {
 		
 		PrintWriter outFq = null;
 		SAMFileWriter outputSam = null;
-		
+		SAMFileHeader samFileHeader = null;
+		File nameSortedBam = null;
 		try {
 			
-			//TODO:
-			SAMFileHeader samFileHeader = new BAMCollection(bams, samples).getMergedHeader(SAMFileHeader.SortOrder.unsorted);
-			
-			//TODO: Open up the .fq and .bam writer here, then run the potential MEIFinder
 			outFq = new PrintWriter(new FileWriter(outfile + "_potential.fq"), true);
-			outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, new File(tmp), memory, SAMFileHeader.SortOrder.unsorted, true);
 			
-			//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
-			for (String file : bams){
-				runPotentialMEIFinder(file, outFq, outputSam, tool, useSplit, minClipping, maxClipping);
+			//If more than one bam then try to make unique RG ids and associate sample name to each bam
+			if (bams.length > 1){
+				logger.info("[PMRF] detected multiple samples, modifying RG's");
+				BAMCollection collection = new BAMCollection(bams, samples, true);
+				
+				samFileHeader = collection.getMergedHeader(SAMFileHeader.SortOrder.unsorted);
+				
+				outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, tmp, memory, SAMFileHeader.SortOrder.unsorted, true);
+				
+				//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
+				for (BAMSample bamSample : collection.getCloneOfBAMSampleList()){
+				
+					//Query sort input if user wants this
+					if (query_sort_input){
+						nameSortedBam = new File(bamSample.getBam().toString() + ".query_sorted");
+						SAMWriting.writeSortedSAMorBAM(bamSample.getBam(), nameSortedBam, tmp, memory, SortOrder.queryname);
+						runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
+						nameSortedBam.delete();
+					}else{
+						runPotentialMEIFinder(bamSample.getBam().getAbsolutePath(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
+					}
+					
+				}
+			//Otherwise if there is just 1 bam, do not try to modify the read groups. 
+			}else if(bams.length == 1){
+				logger.info("[PMRF] detected one sample, not modifying RG's");
+				SAMSilentReader reader = new SAMSilentReader(new File(bams[0]));
+				samFileHeader = reader.getFileHeader();
+				outputSam = SAMWriting.makeSAMWriter(new File(outfile + "_potential.bam"), samFileHeader, tmp, memory, SAMFileHeader.SortOrder.unsorted, true);
+				reader.close();
+				
+				if (query_sort_input){
+					nameSortedBam = new File(bams[0] + ".query_sorted");
+					SAMWriting.writeSortedSAMorBAM(new File(bams[0]), nameSortedBam, tmp, memory, SortOrder.queryname);
+					runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, "");
+					nameSortedBam.delete();
+				}else{
+					runPotentialMEIFinder(bams[0], outFq, outputSam, tool, useSplit, minClipping, maxClipping, "");
+				}
 			}
 			
 			
 
-		} catch (IOException e) {
+		} catch (IllegalArgumentException e){
+			logger.fatal(e.getMessage());
+		}
+		
+		catch (IOException e) {
 			logger.error("[PMRF] Could not create or find file / directory");
 			logger.error(e.getMessage());
 		} finally {
@@ -261,6 +319,12 @@ public class PotentialMEIReadFinder {
 			}
 			if (outputSam != null){
 				outputSam.close();
+			}
+			if (nameSortedBam != null){
+				nameSortedBam.delete();
+			}
+			if (tmp != null && ! tmp.delete() ){
+				logger.error("[PMRF] Could not delete temp: " + tmp);
 			}
 		}
 		
@@ -277,11 +341,13 @@ public class PotentialMEIReadFinder {
 	}
 
 	public static void runPotentialMEIFinder(String inFile, PrintWriter outFq, SAMFileWriter outSam, String mappingTool,
-			boolean useSplit, int minClipping, int maxClipping) {
+			boolean useSplit, int minClipping, int maxClipping, String readGroupPrefix) {
 		
 		File inBam = new File(inFile);
 		PotentialMobilePairIterator potentialMEIReads = new PotentialMobilePairIterator(inBam, mappingTool, useSplit,
 																minClipping, maxClipping, min_avg_qual, min_anchor_mapq);
+		logger.info("Skipping UM pairs?: " + skip_um_pairs);
+		potentialMEIReads.setSkippingOfUMPairs(skip_um_pairs);
 		//SAMFileHeader samFileHeader = potentialMEIReads.getSAMReader().getFileHeader();
 		
 		//File tmpFile = new File(tmp);
@@ -298,7 +364,7 @@ public class PotentialMEIReadFinder {
 	
 		for (SAMRecordHolderPair<NrMappingsSAMRecordHolder> pair : YieldUtils.toIterable(potentialMEIReads)){
 
-				pair.writeMobileReadsToFastQAndPotentialPairsToSAM(outFq, outSam, useSplit, true);
+				pair.writeMobileReadsToFastQAndPotentialPairsToSAM(outFq, outSam, useSplit, true, readGroupPrefix);
 				c++;
 				if(pair.hasSplitReadOfCertainSize()){
 					d++;

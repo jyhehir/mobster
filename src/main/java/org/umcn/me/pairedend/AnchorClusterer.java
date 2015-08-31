@@ -8,17 +8,25 @@ import org.apache.commons.cli.*;
 import org.umcn.gen.annotation.AnnotatedRegionSet;
 import org.umcn.gen.region.LabeledRegion;
 import org.umcn.gen.region.RegionComparator;
-import org.umcn.gen.sam.IllegalSAMPairException;
-import org.umcn.gen.sam.SAMSilentReader;
-import org.umcn.gen.sam.SAMWriting;
 import org.umcn.me.sam.MateCluster;
+import org.umcn.me.samexternal.IllegalSAMPairException;
+import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.splitread.ClippedRead;
 import org.umcn.me.splitread.InvalidHardClipCigarException;
+import org.umcn.me.tabix.BlacklistAnnotation;
+import org.umcn.me.tabix.RefGeneAnnotation;
+import org.umcn.me.tabix.RepMaskAnnotation;
+import org.umcn.me.tabix.SelfChainAnnotation;
+import org.umcn.me.tabix.TabixBaseAnnotater;
+import org.umcn.me.tabix.TabixReader;
 import org.umcn.me.util.ClippedReadSet;
 import org.umcn.me.util.CollectionUtil;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.ReadName;
+import org.umcn.me.util.ReadNameOption;
+import org.umcn.me.util.ReadNameRetriever;
 import org.umcn.me.util.SampleBam;
-
 
 import java.io.File;
 import java.io.BufferedReader;
@@ -28,7 +36,9 @@ import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -82,7 +92,7 @@ public class AnchorClusterer {
 	public static Logger logger = Logger.getLogger("AnchorClusterer");
 	
 	private static final int FILTER_REGION = 90;
-	private static final String VERSION = "0.1.6";
+	private static final String VERSION = "0.1.7b-GRIPS";
 	
 	private static int mean_frag_size = 470;
 	private static int sd_frag_size = 35;
@@ -99,10 +109,13 @@ public class AnchorClusterer {
 	private static boolean multiple_sample_calling = false;
 	private static boolean filter_by_read_counts_single_sample = false;
 	private static boolean lenient_search = false;
-	private static String tmp;
+	private static boolean grips_mode = false;
+	private static String TMP;
 	private static int memory;
 	
 	private static String repmask_file = "./hg19_alul1svaerv.txt";
+	
+	private static Properties mobster_properties;
 	
 	
 	public static String getVersionAndParameterInfo(String[] params){
@@ -121,7 +134,7 @@ public class AnchorClusterer {
 		sb.append("#Creation date: ");
 		sb.append(date.toString());
 		sb.append("\n");
-		
+
 		return sb.toString();
 	}
 	
@@ -152,7 +165,7 @@ public class AnchorClusterer {
 	}
 	
 	
-	public static void runFromPropertiesFile(Properties props){
+	public static void runFromPropertiesFile(Properties props) throws IOException{
 //		public static final String ANCHOR_FILE = "ANCHOR_BAM_FILE"; DONE
 //		public static final String SPLIT_ANCHOR_FILE = "ANCHOR_SPLIT_BAM_FILE";
 //		public static final String READS_PER_CLUSTER = "READS_PER_CLUSTER"; DONE
@@ -182,8 +195,13 @@ public class AnchorClusterer {
 		int rpc; //default 2
 		int overlap; // default 50 
 		int maxdist; // default 450
+		List<ReadName> anchorReads;
+		List<ReadName> splitAnchorReads;
+		Map<String, ReadName> readnameMap = new HashMap<String, ReadName>();
 		
 		//anchorIndex = new File(line.getOptionValue("in").replaceAll(".bam$", ".bai"));
+		
+		mobster_properties = props;
 		
 		anchor = new File(props.getProperty(MobileDefinitions.ANCHOR_FILE).trim());
 		anchorIndex = new File(props.getProperty(MobileDefinitions.ANCHOR_FILE).trim().replaceAll(".bam$", ".bai"));
@@ -251,11 +269,16 @@ public class AnchorClusterer {
 		}
 		
 		if (props.containsKey(MobileDefinitions.TMP)){
-			tmp = props.getProperty(MobileDefinitions.TMP).trim();
+			TMP = props.getProperty(MobileDefinitions.TMP).trim() + File.separator + "mob_" + Long.toString(System.nanoTime());			
 		}else{
-			tmp = System.getProperty("java.io.tmpdir");
+			TMP = System.getProperty("java.io.tmpdir") + File.separator + "mob_" + Long.toString(System.nanoTime());
 		}
 		
+		File tmp = new File(TMP);
+		
+		if ( ! tmp.mkdir() ){
+			throw new IOException("Can not create tmp directory: " + tmp);
+		}
 		if (props.containsKey(MobileDefinitions.REPEAT_MASK_FILE)){
 			repmask_file = props.getProperty(MobileDefinitions.REPEAT_MASK_FILE).trim();
 		}
@@ -273,6 +296,10 @@ public class AnchorClusterer {
 			filter_by_read_counts_single_sample = true;	
 		}
 		
+		if (props.containsKey(MobileDefinitions.GRIPS_MODE) && "true".equals(props.getProperty(MobileDefinitions.GRIPS_MODE).toLowerCase())){
+			grips_mode = true;
+		}
+		
 		memory = Integer.parseInt(props.getProperty(MobileDefinitions.MEMORY).trim());
 		
 		//TODO this is a copy and paste of the main function, needs refactoring
@@ -281,8 +308,9 @@ public class AnchorClusterer {
 		logger.info("Using max overlap for double clusters: " + overlap);
 		logger.info("Using max distance between 5 and 3 end clusters for double clusters of: " +
 				maxdist);
-		
-		
+		logger.info("using tmp: " + tmp);
+		logger.info("using GRIPs mode: " + grips_mode);
+
 		//Step 1: Clustering
 		//Run simple clustering algorithm
 
@@ -317,11 +345,83 @@ public class AnchorClusterer {
 			}
 			
 			matePredictions = mergePredictions(matePredictions, overlap, maxdist);
-			matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
-			matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
-			commentHeader = getVersionAndParameterInfo(props);
-			writePredictionsToFile(outPrefix + "_predictions.txt", matePredictions, commentHeader, sample);
 			
+			if (mobster_properties.containsKey(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS) &&
+					Boolean.parseBoolean(mobster_properties.getProperty(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS))){
+				logger.info("Anchorclusterer: will remove overlapping predictions");
+				matePredictions = GRIPFunctions.removeOverlappingPredictions(matePredictions);
+			}
+			commentHeader = getVersionAndParameterInfo(props);
+			if (grips_mode){
+				writeGRIPSToFile(outPrefix + "_GRIPS_unfiltered.txt", matePredictions, commentHeader, false);
+			}
+			
+			matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
+			
+			if (!grips_mode){
+				matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
+			}
+			
+			//Filter for multiple occuring source genes if detection is done using GRIPS
+			if (props.containsKey(MobileDefinitions.GRIPS_MAX_SOURCE_GENES)){
+				int maxSourceGenes = Integer.parseInt(props.getProperty(MobileDefinitions.GRIPS_MAX_SOURCE_GENES));
+				logger.info("Filtering GRIPS for max source genes: " + maxSourceGenes);
+				matePredictions = GRIPFunctions.reducePredictionsBasedOnSource(matePredictions, maxSourceGenes);
+			}
+			
+			
+			if (grips_mode){
+				//Prestep 1 for GRIPS: extracting the read names
+				anchorReads = extractReadnames(anchor);
+				splitAnchorReads = extractReadnames(splitAnchor);
+				
+				
+				System.out.println("Anchor reads size: " + anchorReads.size());
+				System.out.println("Split anchor reads size: " + splitAnchorReads.size());
+				readnameMap = CollectionUtil.readNamesToMap(anchorReads);
+				System.out.println("read name map size 1: " + readnameMap.size());
+				readnameMap.putAll(CollectionUtil.readNamesToMap(splitAnchorReads));
+				System.out.println("read name map size 2: " + readnameMap.size());
+				
+				
+				//Now only keep the reads in map which made it to the clusters supporting the predictions
+				Set<String> reads = new HashSet<String>();
+				for (MobilePrediction pred : matePredictions){
+					reads.addAll(pred.getReadNamesFromMateClusters());
+					reads.addAll(pred.getReadNamesFromSplitClusters());
+				}
+				System.out.println("Number of total supporting reads from clusters: " + reads.size());
+				Set<String> keys = readnameMap.keySet();
+				keys.retainAll(reads);
+				System.out.println("Number of keys in map: " + readnameMap.size());
+				
+				//annotate the predictions
+				String refGeneLoc = props.getProperty(MobileDefinitions.GRIPS_TRANSCRIPT);
+				String repMaskLoc = props.getProperty(MobileDefinitions.GRIPS_REPMASK);
+				String blackListLoc = props.getProperty(MobileDefinitions.GRIPS_BLACKLIST);
+				String selfChainLoc = props.getProperty(MobileDefinitions.GRIPS_SELFCHAIN);
+				
+				try {
+					annotateRefGene(readnameMap.values(), refGeneLoc);
+					annotateRepMask(readnameMap.values(), repMaskLoc, true);
+					annotateBlacklist(readnameMap.values(), blackListLoc);
+					annotateSelfChain(readnameMap.values(), selfChainLoc);
+				} catch (java.text.ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				
+				//Add in the repmask / refgene annotation
+				for (MobilePrediction pred : matePredictions){
+					pred.parseReadNames(readnameMap);
+				}
+				writeGRIPSToFile(outPrefix + "_GRIPS_predictons.txt", matePredictions, commentHeader, false);
+				writeGRIPSToFile(outPrefix + "_GRIPS_MORECONFIDENT_predictions.txt", matePredictions, commentHeader, true);
+			}else{
+				writePredictionsToFile(outPrefix + "_predictions.txt", matePredictions, commentHeader, sample);
+			}
+
 			long end = System.currentTimeMillis();
 			long millis = end - start;
 			String time = String.format("%d min, %d sec", 
@@ -333,8 +433,79 @@ public class AnchorClusterer {
 			logger.info("Anchorclusterer ran in : " + time);
 		} catch (IOException e) {
 			logger.error("Anchorclusterer: Error in opening files: " + e.getMessage());
+		} finally {
+			if (tmp != null && ! tmp.delete() ){
+				logger.error("Anchor Clusterer: Could not delete temp: " + tmp);
+			}
+		}
+
+		
+	}
+
+	public static void annotateSelfChain(Collection<ReadName> reads, String chainLocation) throws IOException, java.text.ParseException{
+		TabixBaseAnnotater<SelfChainAnnotation> tba = new TabixBaseAnnotater<SelfChainAnnotation>(chainLocation, new SelfChainAnnotation());
+		
+		for (ReadName name : reads){
+			if ( name.mateIsMapped ){
+				name.setSelfChain(tba.queryOverlapping(name.toPositionString())); //intentionally query from the anchor position
+			}
+			
 		}
 		
+	}
+	
+	public static void annotateRefGene(Collection<ReadName> reads, String transcriptLocation)
+			throws IOException, java.text.ParseException {
+		TabixBaseAnnotater<RefGeneAnnotation> tba = new TabixBaseAnnotater<RefGeneAnnotation>(transcriptLocation, new RefGeneAnnotation());
+		
+		
+		for (ReadName name : reads){
+			if( name.mateIsMapped){
+				name.setMateRefGeneAnnotation(tba.queryOverlapping(name.mateToPositionString()));
+			}
+			if (name.isMapped){
+				name.setRefGeneAnnotation(tba.queryOverlapping(name.toPositionString()));
+			}
+		}
+	}
+	
+	public static void annotateBlacklist(Collection<ReadName> reads, String blacklistLocation) throws IOException, java.text.ParseException{
+		TabixBaseAnnotater<BlacklistAnnotation> tba = new TabixBaseAnnotater<BlacklistAnnotation>(blacklistLocation, new BlacklistAnnotation());
+		
+		for (ReadName name : reads){
+			if (name.isMapped){
+				name.setBlacklist(tba.queryOverlapping(name.toPositionString()));
+			}
+			if (name.mateIsMapped){
+				name.setMateBlacklist(tba.queryOverlapping(name.mateToPositionString()));
+			}
+		}
+		
+	}
+	
+	public static void annotateRepMask(Collection<ReadName> reads, String repmaskLocation, boolean annotateMates)
+			throws IOException, java.text.ParseException {
+		TabixBaseAnnotater<RepMaskAnnotation> tba = new TabixBaseAnnotater<RepMaskAnnotation>(repmaskLocation, new RepMaskAnnotation());
+		
+		for (ReadName name : reads){
+			if(name.isMapped){
+				name.setRepMaskAnnotation(tba.queryOverlapping(name.toPositionString()));
+			}
+			if(annotateMates && name.mateIsMapped){
+				name.setMateRepMaskAnnotation(tba.queryOverlapping(name.mateToPositionString()));
+			}
+		}
+	}
+
+	public static List<ReadName> extractReadnames(File anchor) {
+		ReadNameOption option = new ReadNameOption.Builder().addRegion(true).autoPrefixReference(true).build();
+		ReadNameRetriever retriever = new ReadNameRetriever(anchor, option);
+		List<ReadName> reads = new ArrayList<ReadName>();
+		
+		for (ReadName read : retriever){
+			reads.add(read);
+		}
+		return reads;
 	}
 	
 	public static void main(String[] args) {
@@ -386,8 +557,9 @@ public class AnchorClusterer {
 				multiple_sample_calling = line.hasOption("multiplesample");
 				filter_by_read_counts_single_sample = line.hasOption("multisample_stringent");
 				percentile_99_fragment = Integer.parseInt(line.getOptionValue("maxclust", Integer.toString(percentile_99_fragment)));
-				tmp = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
+				TMP = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
 				memory = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));				
+				grips_mode = line.hasOption("grips");
 				
 				if(line.hasOption("insplit")){
 					splitAnchor = new File(line.getOptionValue("insplit"));
@@ -401,6 +573,7 @@ public class AnchorClusterer {
 				logger.info("Using max overlap for double clusters: " + overlap);
 				logger.info("Using max distance between 5 and 3 end clusters for double clusters of: " +
 						maxdist);
+				logger.info("Using GRIPs mode: " + grips_mode);
 				
 				//Step 1: Clustering
 				//Run simple clustering algorithm
@@ -442,6 +615,7 @@ public class AnchorClusterer {
 				}
 				
 				matePredictions = mergePredictions(matePredictions, overlap, maxdist);
+				
 				matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
 				matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
 				commentHeader = getVersionAndParameterInfo(args);
@@ -458,10 +632,11 @@ public class AnchorClusterer {
 				logger.info("Anchorclusterer ran in : " + time);
 				
 				
-			} catch (ParseException e) {
-				logger.error("Error in parsing CLI arguments: " + e.getMessage());
-			} catch (IOException e){
+			}  catch (IOException e){
 				logger.error("Error in opening files: " + e.getMessage());
+			} catch (org.apache.commons.cli.ParseException e) {
+				// TODO Auto-generated catch block
+				logger.error("Error in parsing CLI arguments: " + e.getMessage());
 			}
 			
 		}
@@ -626,6 +801,34 @@ public class AnchorClusterer {
 		
 	}
 	
+	public static void writeGRIPSToFile(String outString, Vector<MobilePrediction> predictions, String comment, boolean filter){
+		try {
+			PrintWriter outFile = new PrintWriter(new FileWriter(outString), true);
+			
+			boolean writtenHeader = false;
+			outFile.print(comment);
+			for(MobilePrediction pred : predictions){
+				if (! writtenHeader){
+					outFile.println(pred.toGripsHeader());
+					writtenHeader = true;
+				}
+
+				if (filter && ! pred.gripNeedsFiltering()){
+					outFile.println(pred.toGripsString());
+				}else if (! filter){
+					outFile.println(pred.toGripsString());
+				}
+
+			}
+			
+			outFile.close();
+		} catch (IOException e) {
+			logger.error("Failed to write prediction file: " + e.getMessage());
+		}
+		
+		
+	}
+	
 	public static Options createCmdOptions(){
 		Options options = new Options();
 		
@@ -764,6 +967,10 @@ public class AnchorClusterer {
 		options.addOption(OptionBuilder.create("multisample_stringent"));
 		
 		
+		Option grip = new Option("grips", "Change settings specifically for GRIP clustering");
+		options.addOption(grip);
+		
+		
 		return options;
 	}
 	
@@ -794,11 +1001,25 @@ public class AnchorClusterer {
 		SampleBam sampleCalling = SampleBam.SINGLESAMPLE;
 		
 		header = editSAMFileHeader(header);
-		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(clusterBam, header, new File(tmp), memory, SAMFileHeader.SortOrder.coordinate);
+		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(clusterBam, header, new File(TMP), memory, SAMFileHeader.SortOrder.coordinate);
 		
 		Vector<MateCluster<SAMRecord>> mobileClusters = new Vector<MateCluster<SAMRecord>>();
 		
 		int c = 0;
+		int skippedClustersBecauseOfNotSameRefMapping = 0;
+		double minPercentSameMateRefMapping = 0.0;
+		int maxDiffMateMapping = Integer.MAX_VALUE;
+		
+		if (mobster_properties.containsKey(MobileDefinitions.GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING)){
+			minPercentSameMateRefMapping = Double.parseDouble(mobster_properties.getProperty(MobileDefinitions.GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING));
+		}
+		
+		if (mobster_properties.containsKey(MobileDefinitions.GRIPS_MAX_DIFF_MATE_MAPPINGS)){
+			maxDiffMateMapping = Integer.parseInt(mobster_properties.getProperty(MobileDefinitions.GRIPS_MAX_DIFF_MATE_MAPPINGS));
+		}
+		
+		logger.info("Using a minPercentSameMateRefMapping threshold of: " + minPercentSameMateRefMapping);
+		logger.info("Using a max different mate chr threshold of: " + maxDiffMateMapping);
 		
 		if (multiple_sample_calling){
 			sampleCalling = SampleBam.MULTISAMPLE;
@@ -816,8 +1037,13 @@ public class AnchorClusterer {
 						break;
 					}
 				}else if(currentCluster.size() >= minReads){
-					c++;
-					currentCluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
+					if (currentCluster.getHighestPercentageOfMateAlignmentsToSameChrosome(true) >= minPercentSameMateRefMapping
+							&& currentCluster.getNumberOfDifferentChromosomeMappingsOfMates(true) <= maxDiffMateMapping){
+						currentCluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
+						c++;
+					}else{
+						skippedClustersBecauseOfNotSameRefMapping++;
+					}
 					iter.remove();
 				}else{
 					iter.remove();
@@ -832,6 +1058,14 @@ public class AnchorClusterer {
 			iter = mobileClusters.iterator();
 		}
 		
+
+		//Write anchors to clusters.bam which have not been written yet.
+		for (MateCluster<SAMRecord> cluster : mobileClusters){
+			if (cluster.size() >= minReads){
+				cluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
+			}
+		}
+		logger.info("Number of skipped clusters because mates do not align to same chromosome:" + skippedClustersBecauseOfNotSameRefMapping);
 		logger.info("Found nr of clusters: " + c);
 
 		input.close();
@@ -861,7 +1095,7 @@ public class AnchorClusterer {
 		//convert reference names in SAM header from 1 to -> chr1 etc.
 		header = editSAMFileHeader(header);
 		header2 = editSAMFileHeader(header2);
-		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(outBam, header, new File(tmp), memory, SAMFileHeader.SortOrder.coordinate);
+		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(outBam, header, new File(TMP), memory, SAMFileHeader.SortOrder.coordinate);
 				
 		for (SAMRecord record : input){
 			

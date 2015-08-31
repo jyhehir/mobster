@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Vector;
 
-import org.umcn.gen.sam.IllegalSAMPairException;
+import org.umcn.me.samexternal.IllegalSAMPairException;
 
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;

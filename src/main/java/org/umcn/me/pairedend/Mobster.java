@@ -9,7 +9,7 @@ import java.util.Properties;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.umcn.gen.sam.SAMDefinitions;
+import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.util.MobileDefinitions;
 
 public class Mobster {
@@ -20,14 +20,13 @@ public class Mobster {
 	public static String inFile = null;
 	public static String outFile = null;
 	public static String sampleName = null;
-	public static final String VERSION = "0.1.6-MultipleOrganismandSample-Pair";
+	public static final String VERSION = "0.1.7b-GRIPS";
 	
 	public static void main(String[] args) {
 		
 		Properties props = new Properties();
 		
 		BasicConfigurator.configure();
-		
 		checkParams(args);
 		
 		if (propertiesFile != null){
@@ -132,7 +131,6 @@ public class Mobster {
 				AnchorClusterer.runFromPropertiesFile(props);
 				
 			}  catch (IOException e) {
-				logger.error("[Mobster] Can not locate properties file: " + propertiesFile);
 				logger.error(e.getMessage());
 			}
 		}
