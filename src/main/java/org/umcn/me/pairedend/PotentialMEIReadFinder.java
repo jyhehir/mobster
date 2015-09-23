@@ -219,10 +219,14 @@ public class PotentialMEIReadFinder {
 		samples = props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0);
 		bams = props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0);
 		
-		//Check to see whether all values are actually unique
-		if (samples.length != new HashSet<String>(Arrays.asList(samples)).size() ||
-				bams.length != new HashSet<String>(Arrays.asList(bams)).size()){
-			logger.error("Supplied bams and/or supplied sample names are not unique");
+		//Check to see whether bam names are unique
+		if (bams.length != new HashSet<String>(Arrays.asList(bams)).size()){
+			logger.error("Supplied bams are not unique");
+			System.exit(1);
+		}
+		
+		if (bams.length != samples.length){
+			logger.error("Number of sample names do not match number of supplied bams");
 			System.exit(1);
 		}
 
