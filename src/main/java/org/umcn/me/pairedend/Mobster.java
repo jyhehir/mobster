@@ -20,7 +20,7 @@ public class Mobster {
 	public static String inFile = null;
 	public static String outFile = null;
 	public static String sampleName = null;
-	public static final String VERSION = "0.1.7b-GRIPS";
+	public static final String VERSION = "0.1.7c";
 	
 	public static void main(String[] args) {
 		
@@ -124,7 +124,13 @@ public class Mobster {
 
 				PotentialMEIReadFinder.runFromProperties(props);
 				
-				execUnixCommand(mobiomeMappingCmd);
+				int exitStatus = execUnixCommand(mobiomeMappingCmd);
+				
+				if (exitStatus != 0){
+					logger.fatal("Mobiome mapping finished with non-normal exit value: " + exitStatus);
+					logger.fatal("Therefore Mobster execution is terminated");
+					System.exit(-1);
+				}
 				
 				RefAndMEPairFinder.runFromPropertiesFile(props);
 				
@@ -138,7 +144,7 @@ public class Mobster {
 	}
 	
 	
-	public static void execUnixCommand(String cmd){
+	public static int execUnixCommand(String cmd){
 		
 
 		ProcessBuilder builder = new ProcessBuilder("/bin/sh", "-c", cmd);
@@ -151,16 +157,20 @@ public class Mobster {
                 while ((s = stdout.readLine()) != null) {
                     System.out.println(s);
                 }
-                System.out.println("Exit value: " + process.waitFor());
+                int exitStatus = process.waitFor();
+                
+                System.out.println("Exit value: " + exitStatus);
+                
+                return exitStatus;
 			
 		} catch (IOException e) {
 			logger.error("Error in executing command: " + cmd);
 			logger.error(e.getMessage());
-			System.exit(-1);
+			return -1;
 		} catch (InterruptedException e) {
 			logger.error("Error in executing command: " + cmd);
 			logger.error(e.getMessage());
-			System.exit(-2);
+			return -2;
 		}
 	}
 	
