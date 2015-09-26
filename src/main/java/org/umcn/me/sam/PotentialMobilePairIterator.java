@@ -72,7 +72,7 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 		} catch (IllegalSAMPairException e){
 			logger.error(e.getMessage());
 			closeSamReader();
-		}
+		} 
 		closeSamReader();
 	}
 
@@ -85,13 +85,13 @@ public class PotentialMobilePairIterator implements Generator<SAMRecordHolderPai
 		NrMappingsSAMRecordHolder potentialMobileRead2;
 		SAMRecordHolderPair<NrMappingsSAMRecordHolder> potentialReadPair;
 		
-		//Skip reads which are unmapped
-		if((rec.getReadUnmappedFlag() && rec.getMateUnmappedFlag())){
+		//Skip single-end reads for now; will hog all the memory
+		if (!rec.getReadPairedFlag()){
 			return;
 		}
 		
-		//Skip single-end reads for now; will hog all the memory
-		if (!rec.getReadPairedFlag()){
+		//Skip reads which are unmapped
+		if((rec.getReadUnmappedFlag() && rec.getMateUnmappedFlag())){
 			return;
 		}
 		
