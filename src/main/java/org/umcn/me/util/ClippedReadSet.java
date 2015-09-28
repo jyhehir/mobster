@@ -11,9 +11,9 @@ import java.util.Vector;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMRecord;
 
-import org.umcn.gen.sam.QualityProcessing;
 import org.umcn.me.sam.InvalidCategoryException;
 import org.umcn.me.sam.MobileSAMTag;
+import org.umcn.me.samexternal.QualityProcessing;
 import org.umcn.me.splitread.ClippedRead;
 
 /**
@@ -520,6 +520,15 @@ public class ClippedReadSet<T extends ClippedRead> extends Vector<T>{
 		
 	}
 	
+	public String getReadNames(){
+		StringBuilder sb = new StringBuilder();
+		for (ClippedRead read : this){
+			sb.append(read.getSAMRecord().getReadName());
+			sb.append(",");
+		}
+		return sb.substring(0, sb.length() - 1);
+	}
+	
 	public void writeClippedReadSetToBAM(SAMFileWriter writer){
 		
 		StringBuilder cigar = new StringBuilder();
@@ -563,6 +572,8 @@ public class ClippedReadSet<T extends ClippedRead> extends Vector<T>{
 		record.setAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_MEDIAN_END, this.getMedianOfRightClippedEnds());
 		record.setAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_POLYA, this.getNrOfRightClippedPolyAMapping());
 		record.setAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_POLYT, this.getNrOfRightClippedPolyTMapping());
+		
+		record.setAttribute(MobileDefinitions.SAM_TAG_READNAMES, this.getReadNames());
 		
 		record.setAttribute(MobileDefinitions.SAM_TAG_MOBILE_HIT, this.getMobileMapping());
 		record.setAttribute(MobileDefinitions.SAM_TAG_SAMPLECOUNT, this.getSampleCounts());

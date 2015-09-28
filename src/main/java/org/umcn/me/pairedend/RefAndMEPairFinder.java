@@ -15,14 +15,14 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.commons.cli.*;
-import org.umcn.gen.sam.SAMDefinitions;
-import org.umcn.gen.sam.SAMSilentReader;
-import org.umcn.gen.sam.SAMWriting;
-import org.umcn.gen.sam.UnknownParamException;
 import org.umcn.gen.sequence.InvalidSequenceException;
 import org.umcn.gen.sequence.Sequence;
 import org.umcn.me.sam.InvalidCategoryException;
 import org.umcn.me.sam.MobileSAMTag;
+import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.samexternal.SAMWriting;
+import org.umcn.me.samexternal.UnknownParamException;
 import org.umcn.me.util.MobileDefinitions;
 
 /*
@@ -60,6 +60,7 @@ public class RefAndMEPairFinder {
 	public static Logger logger = Logger.getLogger("RefAndMEPairFinder"); 
 	private static int MIN_POLYA_LEN = 9;
 	private static int MAX_POLYA_MM = 1;
+	private static int MAX_MAPPINGS = -1; // -1 do not use max mobiome mappings
 	
 	private static int MEMORY;
 	private static String TMP;
@@ -108,6 +109,10 @@ public class RefAndMEPairFinder {
 					}else{
 						TMP = System.getProperty("java.io.tmpdir");
 					}
+					if (prop.containsKey(MobileDefinitions.GRIPS_MAX_REFSEQ_MAPPING)){
+						MAX_MAPPINGS = Integer.parseInt(prop.getProperty(MobileDefinitions.GRIPS_MAX_REFSEQ_MAPPING));
+					}
+					
 					MEMORY = Integer.parseInt(prop.getProperty(MobileDefinitions.MEMORY).trim());
 					
 					
@@ -124,6 +129,7 @@ public class RefAndMEPairFinder {
 					tool = line.getOptionValue("tool", SAMDefinitions.MAPPING_TOOL_MOSAIK);
 					sampleName = line.getOptionValue("samplename", sampleName);
 					paired = line.hasOption("p");
+					MAX_MAPPINGS = Integer.parseInt(line.getOptionValue("max_mapping", Integer.toString(MAX_MAPPINGS)));
 					TMP = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
 					MEMORY = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));
 				}
@@ -155,7 +161,7 @@ public class RefAndMEPairFinder {
 	}
 	
 	//TODO remove the duplicated code associated with this code
-	public static void runFromPropertiesFile(Properties prop){
+	public static void runFromPropertiesFile(Properties prop) throws IOException{
 		
 		File single = null;
 		File multiple = null;
@@ -178,10 +184,20 @@ public class RefAndMEPairFinder {
 		MIN_POLYA_LEN = Integer.parseInt(prop.getProperty(MobileDefinitions.POLY_A_LENGTH).trim());
 		MAX_POLYA_MM = Integer.parseInt(prop.getProperty(MobileDefinitions.POLY_A_MAX_MISMATCHES).trim());
 		
+		if (prop.containsKey(MobileDefinitions.GRIPS_MAX_REFSEQ_MAPPING)){
+			MAX_MAPPINGS = Integer.parseInt(prop.getProperty(MobileDefinitions.GRIPS_MAX_REFSEQ_MAPPING));
+		}
+		
 		if (prop.containsKey(MobileDefinitions.TMP)){
-			TMP = prop.getProperty(MobileDefinitions.TMP).trim();
+			TMP = prop.getProperty(MobileDefinitions.TMP).trim() + File.separator + "mob_" + Long.toString(System.nanoTime());			
 		}else{
-			TMP = System.getProperty("java.io.tmpdir");
+			TMP = System.getProperty("java.io.tmpdir") + File.separator + "mob_" + Long.toString(System.nanoTime());
+		}
+		
+		File tmp = new File(TMP);
+		
+		if ( ! tmp.mkdir() ){
+			throw new IOException("Can not create tmp directory: " + tmp);
 		}
 		MEMORY = Integer.parseInt(prop.getProperty(MobileDefinitions.MEMORY).trim());
 		
@@ -190,9 +206,38 @@ public class RefAndMEPairFinder {
 		logger.info("Mapping tool used for mobile mapping: " + tool);
 		logger.info("Paired-end reads: " + paired);
 		logger.info("Setting sample name to: " + sampleName);
+		logger.info("Using temp: " + tmp);
 		
 		try {
-			runRefAndMePairFinder(single, multiple, filtered, out, tool, paired, sampleName);
+			
+			if (Boolean.parseBoolean(prop.getProperty(MobileDefinitions.GRIPS_SKIP_UU_EXCLUSION))){
+				runRefAndMePairFinderSkipUUChecking(single, multiple, filtered, out, tool, paired, sampleName);
+			}else{
+				runRefAndMePairFinder(single, multiple, filtered, out, tool, paired, sampleName);
+			}
+			
+			//cleanup files if necessary:
+			
+			if(Boolean.parseBoolean(prop.getProperty(MobileDefinitions.CLEANUP_FILES))){
+				File datToDelete = new File(filtered.toString().replaceAll(".bam$", ".dat"));
+				File fqToDelete = new File(filtered.toString().replaceAll(".bam$", ".fq"));
+				File multipleBam = new File(single.toString().replaceAll(".bam$", ".multiple.bam"));
+				
+				logger.info("Will delete: " + filtered.toString());
+				logger.info("Will delete: " + datToDelete.toString());
+				logger.info("Will delete: " + fqToDelete.toString());
+				logger.info("Will delete: " + single.toString());
+				logger.info("Will delete: " + multipleBam.toString());
+				
+				logger.info(filtered.toString() + " deleted? : " + filtered.delete());				
+				logger.info(datToDelete.toString() + " deleted? : " + datToDelete.delete());
+				logger.info(fqToDelete.toString() + " deleted? : " + fqToDelete.delete());
+				logger.info(single.toString() + " deleted? : " + single.delete());
+				logger.info(multipleBam.toString() + " deleted? : " + multipleBam.delete());
+				
+			}
+			
+			
 			long end = System.currentTimeMillis();
 			long millis = end - start;
 			String time = String.format("%d min, %d sec", 
@@ -203,7 +248,11 @@ public class RefAndMEPairFinder {
 			
 			logger.info("RefAndMEPairFinder ran in : " + time);
 		} catch (IOException e) {
-			logger.error("[RMPF] Error in finding files: " + e.getMessage());
+			logger.error("RefAndMEPairFinder -> Error in finding files: " + e.getMessage());
+		} finally{
+			if (tmp != null && ! tmp.delete() ){
+				logger.error("RefAndMEPairFinder -> Could not delete temp: " + tmp);
+			}
 		}
 	}
 	
@@ -228,13 +277,48 @@ public class RefAndMEPairFinder {
 		Vector<String> exclusionReads = new Vector<String>();
 		Map<String, MobileSAMTag> meReads;
 		
-		File nameSortedSingleBam = new File(singleBam.toString().replaceAll(".bam$",""));
+		File nameSortedSingleBam = new File(singleBam.toString().replaceAll(".bam$","_nsorted.bam"));
 		
 		SAMWriting.writeSortedSAMorBAM(singleBam, nameSortedSingleBam, new File(TMP), MEMORY, SortOrder.queryname);
 		//SAMWriting.writeNameSortedSAMorBAM(singleBam, nameSortedSingleBam, new File(TMP), MEMORY);
 		
 		exclusionReads = getUUReadsMappingBothToME(nameSortedSingleBam);
 		
+		meReads = getReadsMappingToME(nameSortedSingleBam, exclusionReads, tool);
+		
+		if(multipleBam != null){
+			updateReadsMappingToMultipleME(multipleBam, meReads, exclusionReads);
+		}
+		
+		writeRefCoordinateFile(oriBam, meReads, output, paired, sampleName);
+		
+	}
+	
+	/**
+	 * The do work function
+	 * @param singleBam: bam file containing max 1 alignment per read against mobile ref.
+	 * Should be readname sorted if paired data.
+	 * @param multipleBam: bam file containing all alignments for all reads mapping
+	 * multiple times against mobile ref. Should be readname sorted. (MOSAIK can output such a bam file)
+	 * @param oriBam: bam file before mapping against the mobile reference, but after filtering (containing potential pairs)
+	 * @param output: output bam file containing only anchors for mobile elements.
+	 * @param tool: tool used for mobile reference mapping
+	 * @param paired: true if paired-end reads are used
+	 * @throws IOException
+	 */
+	public static void runRefAndMePairFinderSkipUUChecking(File singleBam, File multipleBam, File oriBam,
+			 String output, String tool, Boolean paired, String sampleName) throws IOException{
+			
+		//TODO modify runRefAndMePairFinder to accept tool as a parameter, so different
+		//mapping tools can be used more easily with this class. Now it can still be done
+		//but multiple methods from this class need to be called seperately.
+		Vector<String> exclusionReads = new Vector<String>();
+		Map<String, MobileSAMTag> meReads;
+		
+		File nameSortedSingleBam = new File(singleBam.toString().replaceAll(".bam$","_nsorted.bam"));
+		
+		SAMWriting.writeSortedSAMorBAM(singleBam, nameSortedSingleBam, new File(TMP), MEMORY, SortOrder.queryname);
+
 		meReads = getReadsMappingToME(nameSortedSingleBam, exclusionReads, tool);
 		
 		if(multipleBam != null){
@@ -308,11 +392,30 @@ public class RefAndMEPairFinder {
 		Map<String, MobileSAMTag> meReads = new HashMap<String, MobileSAMTag>();
 		SAMFileReader inputSam = new SAMSilentReader(bam);	
 		int mobileReadCounter = 0;
+		int skippedReadsBecauseOfMultiMappings = 0;
+		
+		logger.info("Using max mobiome mappings of (-1 is disabled) : " + MAX_MAPPINGS);
 		
 		for (SAMRecord samRecord : inputSam){
 			
 			String recordName = samRecord.getReadName();
 			boolean splitRead = recordName.startsWith(SAMDefinitions.SPLIT_MAPPING);
+			
+			if(MAX_MAPPINGS != -1){
+				MobileSAMTag tempTag = new MobileSAMTag();
+				try {
+					tempTag.build(samRecord, tool);
+					if (tempTag.getNrOfMappings() > MAX_MAPPINGS){
+						skippedReadsBecauseOfMultiMappings++;
+						continue;
+					}
+				} catch (InvalidCategoryException e) {
+					logger.error(e.getMessage());
+				} catch (UnknownParamException e) {
+					logger.error(e.getMessage());
+				}
+				
+			}
 			
 			if (!samRecord.getReadUnmappedFlag() && !exclusion.contains(samRecord.getReadName())){
 				mobileReadCounter++;
@@ -370,6 +473,7 @@ public class RefAndMEPairFinder {
 			}
 		}
 		logger.info(mobileReadCounter + " reads map to at least 1 mobile element");
+		logger.info("Skipped reads because of mobiome multimappings: " + skippedReadsBecauseOfMultiMappings);
 		inputSam.close();
 		return meReads;
 	}
@@ -549,6 +653,11 @@ public class RefAndMEPairFinder {
 		OptionBuilder.withDescription("Use property file instead of command line arguments, command line arguments will be skipt. Values in property file will be used");
 		
 		options.addOption(OptionBuilder.create("properties"));
+		
+		OptionBuilder.withArgName("int");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("Maximum number of mappings a read may map to the mobiome");
+		options.addOption(OptionBuilder.create("max_mapping"));
 		
 		return options;
 	}

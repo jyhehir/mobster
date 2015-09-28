@@ -4,11 +4,13 @@ import net.sf.samtools.*;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+
 import java.io.*;
 import java.util.*;
-import org.umcn.gen.parsers.FastaParserFast;
-import org.umcn.gen.sam.SAMDefinitions;
-import org.umcn.gen.sam.UnknownParamException;
+
+import org.umcn.me.parsers.FastaParserFast;
+import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.samexternal.UnknownParamException;
 
 
 

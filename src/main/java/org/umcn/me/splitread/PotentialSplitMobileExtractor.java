@@ -5,8 +5,8 @@ import net.sf.samtools.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.commons.cli.*;
-import org.umcn.gen.sam.QualityProcessing;
-import org.umcn.gen.sam.SAMSilentReader;
+import org.umcn.me.samexternal.QualityProcessing;
+import org.umcn.me.samexternal.SAMSilentReader;
 
 import java.io.File;
 import java.io.FileWriter;

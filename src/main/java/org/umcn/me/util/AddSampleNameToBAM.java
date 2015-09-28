@@ -14,7 +14,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.umcn.gen.sam.SAMSilentReader;
+import org.umcn.me.samexternal.SAMSilentReader;
 
 public class AddSampleNameToBAM {
 

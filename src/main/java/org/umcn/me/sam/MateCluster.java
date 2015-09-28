@@ -1,12 +1,14 @@
 package org.umcn.me.sam;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 
-import org.umcn.gen.sam.QualityProcessing;
-import org.umcn.gen.sam.SAMDefinitions;
+import org.umcn.me.samexternal.QualityProcessing;
+import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.util.MathFunction;
 import org.umcn.me.util.MobileDefinitions;
 import org.umcn.me.util.SampleBam;
 
@@ -77,7 +79,62 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		}
 	}
 	
+	private Map<String, Integer> retrieveMateAlignments(boolean skipUnmapped){
+		Map<String, Integer> countMap = new HashMap<String, Integer>();
+		String ref;
+		
+		for (T record : this){
+			if(skipUnmapped && record.getMateUnmappedFlag()){
+				continue;
+			}
+			
+			ref = record.getMateReferenceName();
+			if (countMap.containsKey(ref)){
+				countMap.put(ref, countMap.get(ref) + 1);
+			}else{
+				countMap.put(ref, 1);
+			}
+		}
+		
+		return countMap;
+	}
+	
+	public double getHighestPercentageOfMateAlignmentsToSameChrosome(boolean skipUnmapped){
+		
+		Map<String, Integer> countMap = this.retrieveMateAlignments(skipUnmapped);
+		int total = 0;
+		int highestCount = 0;
+
+		for (String ref : countMap.keySet()){
+			int currentcount = countMap.get(ref);
+			
+			if (currentcount > highestCount){
+				highestCount = currentcount;
+			}
+			total += currentcount;
+		}
+		
+		//if total is 0, e.g. due to all mates being unmapped just set percentage to 100%
+		if (total == 0){
+			return 100.0;
+		}
+		
+		double highestPercentage = (double) highestCount / (double) total * 100; 
+		
+		return highestPercentage;
+	}
+	
+	public int getNumberOfDifferentChromosomeMappingsOfMates(boolean skipUnmapped){
+		
+		Map<String, Integer> countMap = this.retrieveMateAlignments(skipUnmapped);
+		return countMap.size();
+		
+	}
+	
 	private boolean isValidAddition(T originalRec, T newRec) throws InvalidCategoryException{
+		
+		//When modifying for GRIPs do not forget to check whether the mates are unmapped
+		
 		if(!this.split_read){
 			return (isSameStrand(originalRec, newRec) && isSameReference(originalRec, newRec) &&
 			isSameMobileMapping(originalRec, newRec));
@@ -91,8 +148,26 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 	}
 	
 	private boolean isSameReference(T originalRec, T newRec){
-		return (originalRec.getReferenceName() == newRec.getReferenceName());
+		return (originalRec.getReferenceName().equals(newRec.getReferenceName()));
 	}
+	
+	public boolean isMateSameReference(T originalRec, T newRec){
+		return (originalRec.getMateReferenceName().equals(newRec.getMateReferenceName()));
+	}
+	
+	public boolean isMateSameReferenceWithinRegion(T originalRec, T newRec, int region){
+		boolean sameReference = this.isMateSameReference(originalRec, newRec);
+		int startSearchRegion = originalRec.getMateAlignmentStart() - region;
+		int endSearchRegion = originalRec.getMateAlignmentStart() + region;
+		boolean withinRegion = (newRec.getMateAlignmentStart() >= startSearchRegion 
+				&& newRec.getMateAlignmentStart() <= endSearchRegion);
+		
+		return (sameReference && withinRegion);
+		
+		
+	}
+	
+	
 	
 	//TODO now this function returns only true when the first added mobile category
 	//for two SAMRecords is the same (usually the best hit). Could make this more lenient
@@ -110,10 +185,24 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 	}
 	
 	public boolean isWithinSearchArea(T record, int searchArea){
+		
+		boolean sameReference;
+		boolean sameRange;
+		final int wiggle = 10;
+		
 		if(this.size() == 0){
 			return true;
 		}else{
-			return (record.getAlignmentStart() <= this.lastElement().getAlignmentStart() + searchArea);
+			//Bugfix: Should check for both reference and range as some clusters may not be written if
+			//no subsequent anchors are found with higher coordinates.
+			sameReference = (record.getReferenceName().equals(this.lastElement().getReferenceName()));
+			sameRange = (record.getAlignmentStart() <= this.lastElement().getAlignmentStart() + searchArea
+					&& record.getAlignmentStart() >= this.lastElement().getAlignmentStart() - wiggle);
+			
+			return (sameReference && sameRange);
+			
+			//Old return method in 0.1.6
+			//return (record.getAlignmentStart() <= this.lastElement().getAlignmentStart() + searchArea);
 		}
 	}
 	
@@ -167,6 +256,29 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		}
 	}
 	
+	public String getReadNames(){
+		
+		StringBuilder sb = new StringBuilder();
+		
+		for (T record : this){
+			sb.append(record.getReadName());
+			sb.append(",");
+		}
+		
+		return sb.substring(0, sb.length() - 1);
+		
+	}
+	
+	public int getMedianMAPQ(){
+		ArrayList<Integer> mapq = new ArrayList<Integer>();
+		
+		for (T record : this){
+			mapq.add(record.getMappingQuality());
+		}
+		
+		return MathFunction.getMedianFromIntegers(mapq);
+	}
+	
 	public int getClusterSize(){
 		return getClusterEnd() - getClusterStart() + 1;
 	}
@@ -193,7 +305,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 			record.setFlags(0);
 			record.setReferenceName(referenceBuilder.toString());
 			record.setAlignmentStart(this.getClusterStart());
-			record.setMappingQuality(255);
+			record.setMappingQuality(this.getMedianMAPQ());
 			record.setCigarString(cigar.toString());
 			record.setMateReferenceName("*");
 			record.setInferredInsertSize(0);
@@ -212,6 +324,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 			record.setAttribute(MobileDefinitions.SAM_TAG_CLUSTER_LENGTH, Integer.toString(clusterSize));
 			record.setAttribute(MobileDefinitions.SAM_TAG_MOBILE_HIT, meTag.getMobileCategoryNames().get(0));
 			record.setAttribute(MobileDefinitions.SAM_TAG_SPLIT_CLUSTER, Boolean.toString(this.split_read));
+			record.setAttribute(MobileDefinitions.SAM_TAG_READNAMES, this.getReadNames());
 			
 			this.countCategories();
 			record.setAttribute(MobileDefinitions.SAM_TAG_UNIQUE_HITS, this.unique_hits);
@@ -221,6 +334,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 			this.countSamples();
 			String sampleCount = this.sample_count.toString();
 			record.setAttribute(MobileDefinitions.SAM_TAG_SAMPLECOUNT, sampleCount.substring(1, sampleCount.length() - 1));
+			
 			
 			
 			cigar.setLength(0);

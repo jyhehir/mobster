@@ -34,6 +34,7 @@ public abstract class MobileDefinitions {
 	public static final String SAM_TAG_SPLIT_RIGHTCLIPPED_POLYA = "YU";
 	public static final String SAM_TAG_SAMPLENAME = "YY";
 	public static final String SAM_TAG_SAMPLECOUNT = "YX";
+	public static final String SAM_TAG_READNAMES = "YZ";
 	
 	//properties Mobster
 	public static final String READ_LENGTH = "READ_LENGTH";
@@ -51,6 +52,9 @@ public abstract class MobileDefinitions {
 	public static final String MEMORY = "MAX_RECORDS_IN_RAM";
 	public static final String MIN_QUAL = "MINIMUM_AVG_QUALITY";
 	public static final String MIN_MAPQ_ANCHOR = "MINIMUM_MAPQ_ANCHOR";
+	
+	public static final String QUERY_SORT_INPUT = "QUERY_SORT_INPUT";
+	
 	
 	//properties RefAndMEPairFinder
 	
@@ -98,6 +102,25 @@ public abstract class MobileDefinitions {
 	public static final String MULTIPLE_SAMPLE_CALLING_STRINGENT = "MULTIPLE_SAMPLE_CALLING_STRINGENT";
 	
 	public static final String DEFAULT_SEP=",";
+	
+	
+	//properties for GRIPS
+	
+	public static final String GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING = "GRIPS_MIN_PERC_SAME_REF_MAPPING";
+	public static final String GRIPS_DISCARD_UNIQUE_MULTIPLE = "GRIPS_NO_UM_PAIRS";
+	public static final String GRIPS_MAX_REFSEQ_MAPPING = "GRIPS_MAX_REFSEQ";
+	public static final String GRIPS_MAX_SOURCE_GENES = "GRIPS_MAX_SOURCE_GENES";
+	public static final String GRIPS_MAX_DIFF_MATE_MAPPINGS = "GRIPS_MAX_DIFF_MATE_MAPPINGS";
+	public static final String FILTER_OVERLAPPING_PREDICTIONS = "FILTER_OVERLAPPING_PREDICTIONS";
+	public static final String GRIPS_MODE = "GRIPS_MODE";
+	
+	public static final String GRIPS_SELFCHAIN = "SELFCHAIN";
+	public static final String GRIPS_TRANSCRIPT = "TRANSCRIPT";
+	public static final String GRIPS_BLACKLIST = "BLACKLIST";
+	public static final String GRIPS_REPMASK = "GRIPS_REPMASK";
+	public static final String GRIPS_SKIP_UU_EXCLUSION = "GRIPS_SKIP_UU_EXCLUSION"; 
+	
+	public static final String CLEANUP_FILES = "CLEANUP";
 	
 	
 	

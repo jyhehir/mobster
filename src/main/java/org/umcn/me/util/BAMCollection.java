@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.io.File;
 import java.io.FileNotFoundException;
 
-import org.umcn.gen.sam.SAMSilentReader;
+import org.umcn.me.samexternal.SAMSilentReader;
 
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMReadGroupRecord;
@@ -17,8 +17,15 @@ public class BAMCollection {
 
 	List<BAMSample> bams = new ArrayList<BAMSample>();
 	
-	public BAMCollection(String[] files, String[] names) throws InvalidParameterException, FileNotFoundException {
 	
+	public BAMCollection(String[] files, String[] names) throws InvalidParameterException, FileNotFoundException {
+		
+		this(files, names, false);
+		
+	}
+	
+	public BAMCollection(String[] files, String[] names, boolean prefix) throws InvalidParameterException, FileNotFoundException {
+				
 		if (files.length != names.length){
 			throw new InvalidParameterException("Number of files does not equal number of sample names");
 		}
@@ -35,30 +42,69 @@ public class BAMCollection {
 			if (!file.exists()){
 				throw new FileNotFoundException("File does not exist: " + file);
 			}
+			BAMSample sample = new BAMSample(file, name);
 			
-			bams.add(new BAMSample(file, name));
+			if (prefix) sample.setPrefixReadGroupId(Integer.toString(i) + ".");
+			bams.add(sample);
 		}
-		
 	}
 	
-	public SAMFileHeader getMergedHeader(SAMFileHeader.SortOrder order){
+	/**
+	 * 
+	 * @param order
+	 * @return SAMFileHeader
+	 */
+	public SAMFileHeader getMergedHeader(SAMFileHeader.SortOrder order) {
 		
 		List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();		
 		
 		for (BAMSample sample : this.bams){
+			List<SAMReadGroupRecord> newReadGroups = new ArrayList<SAMReadGroupRecord>();
 			SAMSilentReader reader = new SAMSilentReader(sample.bam);
 			SAMFileHeader header = reader.getFileHeader();
 			
-			for (SAMReadGroupRecord rg : header.getReadGroups()){
-				rg.setSample(sample.sample);
+			//If no readgroup is present, make an artificial one
+			if (header.getReadGroups().isEmpty()){
+				SAMReadGroupRecord record = new SAMReadGroupRecord (sample.getPrefixReadGroupId());
+				record.setSample(sample.sample);
+				newReadGroups.add(record);
+			}else{
+				for (SAMReadGroupRecord rg : header.getReadGroups()){
+					rg.setSample(sample.sample);
+					SAMReadGroupRecord rgDup = new SAMReadGroupRecord (sample.getPrefixReadGroupId() + rg.getReadGroupId(), rg);
+					newReadGroups.add(rgDup);
+				}
 			}
-			headers.add(header);
+			reader.close();		
 			
-			reader.close();
+			header.setReadGroups(newReadGroups);
+			headers.add(header);
+
 		}
 		
 		SamFileHeaderMerger merger = new SamFileHeaderMerger(order, headers, true);//true: do merge the sequence dictionaries
 		return merger.getMergedHeader();
 	}
+	
+	public String getPrefixReadGroupIdFromBam(BAMSample bam){
+		
+		int index = this.bams.indexOf(bam);
+		
+		return this.bams.get(index).getPrefixReadGroupId();
+		
+	}
+	
+	public List<BAMSample> getCloneOfBAMSampleList(){
+		
+		List<BAMSample> copyList = new ArrayList<BAMSample>();
+		
+		for (BAMSample sample : this.bams){
+			copyList.add(new BAMSample(sample));
+		}
+		
+		return copyList;
+		
+	}
+	
 	
 }
