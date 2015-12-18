@@ -166,15 +166,10 @@ public class SAMRecordHolderPair<T extends NrMappingsSAMRecordHolder>{
 	}
 	
 	public void writeMobileReadsToFastQAndPotentialPairsToSAM(PrintWriter fq,
-			SAMFileWriter samWriter, boolean includeSplitReads, boolean prefix, String rgPrefix, String readSuffix){
+			SAMFileWriter samWriter, boolean includeSplitReads, boolean prefix, String rgPrefix){
 		
 		if (prefix){
 			prefixReadNames(includeSplitReads);
-		}
-		
-		//Hack below for William Brandler to handle identical readnames within same BAM file from multiple samples
-		if (! "".equals(readSuffix)){
-			this.suffixReadNames(readSuffix);
 		}
 		
 		if (this.writePotentialMobileReadsToFastQ(fq, includeSplitReads)){
@@ -216,19 +211,6 @@ public class SAMRecordHolderPair<T extends NrMappingsSAMRecordHolder>{
 		readName2.append(originalRead2);
 		this.read1.getSAMRecord().setReadName(readName1.toString());
 		this.read2.getSAMRecord().setReadName(readName2.toString());
-	}
-	
-	private void suffixReadNames(String suffix){
-		
-		StringBuilder readName1 = new StringBuilder(this.read1.getSAMRecord().getReadName());
-		StringBuilder readName2 = new StringBuilder(this.read2.getSAMRecord().getReadName());
-		
-		readName1.append(suffix);
-		readName2.append(suffix);
-		
-		this.read1.getSAMRecord().setReadName(readName1.toString());
-		this.read2.getSAMRecord().setReadName(readName2.toString());
-
 	}
 	
 	public void writeToSAMFileWriter(SAMFileWriter samWriter, String rgPrefix){

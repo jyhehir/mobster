@@ -267,8 +267,6 @@ public class PotentialMEIReadFinder {
 			
 			outFq = new PrintWriter(new FileWriter(outfile + "_potential.fq"), true);
 			
-			int bamCounter = 0;
-			
 			//If more than one bam then try to make unique RG ids and associate sample name to each bam
 			if (bams.length > 1){
 				logger.info("[PMRF] detected multiple samples, modifying RG's");
@@ -280,15 +278,15 @@ public class PotentialMEIReadFinder {
 				
 				//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
 				for (BAMSample bamSample : collection.getCloneOfBAMSampleList()){
-					bamCounter++;
+				
 					//Query sort input if user wants this
 					if (query_sort_input){
 						nameSortedBam = new File(bamSample.getBam().toString() + ".query_sorted");
 						SAMWriting.writeSortedSAMorBAM(bamSample.getBam(), nameSortedBam, tmp, memory, SortOrder.queryname);
-						runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample), Integer.toString(bamCounter));
+						runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
 						nameSortedBam.delete();
 					}else{
-						runPotentialMEIFinder(bamSample.getBam().getAbsolutePath(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample), Integer.toString(bamCounter));
+						runPotentialMEIFinder(bamSample.getBam().getAbsolutePath(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, collection.getPrefixReadGroupIdFromBam(bamSample));
 					}
 					
 				}
@@ -303,10 +301,10 @@ public class PotentialMEIReadFinder {
 				if (query_sort_input){
 					nameSortedBam = new File(bams[0] + ".query_sorted");
 					SAMWriting.writeSortedSAMorBAM(new File(bams[0]), nameSortedBam, tmp, memory, SortOrder.queryname);
-					runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, "", "");
+					runPotentialMEIFinder(nameSortedBam.getAbsolutePath().toString(), outFq, outputSam, tool, useSplit, minClipping, maxClipping, "");
 					nameSortedBam.delete();
 				}else{
-					runPotentialMEIFinder(bams[0], outFq, outputSam, tool, useSplit, minClipping, maxClipping, "", "");
+					runPotentialMEIFinder(bams[0], outFq, outputSam, tool, useSplit, minClipping, maxClipping, "");
 				}
 			}
 			
@@ -346,21 +344,8 @@ public class PotentialMEIReadFinder {
 		
 	}
 
-	
-	/**
-	 * 
-	 * @param inFile
-	 * @param outFq
-	 * @param outSam
-	 * @param mappingTool
-	 * @param useSplit
-	 * @param minClipping
-	 * @param maxClipping
-	 * @param readGroupPrefix
-	 * @param readSuffix --> hack for William brandler to handle identical read names from different samples within same .bam files.
-	 */
 	public static void runPotentialMEIFinder(String inFile, PrintWriter outFq, SAMFileWriter outSam, String mappingTool,
-			boolean useSplit, int minClipping, int maxClipping, String readGroupPrefix, String readSuffix) {
+			boolean useSplit, int minClipping, int maxClipping, String readGroupPrefix) {
 		
 		File inBam = new File(inFile);
 		PotentialMobilePairIterator potentialMEIReads = new PotentialMobilePairIterator(inBam, mappingTool, useSplit,
@@ -383,7 +368,7 @@ public class PotentialMEIReadFinder {
 	
 		for (SAMRecordHolderPair<NrMappingsSAMRecordHolder> pair : YieldUtils.toIterable(potentialMEIReads)){
 
-				pair.writeMobileReadsToFastQAndPotentialPairsToSAM(outFq, outSam, useSplit, true, readGroupPrefix, readSuffix);
+				pair.writeMobileReadsToFastQAndPotentialPairsToSAM(outFq, outSam, useSplit, true, readGroupPrefix);
 				c++;
 				if(pair.hasSplitReadOfCertainSize()){
 					d++;
