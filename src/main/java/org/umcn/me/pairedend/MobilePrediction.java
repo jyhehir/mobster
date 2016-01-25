@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
-import org.umcn.gen.util.NumberFunctions;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.tabix.BlacklistAnnotation;
@@ -23,7 +22,6 @@ import org.umcn.me.util.MobileDefinitions;
 import org.umcn.me.util.ReadName;
 import org.umcn.me.util.SimpleRegion;
 
-import net.sf.picard.util.MathUtil;
 import net.sf.samtools.SAMRecord;
 
 public class MobilePrediction  {
@@ -950,7 +948,7 @@ public class MobilePrediction  {
 		return this.mobile_mappings;
 	}
 	
-	public String getHeader(){
+	public static String getHeader(){
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < HEADER.length; i++){
 			sb.append(HEADER[i]);

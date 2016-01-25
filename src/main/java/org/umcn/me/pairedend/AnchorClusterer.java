@@ -19,7 +19,6 @@ import org.umcn.me.tabix.RefGeneAnnotation;
 import org.umcn.me.tabix.RepMaskAnnotation;
 import org.umcn.me.tabix.SelfChainAnnotation;
 import org.umcn.me.tabix.TabixBaseAnnotater;
-import org.umcn.me.tabix.TabixReader;
 import org.umcn.me.util.ClippedReadSet;
 import org.umcn.me.util.CollectionUtil;
 import org.umcn.me.util.MobileDefinitions;
@@ -36,7 +35,6 @@ import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -786,7 +784,7 @@ public class AnchorClusterer {
 			PrintWriter outFile = new PrintWriter(new FileWriter(outString), true);
 			outFile.print(comment);
 			
-			outFile.print(predictions.get(0).getHeader() + "\n");
+			outFile.print(MobilePrediction.getHeader() + "\n");
 			
 			for(MobilePrediction pred : predictions){
 				//pred.setSampleName(sampleName);
