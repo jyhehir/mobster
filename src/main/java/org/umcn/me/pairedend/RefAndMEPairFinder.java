@@ -15,15 +15,15 @@ import java.util.concurrent.TimeUnit;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.commons.cli.*;
-import org.umcn.gen.sequence.InvalidSequenceException;
-import org.umcn.gen.sequence.Sequence;
 import org.umcn.me.sam.InvalidCategoryException;
 import org.umcn.me.sam.MobileSAMTag;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.samexternal.UnknownParamException;
+import org.umcn.me.util.InvalidNucleotideSequenceException;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.NucleotideSequence;
 
 /*
  * IMPORTANT NOTE: STILL HAVE TO CHECK IF UPDATEREADSMAPPINGTOMULTIPLEME
@@ -423,7 +423,7 @@ public class RefAndMEPairFinder {
 				MobileSAMTag mobileTag = new MobileSAMTag();
 				try {
 					if(splitRead){
-						Sequence seq = new Sequence(samRecord.getReadString());
+						NucleotideSequence seq = new NucleotideSequence(samRecord.getReadString());
 						if(samRecord.getReadNegativeStrandFlag()){
 							seq.reverseComplement();
 						}
@@ -443,14 +443,14 @@ public class RefAndMEPairFinder {
 					logger.error(e.getMessage());
 				} catch (UnknownParamException e) {
 					logger.error(e.getMessage());
-				} catch (InvalidSequenceException e){
+				} catch (InvalidNucleotideSequenceException e){
 					logger.error(e.getMessage());
 				}
 			}else if(splitRead && samRecord.getReadUnmappedFlag()){
-				Sequence splitSeq;
+				NucleotideSequence splitSeq;
 				try {
 					String homoPolymer = "";
-					splitSeq = new Sequence(samRecord.getReadString());
+					splitSeq = new NucleotideSequence(samRecord.getReadString());
 					if (recordName.charAt(1) == SAMDefinitions.LEFT_CLIPPED){
 						homoPolymer = splitSeq.getPolyAOrTMapping(MIN_POLYA_LEN, MAX_POLYA_MM, false);
 					}else if(recordName.charAt(1) == SAMDefinitions.RIGHT_CLIPPED){
@@ -463,7 +463,7 @@ public class RefAndMEPairFinder {
 						meReads.put(samRecord.getReadName(), mobileTag);
 					}
 					
-				} catch (InvalidSequenceException e) {
+				} catch (InvalidNucleotideSequenceException e) {
 					logger.error(e.getMessage());
 				} catch (InvalidCategoryException e){
 					logger.error(e.getMessage());
