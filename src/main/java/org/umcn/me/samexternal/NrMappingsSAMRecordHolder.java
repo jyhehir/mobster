@@ -2,7 +2,7 @@ package org.umcn.me.samexternal;
 
 import java.io.PrintWriter;
 
-import org.umcn.me.parsers.FastaParserFast;
+import org.umcn.me.parsers.FastqParser;
 
 import net.sf.samtools.SAMRecord;
 
@@ -46,7 +46,7 @@ public abstract class NrMappingsSAMRecordHolder extends SpecificSAMRecordHolder 
 				readName.append(getReadNumber());
 			}
 			
-			FastaParserFast.writeFastQToStream(outFq, readName.toString(), sequence, qualityString);
+			FastqParser.writeFastQToStream(outFq, readName.toString(), sequence, qualityString);
 		}
 		
 		public void setMinAvgQual(int qual){

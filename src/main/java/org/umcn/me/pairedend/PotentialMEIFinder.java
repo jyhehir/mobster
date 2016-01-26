@@ -8,7 +8,7 @@ import org.apache.log4j.Logger;
 import java.io.*;
 import java.util.*;
 
-import org.umcn.me.parsers.FastaParserFast;
+import org.umcn.me.parsers.FastqParser;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.samexternal.UnknownParamException;
 
@@ -109,7 +109,7 @@ public class PotentialMEIFinder {
 	    	mappingsMate = getNumberOfMappingsOfMate(samRecord, this.mapping_tool, inputSam2);
 			
 			if (isReadPotentialMobile(mappingsRead, mappingsMate, samRecord)){
-				FastaParserFast.writeFastQToStream(outFq, makeFastQHeaderFromSAMRecord(samRecord, this.pair_number_seperator),
+				FastqParser.writeFastQToStream(outFq, makeFastQHeaderFromSAMRecord(samRecord, this.pair_number_seperator),
 						samRecord.getReadString(), samRecord.getBaseQualityString());
 				outputSam.addAlignment(samRecord);
 				nrPotentialMobileReads++;
