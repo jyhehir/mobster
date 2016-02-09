@@ -21,12 +21,6 @@
 	
 	
 	<dependencies>
-	    <dependency>
-            <groupId>org.umcn.gen</groupId>
-            <artifactId>BioInfoBase2</artifactId>
-            <version>1.0</version>
-        </dependency>
-        
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
@@ -57,12 +51,6 @@
 			<groupId>net.sf.picard</groupId>
 			<artifactId>picard</artifactId>
 			<version>1.113</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.biojava</groupId>
-			<artifactId>core</artifactId>
-			<version>1.9.1</version>
 		</dependency>
 		
      </dependencies>
