@@ -8,8 +8,6 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
-import org.umcn.gen.region.InvalidRegionException;
-import org.umcn.gen.region.LabeledRegion;
 import org.umcn.me.pairedend.MobilePrediction;
 
 public class CollectionUtil {
@@ -46,10 +44,10 @@ public class CollectionUtil {
 		return sb.substring(0, sb.length() - 1);
 	}
 	
-	public static Map<LabeledRegion, MobilePrediction> mobilePredictionsToRegions(Vector<MobilePrediction> preds,
+	public static Map<RegionWithLabel, MobilePrediction> mobilePredictionsToRegions(Vector<MobilePrediction> preds,
 			int insecurity){
 		
-		Map<LabeledRegion, MobilePrediction> map  = new HashMap<LabeledRegion, MobilePrediction>();
+		Map<RegionWithLabel, MobilePrediction> map  = new HashMap<RegionWithLabel, MobilePrediction>();
 		
 		int c = 0;
 		
@@ -64,11 +62,9 @@ public class CollectionUtil {
 			
 			String chr = pred.getChromosome();
 			String label = Integer.toString(c);
-			try {
-				map.put(new LabeledRegion(label, chr, start, end), pred);
-			} catch (InvalidRegionException e) {
-				logger.error("Could not convert MobilePrediction to LabeledRegion!");
-			}
+
+			map.put(new RegionWithLabel(label, chr, start, end), pred);
+
 		}
 		
 		return map;

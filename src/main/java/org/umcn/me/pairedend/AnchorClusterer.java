@@ -5,9 +5,6 @@ import net.sf.samtools.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.commons.cli.*;
-import org.umcn.gen.annotation.AnnotatedRegionSet;
-import org.umcn.gen.region.LabeledRegion;
-import org.umcn.gen.region.RegionComparator;
 import org.umcn.me.sam.MateCluster;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMSilentReader;
@@ -25,6 +22,7 @@ import org.umcn.me.util.MobileDefinitions;
 import org.umcn.me.util.ReadName;
 import org.umcn.me.util.ReadNameOption;
 import org.umcn.me.util.ReadNameRetriever;
+import org.umcn.me.util.RegionWithLabel;
 import org.umcn.me.util.SampleBam;
 
 import java.io.File;
@@ -37,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -710,16 +709,16 @@ public class AnchorClusterer {
 	}
 	
 	public static Vector<MobilePrediction> mergePredictions(Vector<MobilePrediction> predictions, int overlapdef, int maxdist){
-		Map<LabeledRegion, MobilePrediction> regionMap = CollectionUtil.mobilePredictionsToRegions(predictions, overlap_default);
-		AnnotatedRegionSet<LabeledRegion> regions = new AnnotatedRegionSet<LabeledRegion>(regionMap.keySet());
+		Map<RegionWithLabel, MobilePrediction> regionMap = CollectionUtil.mobilePredictionsToRegions(predictions, overlap_default);
+		List<RegionWithLabel> regions = new ArrayList<RegionWithLabel>(regionMap.keySet());
 		Set<MobilePrediction> uniquePredictions = new HashSet<MobilePrediction>();
 		
-		regions.sort();
+		Collections.sort(regions);
 		int c = 0;
-		RegionComparator<LabeledRegion, LabeledRegion> rc = new RegionComparator<LabeledRegion, LabeledRegion>();
-		for (LabeledRegion r : regions){
-			AnnotatedRegionSet<LabeledRegion> overlap = rc.getOverlapRegionsFast(r, regions);
-			for (LabeledRegion or : overlap){
+
+		for (RegionWithLabel r : regions){
+			List<RegionWithLabel> overlap = r.overlapsWithSortedRegionList(regions);
+			for (RegionWithLabel or : overlap){
 				if (or.equals(r)){
 					continue;
 				}else{
@@ -730,7 +729,7 @@ public class AnchorClusterer {
 			}
 		}
 		
-		for (LabeledRegion r : regions){
+		for (RegionWithLabel r : regions){
 			uniquePredictions.add(regionMap.get(r));
 		}
 		
@@ -739,11 +738,11 @@ public class AnchorClusterer {
 		logger.info("Number of predictions after merging: " + uniquePredictions.size());
 		
 		
-		Map<LabeledRegion, MobilePrediction> regionMap2 = CollectionUtil.mobilePredictionsToRegions(new Vector<MobilePrediction>(uniquePredictions), overlap_default);
-		AnnotatedRegionSet<LabeledRegion> regions2 = new AnnotatedRegionSet<LabeledRegion>(regionMap2.keySet());
-		regions2.sort();
+		Map<RegionWithLabel, MobilePrediction> regionMap2 = CollectionUtil.mobilePredictionsToRegions(new Vector<MobilePrediction>(uniquePredictions), overlap_default);
+		List<RegionWithLabel> regions2 = new ArrayList<RegionWithLabel>(regionMap2.keySet());
+		Collections.sort(regions2);
 		Vector<MobilePrediction> mergedPredictions =  new Vector<MobilePrediction>();
-		for (LabeledRegion r : regions2){
+		for (RegionWithLabel r : regions2){
 			mergedPredictions.add(regionMap2.get(r));
 		}
 		
@@ -751,8 +750,8 @@ public class AnchorClusterer {
 		
 	}
 	
-	private static boolean mergeMobilePredictions(LabeledRegion r1, LabeledRegion r2,
-			Map<LabeledRegion, MobilePrediction> labeledToMobile, int overlapdef, int maxdist){
+	private static boolean mergeMobilePredictions(RegionWithLabel r1, RegionWithLabel r2,
+			Map<RegionWithLabel, MobilePrediction> labeledToMobile, int overlapdef, int maxdist){
 		
 		MobilePrediction m1 = labeledToMobile.get(r1);
 		MobilePrediction m2 = labeledToMobile.get(r2);
