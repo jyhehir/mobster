@@ -1,8 +1,11 @@
 package org.umcn.me.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
@@ -118,6 +121,24 @@ public class CollectionUtil {
 		mapCopy.retainAll(map2Keys);
 
 		return mapCopy;
+	}
+	
+	/**
+	 * 
+	 * @param regions
+	 * @param chromosome 
+	 * @return A copy of list regions with only the regions retained coming from chromosome as specified by user
+	 */
+	public static List<RegionWithLabel> getSortedRegionsFromChromosome(List<RegionWithLabel> regions, String chromosome){
+		List<RegionWithLabel> regionsFromChromosome = new ArrayList<RegionWithLabel>();
+		
+		for (RegionWithLabel region : regions){
+			if(region.chr.equals(chromosome)){
+				regionsFromChromosome.add(region);
+			}
+		}
+		Collections.sort(regionsFromChromosome);
+		return regionsFromChromosome;
 	}
 	
 }

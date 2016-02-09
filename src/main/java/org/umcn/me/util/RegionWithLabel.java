@@ -38,11 +38,21 @@ public class RegionWithLabel implements Comparable<RegionWithLabel> {
 	 * @return Overlapping regions are returned. If regions were not sorted then return is undefined.
 	 */
 	public List<RegionWithLabel> overlapsWithSortedRegionList(List<RegionWithLabel> regions){
-		//RegionWithLabel dummyRegion = new RegionWithLabel("1", this.chr, Integer.MIN_VALUE, Integer.MIN_VALUE);
+		
+		List<RegionWithLabel> regionsFromSameChromosome = CollectionUtil.getSortedRegionsFromChromosome(regions, this.chr);
 		List<RegionWithLabel> overlap = new ArrayList<RegionWithLabel>();
-		for (RegionWithLabel otherRegion : regions){
+		
+		boolean foundOverlap = false;		
+		
+		for (RegionWithLabel otherRegion : regionsFromSameChromosome){
 			if (this.overlapsWith(otherRegion)){
 				overlap.add(otherRegion);
+				foundOverlap = true;
+			}else{
+				if (foundOverlap){ //the list was sorted so if we had previously had found overlap and now not anymore,
+					//no overlap will be found anymore.
+					break;
+				}
 			}
 		}
 		
