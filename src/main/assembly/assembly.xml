@@ -11,4 +11,15 @@
             <useProjectArtifact>true</useProjectArtifact>
 		</dependencySet>
 	</dependencySets>
+		<fileSets>
+		<!--  do not put properties in the assembly but do filter the files in properties -->
+		 <fileSet>
+			<directory>src/main/resources/properties</directory>
+			<excludes>
+				<exclude>*</exclude>
+			</excludes>
+			<outputDirectory>/</outputDirectory>
+			<filtered>true</filtered>
+		</fileSet>
+	</fileSets>
 </assembly>

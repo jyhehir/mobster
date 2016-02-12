@@ -28,6 +28,7 @@ import org.umcn.me.util.SampleBam;
 import java.io.File;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.FileWriter;
 import java.io.InputStream;
@@ -89,7 +90,7 @@ public class AnchorClusterer {
 	public static Logger logger = Logger.getLogger("AnchorClusterer");
 	
 	private static final int FILTER_REGION = 90;
-	private static final String VERSION = "0.1.8";
+	private static final String VERSION;
 	
 	private static int mean_frag_size = 470;
 	private static int sd_frag_size = 35;
@@ -114,6 +115,17 @@ public class AnchorClusterer {
 	
 	private static Properties mobster_properties;
 	
+	static{
+		Properties prop = new Properties();
+		try {
+			prop.load(Mobster.class.getResourceAsStream("/properties/version.properties"));
+		} catch (FileNotFoundException e) {
+			logger.error("Could not load Mobster properties", e);
+		} catch (IOException e) {
+			logger.error("Could not read Mobster properties", e);
+		}
+		VERSION = prop.getProperty("version");
+	}
 	
 	public static String getVersionAndParameterInfo(String[] params){
 		StringBuilder sb = new StringBuilder();

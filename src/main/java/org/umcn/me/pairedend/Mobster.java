@@ -2,6 +2,7 @@ package org.umcn.me.pairedend;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -20,7 +21,19 @@ public class Mobster {
 	public static String inFile = null;
 	public static String outFile = null;
 	public static String sampleName = null;
-	public static final String VERSION = "0.1.8";
+	public static final String VERSION;
+	
+	static{
+		Properties prop = new Properties();
+		try {
+			prop.load(Mobster.class.getResourceAsStream("/properties/version.properties"));
+		} catch (FileNotFoundException e) {
+			logger.error("Could not load Mobster properties", e);
+		} catch (IOException e) {
+			logger.error("Could not read Mobster properties", e);
+		}
+		VERSION = prop.getProperty("version");
+	}
 	
 	public static void main(String[] args) {
 		
