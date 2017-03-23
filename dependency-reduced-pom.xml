@@ -4,10 +4,6 @@
   <groupId>org.umcn.gen</groupId>
   <artifactId>MobileInsertions</artifactId>
   <version>0.2.0</version>
-  <scm>
-    <connection>scm:svn:svn://russell/srv/svnrepo/MobileInsertions/trunk</connection>
-    <developerConnection>scm:svn:svn://russell/srv/svnrepo/MobileInsertions/trunk</developerConnection>
-  </scm>
   <build>
     <resources>
       <resource>

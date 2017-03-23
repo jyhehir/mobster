@@ -13,7 +13,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 	
-	
+
 	
 	<dependencies>
         <dependency>
@@ -50,11 +50,17 @@
 		
      </dependencies>
      
-	
-         <scm>
-		<connection>scm:svn:svn://russell/srv/svnrepo/MobileInsertions/trunk</connection>
-		<developerConnection>scm:svn:svn://russell/srv/svnrepo/MobileInsertions/trunk</developerConnection>
-   </scm>
+
+  <repositories>
+	  	<repository>
+      		<snapshots>
+        		<enabled>false</enabled>
+      		</snapshots>
+      		<id>central</id>
+      		<name>Central Repository</name>
+      		<url>http://repo.maven.apache.org/maven2</url>
+    	</repository>
+	  </repositories>
    
       <build>
       	<resources>
