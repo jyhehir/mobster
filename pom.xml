@@ -6,7 +6,7 @@
 
     <groupId>org.umcn.gen</groupId>
     <artifactId>MobileInsertions</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
     
 
 	<properties>
@@ -52,14 +52,15 @@
      
 
   <repositories>
-	  	<repository>
-      		<snapshots>
-        		<enabled>false</enabled>
-      		</snapshots>
-      		<id>central</id>
-      		<name>Central Repository</name>
-      		<url>http://repo.maven.apache.org/maven2</url>
-    	</repository>
+ 	<repository>
+        <id>local-maven-repo</id>
+        <url>file:///${project.parent.basedir}/lib/jar</url>
+    </repository>
+	<repository>
+    	<id>central</id>
+        <url>http://central.maven.org/maven2/</url>
+    </repository>
+
 	  </repositories>
    
       <build>
