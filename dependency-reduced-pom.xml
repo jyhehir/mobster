@@ -62,16 +62,12 @@
   </build>
   <repositories>
     <repository>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>central</id>
-      <name>Central Repository</name>
-      <url>http://repo.maven.apache.org/maven2</url>
-    </repository>
-    <repository>
       <id>local-maven-repo</id>
       <url>file:///${project.parent.basedir}/lib/jar</url>
+    </repository>
+    <repository>
+      <id>central</id>
+      <url>http://central.maven.org/maven2/</url>
     </repository>
   </repositories>
   <dependencies>
@@ -80,27 +76,6 @@
       <artifactId>junit</artifactId>
       <version>4.8.2</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>java-yield</groupId>
-      <artifactId>java-yield</artifactId>
-      <version>1.0-SLIMJAR</version>
-      <scope>system</scope>
-      <systemPath>D:\GIT\mobile-insertions/lib/jar/java-yield-1.0-SLIMJAR.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>net.sf.samtools</groupId>
-      <artifactId>samtools</artifactId>
-      <version>1.113</version>
-      <scope>system</scope>
-      <systemPath>D:\GIT\mobile-insertions/lib/jar/samtools-1.113.jar</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>net.sf.picard</groupId>
-      <artifactId>picard</artifactId>
-      <version>1.113</version>
-      <scope>system</scope>
-      <systemPath>D:\GIT\mobile-insertions/lib/jar/picard-1.113.jar</systemPath>
     </dependency>
   </dependencies>
   <properties>
