@@ -62,21 +62,29 @@
   </build>
   <repositories>
     <repository>
+<<<<<<< HEAD
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
       <id>apache</id>
       <name>Central Repository</name>
       <url>http://repo.maven.apache.org/maven2/</url>
+=======
+      <id>local-maven-repo</id>
+      <url>file:///${project.parent.basedir}/lib/jar</url>
+>>>>>>> 8deb1724bee52751ca66b8f81e1aa481786874c1
     </repository>
     <repository>
       <id>central</id>
       <url>http://central.maven.org/maven2/</url>
     </repository>
+<<<<<<< HEAD
     <repository>
       <id>local-maven-repo</id>
       <url>file:///${project.parent.basedir}/lib/jar</url>
     </repository>
+=======
+>>>>>>> 8deb1724bee52751ca66b8f81e1aa481786874c1
   </repositories>
   <dependencies>
     <dependency>
