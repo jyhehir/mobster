@@ -15,4 +15,4 @@ cd ../..
 mvn compile -U
 mvn package
 
-echo "Complete"
+cp ./lib/Mobster.properties ./target
