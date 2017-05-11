@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<title>Mobster: Mobile Element Insertion Detection in NGS data</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="Description" lang="en" content="Mobster. Mobster is a bioinformatics tool for detection of non-reference mobile element insertions in next generation sequencing data.">
+		<meta name="robots" content="index, follow">
+
+		<!-- icons -->
+		<link rel="mobster-icon" href="assets/img/mobster-icon-reduced.png">
+		<link rel="mobster-icon" href="assets/img/mobster-icon-reduced.png">
+
+		<!-- Bootstrap Core CSS file -->
+		<link rel="stylesheet" href="assets/css/bootstrap.css">
+
+		<!-- Override CSS file - add your own CSS rules -->
+		<link rel="stylesheet" href="assets/css/styles.css">
+
+		<!-- Conditional comment containing JS files for IE6 - 8 -->
+		<!--[if lt IE 9]>
+			<script src="assets/js/html5.js"></script>
+			<script src="assets/js/respond.min.js"></script>
+		<![endif]-->
+	</head>
+	<body>
+
+		<!-- Navigation -->
+	    <nav class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+			<div class="container-fluid">
+
+				<!-- Brand and toggle get grouped for better mobile display -->
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="index.html"><img src="assets/img/logo_mobster_white_web_v2_reduced.png" alt="Mobster"></a>
+				</div>
+				<!-- /.navbar-header -->
+
+				<!-- Collect the nav links, forms, and other content for toggling -->
+				<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+					<ul class="nav navbar-nav">
+						<li><a href="index.html">Home</a></li>
+						<li><a href="downloads.html">Downloads</a></li>
+						<li><a href="documentation.html">Documentation</a></li>
+						<li><a href="faq.html">FAQ</a></li>
+						<li><a href="contact.html">Citing and Contact</a></li>
+					</ul>
+				</div>
+				<!-- /.navbar-collapse -->
+			</div>
+			<!-- /.container-fluid -->
+		</nav>
+		<!-- /.navbar -->
+
+		<!-- Page Content -->
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-sm-12">
+					<!-- Page Heading -->
+					<h1><b>Frequently asked questions</b></h1>
+					<hr>
+
+					<!-- Paragraphs -->
+					<h4>Q1. Can I use Mobster on different organisms?</h4>
+					Mobster has been designed and tested specifically for human data. However it is possible to run Mobster on different organisms by changing the mobilome.
+					Please see the <a href="documentation.html">Documentation</a> section for more information.
+					<hr>
+					<h4>Q2. I am getting the following error: Exception in thread "main" java.lang.OutOfMemoryError: GC overhead limit exceeded</h4>
+					Try feeding Mobster with more memory through the <code>-Xmx</code> argument. E.g. <code>java -Xmx8G -cp "./*" org.umcn.me.pairedend.Mobster</code>
+					for reserving 8Gb of memory. When increasing the amount of reserved memory does not help, it might be the case that some of the read groups in your BAM file are of low quality.
+If a relatively high percentage of reads are unmapped or discordantly mapped, they will fill up the memory. You can check the
+statistics of mapping using Picard or samtools and then remove the appropriate read groups from your BAM file.
+					<hr>
+					<h4>Q3. Can I do multiple sample calling / trio analysis with Mobster?</h4>
+					Yes, you can. For instance if you would like to do a trio analysis, you would invoke Mobster as followed:<br>
+					<code>java -Xmx8G -cp "./*" org.umcn.me.pairedend.Mobster -properties Mobster_latest.properties -in A1_child.bam,A1_father.bam,A1_mother.bam -sn A1_child,A1_father,A1_mother -out A1_trio_mobster</code><br>
+					Make sure that the bam files provided to the -in argument match the sample names provided to the -sn argument. BAM files and sample names should be comma separated.<br>
+					In addition Mobster can also be run on single BAM files which contain multiple samples as long as they have proper readgroup tags with a provided sample name per tag.
+					<hr>
+					<h4>Q4. I want to convert Mobsters predictions to VCF, is this possible?</h4>
+					Yes, this is easy to do with the tool <a href="https://github.com/jyhehir/mobster/raw/develop/resources/MobsterVCF/MobsterVCF-0.0.1-SNAPSHOT.jar">MobsterToVCF</a>
+					<hr>
+					<h4>Q5. How can I increase the speed of the mobilome mapping step</h4>
+					An easy way to increase the mobilome mapping speed is to modify the property <code>MOBIOME_MAPPING_CMD</code> in the properties file used for Mobster.
+					In the value of this property it says somewhere: <code>-p 2</code>. Change the value of 2 to the number of processors you have available.<br><br>
+					In addition or alternatively you can change the hash size of the mobilome. For this you need to recreate the mobilome with <code>MosaikBuild</code> and
+					<code>MosaikJump</code> using a larger hash size (<code>-hs</code>), e.g. 13. After recreation of the mobilome you will need to change the <code>MOBIOME_MAPPING_CMD</code>
+					to match your newly created database and in addition you will need to match the <code>-hs</code> parameter.
+					<hr>
+					<h4>Q6. I am getting the following error: Exception in thread "main" java.lang.IllegalArgumentException: Comparison method violates its general contract! How to fix this?</h4>
+					When invoking mobster provide the following argument to the java virtual machine: <code>-Djava.util.Arrays.useLegacyMergeSort=true</code><br>
+					E.g.:<br>
+					<code>java -Xmx8g -Djava.util.Arrays.useLegacyMergeSort=true -cp ...</code><br><br>
+					<b>Note this error should not occur anymore with Mobster versions 0.2.0 and higher</b>
+					<hr>
+
+				</div>
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /.container-fluid -->
+
+		<!-- JQuery scripts -->
+	    <script src="assets/js/jquery-1.11.2.min.js"></script>
+
+		<!-- Bootstrap Core scripts -->
+		<script src="assets/js/bootstrap.min.js"></script>
+  </body>
+</html>

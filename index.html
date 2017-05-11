@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<title>Mobster: Mobile Element Insertion Detection in NGS data</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="Description" lang="en" content="Mobster. Mobster is a bioinformatics tool for detection of non-reference mobile element insertions in next generation sequencing data.">
+		<meta name="robots" content="index, follow">
+
+		<!-- icons -->
+		<link rel="mobster-icon" href="assets/img/mobster-icon-reduced.png">
+		<link rel="mobster-icon" href="assets/img/mobster-icon-reduced.png">
+
+		<!-- Bootstrap Core CSS file -->
+		<link rel="stylesheet" href="assets/css/bootstrap.css">
+
+		<!-- Override CSS file - add your own CSS rules -->
+		<link rel="stylesheet" href="assets/css/styles.css">
+
+		<!-- Conditional comment containing JS files for IE6 - 8 -->
+		<!--[if lt IE 9]>
+			<script src="assets/js/html5.js"></script>
+			<script src="assets/js/respond.min.js"></script>
+		<![endif]-->
+	</head>
+	<body>
+
+		<!-- Navigation -->
+	    <nav class="navbar navbar-fixed-top navbar-inverse" role="navigation">
+			<div class="container-fluid">
+
+				<!-- Brand and toggle get grouped for better mobile display -->
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand" href="index.html"><img src="assets/img/logo_mobster_white_web_v2_reduced.png" alt="Mobster"></a>
+				</div>
+				<!-- /.navbar-header -->
+
+				<!-- Collect the nav links, forms, and other content for toggling -->
+				<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+					<ul class="nav navbar-nav">
+						<li><a href="index.html">Home</a></li>
+						<li><a href="downloads.html">Downloads</a></li>
+						<li><a href="documentation.html">Documentation</a></li>
+						<li><a href="faq.html">FAQ</a></li>
+						<li><a href="contact.html">Citing and Contact</a></li>
+					</ul>
+				</div>
+				<!-- /.navbar-collapse -->
+			</div>
+			<!-- /.container-fluid -->
+		</nav>
+		<!-- /.navbar -->
+
+		<!-- Page Content -->
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-sm-12">
+
+					<!-- Page Heading -->
+					<h1><b>Mobster</b>: detection of mobile element insertions in NGS data</h1>
+					<hr>
+
+					<!-- Paragraphs -->
+					<h3>About Mobster</h3>
+					<p class="lead">Mobster is a tool written in Java which can detect non-reference mobile element (transposon) insertions in next generation sequencing data.</p>
+					<p>Mobster works on BAM files as input and uses both discordant and split reads to detect mobile element insertions (MEIs). Discordant reads and split reads are mapped to a database of consensus sequences of active mobile elements.
+					When multiple reads, originating from the same genomic region are aligned to the same mobile element family a potential insertion has been found.</p>
+					<p>For more detailed information, please read our <a href="http://genomebiology.biomedcentral.com/articles/10.1186/s13059-014-0488-x" target="_blank">Genome Biology article</a></p>
+					<hr>
+
+				</div>
+			</div>
+			<!-- /.row -->
+		</div>
+		<!-- /.container-fluid -->
+
+		<!-- JQuery scripts -->
+	    <script src="assets/js/jquery-1.11.2.min.js"></script>
+
+		<!-- Bootstrap Core scripts -->
+		<script src="assets/js/bootstrap.min.js"></script>
+  </body>
+</html>

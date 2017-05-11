@@ -1,0 +1,60 @@
+/*------------------------------------*\
+	#OVERRIDE STLES
+	This style sheet can be used for two different functions:
+	1. Override specific Bootstrap styles.
+	2. Add your own styles.
+\*------------------------------------*/
+
+/**
+ * Padding-top is required if using .navbar-fixed-top.
+ * This can be removed Remove if using .navbar-static-top.
+ * The height may need to be changed if the height of you
+ * navigation changes.
+*/
+
+body { padding-top: 70px; }
+
+
+
+/**
+ * Bootstrap requires a containing element to wrap site contents 
+ * and house the grid system. You may choose one of two containers.
+ * Use .container for a responsive fixed width container.
+ * Use .container-fluid for a full width container.
+ 
+ * If using container-fluid, you may need to set a maximum width, 
+ * so that the container will not spread to the entire viewport.
+*/
+
+.container-fluid { max-width: 1200px; }
+
+
+
+/**
+ * Bootstrap pushes the .navbar-brand over to the left, which may not suit.
+ * This can be overridden using the following rule:
+*/
+
+.navbar>.container .navbar-brand, 
+.navbar>.container-fluid .navbar-brand { margin-left: 0; }
+
+
+
+/**
+ * At small screen, padding can be added around the branding 
+ * image so that it lines up with the navbar toggle.
+*/
+
+.navbar-fixed-top .navbar-brand { padding: 0px 0 15px 15px; }
+
+
+
+/**
+ * At mid to wide screen, padding can be added around the branding 
+ * image so that it lines up with the navigation items.
+*/
+
+@media (min-width:768px)
+{
+	.navbar-fixed-top .navbar-brand { padding: 0px 20px 0 0; }
+}
