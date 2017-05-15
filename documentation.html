@@ -65,17 +65,21 @@
 					<!-- Page Heading -->
 					<h1><b>Mobster documentation</b></h1>
 					<hr>
+					<br> Mobster is built using maven, and assumes that this is in your path. To build mobster run "install.sh" this will package the required classes into a fat executable jar in the "target" directory. Typically called MobileInsertions-.jar. For example MobileInsertions-0.2.2.jar.
 
 					<!-- Paragraphs -->
 					<h3>Installation</h3>
 					<code>cd &#60;dir containing mobster</code><br>
-<code>./install_additions.sh</code>
+<code>./install.sh</code>
 <br><br>
 Install MOSAIK manually (we have tested Mobster with MOSAIK v 2.1.33)
 Try the binaries directly or try building from source<br>
 <code>wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/mosaik-aligner/MOSAIK-2.1.33-Linux-x64.tar</code><br>or<br>
 <code>wget https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/mosaik-aligner/MOSAIK-2.1.33-source.tar</code><br><br>
 
+Or try installing via bioconda or visiting <a href="https://github.com/wanpinglee/MOSAIK.git">MOSAIC at github</a>
+<br>
+Don't forget to update Mobster.properties to include the location for MOSAIK.<br>
 Finally add the Mosaik binaries like MosaikBuild to your $PATH, you can do this by:<br>
 <code>
 cd<br>
