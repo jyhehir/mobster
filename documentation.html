@@ -247,6 +247,11 @@ Now filter out known reference MEIs using your own scripts or for instance conve
 					</ol>
 					<br>
 					<hr>
+					<h3>Changing the genome build</h3>
+					By default Mobster is configured to run with HG19, but it can be configured to run for different builds of the Human Genome.
+					You can change the genome build by modifying the property<code>REPEATMASK_FILE</code>  in <code>Mobster.properties</code> to the location of the hg38 repeast mask file by <code>REPEATMASK_FILE=../resources/repmask/alu_l1_herv_sva_other_grch38_ucsc_repeatmasker.txt</code><br>
+					<hr>
+					<br>
 				</div>
 			</div>
 			<!-- /.row -->
@@ -260,3 +265,8 @@ Now filter out known reference MEIs using your own scripts or for instance conve
 		<script src="assets/js/bootstrap.min.js"></script>
   </body>
 </html>
+<br>
+					<hr>
+					<h3>Converting to VCF</h3>
+					You can convert the <code>*_predictions.txt</code> file to VCF using <a href="downloads.html">MobsterToVCF</a>.<br>
+					<code> java -jar MobsterVCF-&#60;version&gt;.jar -file &lt;input_file&gt; -out &#60;output_vcf&gt; </code>
