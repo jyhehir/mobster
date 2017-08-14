@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+echo "Downloading additional resources"
+git lfs pull
 
 echo "Starting mobster build..."
 
