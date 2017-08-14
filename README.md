@@ -13,8 +13,10 @@ bioconda or git clone https://github.com/wanpinglee/MOSAIK.git
 Don't forget to update Mobster.properties to include the location for MOSAIK
 
 #Testing the install
+
 Try running Mobster with the sample bam provided
-java -Xmx8G -jar MobileInsertions-0.2.2.jar -properties Mobster.properties -out TestSample_
+
+java -Xmx8G -jar MobileInsertions-0.2.2.jar -properties Mobster.properties -out TestSample
 
 Important:
 * Its best to use the properties file Mobster_latest.properties contained within the zip of the modified version of Mobster.
