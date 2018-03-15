@@ -283,7 +283,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 		return getClusterEnd() - getClusterStart() + 1;
 	}
 	
-	public void writeClusterToSAMWriter(SAMFileWriter writer, String name){
+	public void writeClusterToSAMWriter(SAMFileWriter writer, String name, boolean prepend){
 		StringBuilder cigar = new StringBuilder();
 		StringBuilder referenceBuilder = new StringBuilder();
 		MobileSAMTag meTag = new MobileSAMTag();
@@ -292,7 +292,7 @@ public class MateCluster<T extends SAMRecord> extends Vector<T> {
 
 			meTag.parse(this.firstElement().getAttribute(MobileDefinitions.SAM_TAG_MOBILE).toString());
 			
-			if (!reference.startsWith("chr")){
+			if (prepend && !reference.startsWith("chr")){
 				referenceBuilder.append("chr");
 			}
 			referenceBuilder.append(reference);

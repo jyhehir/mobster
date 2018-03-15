@@ -83,4 +83,22 @@ public class ReadNameRetrieverTest extends TestCase {
 		}
 	}
 	
+	public void testNoAutoPrefixingReads(){
+		ReadNameOption option = new ReadNameOption.Builder().addRegion(true).autoPrefixReference(false).build();
+		
+		ReadNameRetriever retriever = new ReadNameRetriever(this.sam, option);
+		int c = 0;
+		
+		for (ReadName name : retriever){
+			c++;
+			if (c == 2){
+				assertEquals("1", name.reference);
+			}
+			
+			if (c == 5){
+				assertEquals("1", name.reference);
+			}
+		}
+	}
+	
 }

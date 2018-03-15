@@ -92,6 +92,7 @@ public abstract class MobileDefinitions {
 	public static final String MINIMUM_TOTAL_HITS = "MINIMUM_SUPPORTING_READS";
 	public static final String MINIMUM_INITIAL_SPLIT_CLUSTER_READS = "MINIMUM_INITIAL_SPLIT_CLUSTER_READS";
 	public static final String REPEAT_MASK_FILE = "REPEATMASK_FILE";
+        public static final String PREFIX_REFERENCE = "PREFIX_REFERENCE";
 	
 	public static final String MOBIOME_MAPPING_CMD = "MOBIOME_MAPPING_CMD";
 	public static final String PICARD_COLLECT_INSERT_METRICS = "PICARD_COLLECT_INSERT_SIZE_METRICS_JAR";
