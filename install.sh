@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 echo "Downloading additional resources"
 git lfs pull
-gunzup ./resources/repmask/alu_l1_herv_sva_other_grch38_ucsc_repeatmasker.txt.gz
-gunzup ./resources/repmask/alu_l1_herv_sva_other_grch38_ucsc_accession_repeatmasker.txt.gz
+gunzip ./resources/repmask/alu_l1_herv_sva_other_grch38_ucsc_repeatmasker.txt.gz
+gunzip ./resources/repmask/alu_l1_herv_sva_other_grch38_ucsc_accession_repeatmasker.txt.gz
 
 echo "Starting mobster build..."
 
