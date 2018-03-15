@@ -9,16 +9,21 @@ Mobster is built using maven, and assumes that this is in your path. To build mo
 Mobster also requires MOSAIK to be installed,
 this can be done via
 bioconda or git clone https://github.com/wanpinglee/MOSAIK.git
-
 Don't forget to update Mobster.properties to include the location for MOSAIK
 
+To install mobster and all especially its resources git lfs is required.
+https://help.github.com/articles/installing-git-large-file-storage/
+
+
 #Testing the install
+
 Try running Mobster with the sample bam provided
-java -Xmx8G -jar MobileInsertions-0.2.2.jar -properties Mobster.properties -out TestSample_
+
+java -Xmx8G -jar MobileInsertions-0.2.2.jar -properties Mobster.properties -out TestSample
 
 Important:
-* Its best to use the properties file Mobster_latest.properties contained within the zip of the modified version of Mobster.
-* if you want to turn on multiple sample calling, make sure you set the property MULTIPLE_SAMPLE_CALLING=false to true. (the default is false)
+* Due to their size the test files and are number of the resources are stored with git lfs. These will not be retreived with the initial git clone, but will be downloaded when you run the install.sh
+* If you want to turn on multiple sample calling, make sure you set the property MULTIPLE_SAMPLE_CALLING=false to true. (the default is false)
 * You can set the READ_LENGTH property to whatever value is appropriate for your BAM file in the properties file
 * In this version of Mobster, Mobster will accept all kinds of BAM files from different mappers. In the property file MAPPING_TOOL is set to unspecified and MINIMUM_MAPQ_ANCHOR is set to 20. I would leave this as is.
 * Most of the other default settings in the property file should be fine, to be a bit more sensitive you can lower the MINIMUM_POLYA_LENGTH to 7
