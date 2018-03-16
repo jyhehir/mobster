@@ -112,6 +112,7 @@ public class AnchorClusterer {
 	private static int memory;
 	
 	private static String repmask_file = "./hg19_alul1svaerv.txt";
+	private static boolean usePrefixReference = true;
 	
 	private static Properties mobster_properties;
 	
@@ -291,7 +292,10 @@ public class AnchorClusterer {
 		if (props.containsKey(MobileDefinitions.REPEAT_MASK_FILE)){
 			repmask_file = props.getProperty(MobileDefinitions.REPEAT_MASK_FILE).trim();
 		}
-		
+		if (props.containsKey(MobileDefinitions.PREFIX_REFERENCE)) {
+			usePrefixReference = Boolean.getBoolean(props.getProperty(MobileDefinitions.PREFIX_REFERENCE));
+		}
+				
 		if (props.containsKey(MobileDefinitions.SPLIT_ANCHOR_FILE)){
 			splitAnchor = new File(props.getProperty(MobileDefinitions.SPLIT_ANCHOR_FILE).trim());
 			splitAnchorIndex = new File(props.getProperty(MobileDefinitions.SPLIT_ANCHOR_FILE).trim().replaceAll(".bam$", ".bai"));
@@ -325,7 +329,7 @@ public class AnchorClusterer {
 
 		logger.info("Using simple clustering with search area of: " + search);
 			
-		runSimpleAnchorClusterer(anchor, anchorIndex, clusterBam, search, rpc);
+		runSimpleAnchorClusterer(anchor, anchorIndex, clusterBam, search, rpc, usePrefixReference);
 
 		
 		//Step 3: Make single & double cluster predictions out of the clusters
@@ -339,7 +343,7 @@ public class AnchorClusterer {
 			if(splitAnchor != null){
 				logger.info("Number of initial minimum hits for split clusters:" + min_initial_cluster_size_split);
 				clusterSplitAnchorsToBAM(splitAnchor, splitAnchorIndex,
-						new File(outPrefix + "_splitcluster.bam"), min_initial_cluster_size_split);
+						new File(outPrefix + "_splitcluster.bam"), min_initial_cluster_size_split, usePrefixReference);
 				
 //			execCommand(samdir + "samtools sort " + line.getOptionValue("out") + "_splitcluster.bam" +
 //			 " " + line.getOptionValue("out") + "_splitcluster_sorted");
@@ -381,8 +385,8 @@ public class AnchorClusterer {
 			
 			if (grips_mode){
 				//Prestep 1 for GRIPS: extracting the read names
-				anchorReads = extractReadnames(anchor);
-				splitAnchorReads = extractReadnames(splitAnchor);
+				anchorReads = extractReadnames(anchor,props);
+				splitAnchorReads = extractReadnames(splitAnchor,props);
 				
 				
 				System.out.println("Anchor reads size: " + anchorReads.size());
@@ -506,8 +510,9 @@ public class AnchorClusterer {
 		}
 	}
 
-	public static List<ReadName> extractReadnames(File anchor) {
-		ReadNameOption option = new ReadNameOption.Builder().addRegion(true).autoPrefixReference(true).build();
+	public static List<ReadName> extractReadnames(File anchor, Properties props) {
+		boolean usePrefixReference = Boolean.getBoolean(props.getProperty(MobileDefinitions.PREFIX_REFERENCE));
+		ReadNameOption option = new ReadNameOption.Builder().addRegion(true).autoPrefixReference(usePrefixReference).build();
 		ReadNameRetriever retriever = new ReadNameRetriever(anchor, option);
 		List<ReadName> reads = new ArrayList<ReadName>();
 		
@@ -589,7 +594,7 @@ public class AnchorClusterer {
 
 				logger.info("Using simple clustering with search area of: " + search);
 					
-				runSimpleAnchorClusterer(anchor, anchorIndex, clusterBam, search, rpc);
+				runSimpleAnchorClusterer(anchor, anchorIndex, clusterBam, search, rpc, true);
 
 				
 				//Step 2: coordinate sorting the clusters (each cluster is a
@@ -609,7 +614,7 @@ public class AnchorClusterer {
 				if(splitAnchor != null){
 					logger.info("Number of initial minimum hits for split clusters:" + min_initial_cluster_size_split);
 					clusterSplitAnchorsToBAM(splitAnchor, splitAnchorIndex,
-							new File(line.getOptionValue("out") + "_splitcluster.bam"), min_initial_cluster_size_split);
+							new File(line.getOptionValue("out") + "_splitcluster.bam"), min_initial_cluster_size_split, true);
 					
 //					execCommand(samdir + "samtools sort " + line.getOptionValue("out") + "_splitcluster.bam" +
 //					 " " + line.getOptionValue("out") + "_splitcluster_sorted");
@@ -919,6 +924,14 @@ public class AnchorClusterer {
 		
 		options.addOption(OptionBuilder.create("repmask"));
 		
+		OptionBuilder.withArgName("Boolean");
+		OptionBuilder.hasArg();
+		OptionBuilder.withDescription("If chromosomes should have the prefix 'chr' added to their dictionary " +
+				usePrefixReference);
+		
+		options.addOption(OptionBuilder.create("usePrefixReference"));
+		
+		
 		OptionBuilder.withArgName(".bam");
 		OptionBuilder.hasArg();
 		OptionBuilder.withDescription("Coordinate sorted split anchor file");
@@ -1003,13 +1016,13 @@ public class AnchorClusterer {
 	 * @param minReads number of reads a cluster has to have, otherwise potential cluster is
 	 * thrown away.
 	 */
-	public static void runSimpleAnchorClusterer(File anchor, File index, File clusterBam, int searchRegion, int minReads){
+	public static void runSimpleAnchorClusterer(File anchor, File index, File clusterBam, int searchRegion, int minReads, boolean prepend){
 
 		SAMFileReader input = new SAMSilentReader(anchor, index);
 		SAMFileHeader header = input.getFileHeader();
 		SampleBam sampleCalling = SampleBam.SINGLESAMPLE;
 		
-		header = editSAMFileHeader(header);
+		header = editSAMFileHeader(header, prepend);
 		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(clusterBam, header, new File(TMP), memory, SAMFileHeader.SortOrder.coordinate);
 		
 		Vector<MateCluster<SAMRecord>> mobileClusters = new Vector<MateCluster<SAMRecord>>();
@@ -1018,6 +1031,7 @@ public class AnchorClusterer {
 		int skippedClustersBecauseOfNotSameRefMapping = 0;
 		double minPercentSameMateRefMapping = 0.0;
 		int maxDiffMateMapping = Integer.MAX_VALUE;
+		boolean usePrefixReference = true;
 		
 		if (mobster_properties.containsKey(MobileDefinitions.GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING)){
 			minPercentSameMateRefMapping = Double.parseDouble(mobster_properties.getProperty(MobileDefinitions.GRIPS_MIN_PERCENT_SAME_REF_MATE_MAPPING));
@@ -1026,6 +1040,9 @@ public class AnchorClusterer {
 		if (mobster_properties.containsKey(MobileDefinitions.GRIPS_MAX_DIFF_MATE_MAPPINGS)){
 			maxDiffMateMapping = Integer.parseInt(mobster_properties.getProperty(MobileDefinitions.GRIPS_MAX_DIFF_MATE_MAPPINGS));
 		}
+		
+		if (mobster_properties.containsKey(MobileDefinitions.PREFIX_REFERENCE))
+			usePrefixReference = Boolean.getBoolean(mobster_properties.getProperty(MobileDefinitions.PREFIX_REFERENCE));
 		
 		logger.info("Using a minPercentSameMateRefMapping threshold of: " + minPercentSameMateRefMapping);
 		logger.info("Using a max different mate chr threshold of: " + maxDiffMateMapping);
@@ -1048,7 +1065,7 @@ public class AnchorClusterer {
 				}else if(currentCluster.size() >= minReads){
 					if (currentCluster.getHighestPercentageOfMateAlignmentsToSameChrosome(true) >= minPercentSameMateRefMapping
 							&& currentCluster.getNumberOfDifferentChromosomeMappingsOfMates(true) <= maxDiffMateMapping){
-						currentCluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
+						currentCluster.writeClusterToSAMWriter(outputSam, Integer.toString(c), usePrefixReference);
 						c++;
 					}else{
 						skippedClustersBecauseOfNotSameRefMapping++;
@@ -1071,7 +1088,7 @@ public class AnchorClusterer {
 		//Write anchors to clusters.bam which have not been written yet.
 		for (MateCluster<SAMRecord> cluster : mobileClusters){
 			if (cluster.size() >= minReads){
-				cluster.writeClusterToSAMWriter(outputSam, Integer.toString(c));
+				cluster.writeClusterToSAMWriter(outputSam, Integer.toString(c), usePrefixReference);
 			}
 		}
 		logger.info("Number of skipped clusters because mates do not align to same chromosome:" + skippedClustersBecauseOfNotSameRefMapping);
@@ -1081,7 +1098,7 @@ public class AnchorClusterer {
 		outputSam.close();
 	}
 	
-	public static void clusterSplitAnchorsToBAM(File anchor, File index, File outBam, int minClustersize){
+	public static void clusterSplitAnchorsToBAM(File anchor, File index, File outBam, int minClustersize, boolean prepend){
 		
 		SampleBam sampleCalling = SampleBam.SINGLESAMPLE;
 		
@@ -1102,8 +1119,8 @@ public class AnchorClusterer {
 		int d = 0;
 		
 		//convert reference names in SAM header from 1 to -> chr1 etc.
-		header = editSAMFileHeader(header);
-		header2 = editSAMFileHeader(header2);
+		header = editSAMFileHeader(header, prepend);
+		header2 = editSAMFileHeader(header2, prepend);
 		SAMFileWriter outputSam = SAMWriting.makeSAMWriter(outBam, header, new File(TMP), memory, SAMFileHeader.SortOrder.coordinate);
 				
 		for (SAMRecord record : input){
@@ -1191,13 +1208,13 @@ public class AnchorClusterer {
 	
 	
 	
-	private static SAMFileHeader editSAMFileHeader(SAMFileHeader header) {
+	private static SAMFileHeader editSAMFileHeader(SAMFileHeader header, boolean prepend) {
 		List<SAMSequenceRecord> sequenceList = new ArrayList<SAMSequenceRecord>();
 		
 		for ( SAMSequenceRecord sequenceRec : header.getSequenceDictionary().getSequences()){
 			StringBuilder sequenceBuilder = new StringBuilder();
 			SAMSequenceRecord newSeq;
-			if(!sequenceRec.getSequenceName().startsWith("chr")){
+			if(!sequenceRec.getSequenceName().startsWith("chr") && prepend){
 				sequenceBuilder.append("chr");
 			}
 			sequenceBuilder.append(sequenceRec.getSequenceName());
@@ -1588,7 +1605,12 @@ public class AnchorClusterer {
 		StringBuilder pos = new StringBuilder();
 		boolean header = true;
 		
-		is = new FileInputStream(repmask_file);
+		File f = new File(repmask_file);
+		if (!f.exists() || !f.canRead())
+			logger.equals(repmask_file + ": does not exist, or is not readable");
+			
+		is = new FileInputStream(f);
+		
 		BufferedReader br = new BufferedReader(new InputStreamReader(is));
 		
 		while ((line = br.readLine()) != null){
@@ -1633,3 +1655,5 @@ public class AnchorClusterer {
 	
 	
 }
+
+

@@ -10,6 +10,6 @@ public class SplitAnchorTest {
 		File out = new File(args[2]);
 
 		AnchorClusterer.clusterSplitAnchorsToBAM(splitAnchors, indexAnchors,
-				out, 2);
+				out, 2,true);
 	}
 }
