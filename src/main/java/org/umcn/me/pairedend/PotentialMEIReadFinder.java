@@ -38,7 +38,7 @@ import net.sf.samtools.SAMFileHeader.SortOrder;
 
 public class PotentialMEIReadFinder {
 	
-	public static Logger logger = Logger.getLogger("PotentialMEIReadFinder");
+	public static Logger logger = Logger.getLogger(PotentialMEIReadFinder.class.getName());
 	private static int min_avg_qual = 20;
 	private static int min_anchor_mapq = 20;
 	private static boolean skip_um_pairs = false; //um --> unique - multiply mapped pairs
@@ -167,7 +167,7 @@ public class PotentialMEIReadFinder {
 	}
 	
 	//TODO remove duplicate code for this function
-	public static void runFromProperties(Properties props) throws IOException{
+	public static void runFromProperties(Properties props) throws IOException {
 		
 		//TODO
 //		String infile;
