@@ -37,17 +37,17 @@ public class Mobster {
 	
 	public static void main(String[] args) {
 		
+		checkParams(args);
+		
 		Properties props = new Properties();
 		
 		BasicConfigurator.configure();
-		checkParams(args);
 		
 		if (propertiesFile != null){
 			try {
 				
 				props.load(new FileInputStream(propertiesFile));
 				if (inFile != null){
-					
 					props.put(MobileDefinitions.INFILE, inFile);
 				}
 				if (outFile != null){
@@ -62,12 +62,12 @@ public class Mobster {
 						props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0).length){
 					logger.fatal("Number of supplied samples does not equal the number of supplied bams. Exiting");
 					System.exit(1);
-				}else if (props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0).length > 1){
+				} else if (props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0).length > 1){
 					logger.info("Detected multiple samples. Multiple sample calling will be turned ON even if this property was set to false in the properties file");
 					props.put(MobileDefinitions.MULTIPLE_SAMPLE_CALLING, "true");
 				}
 				
-				if(props.containsKey(MobileDefinitions.PICARD_COLLECT_INSERT_METRICS) &&
+				if (props.containsKey(MobileDefinitions.PICARD_COLLECT_INSERT_METRICS) &&
 						"true".equals(props.getProperty(MobileDefinitions.USE_PICARD).trim())){
 					
 					//NOTE if multiple BAM Files are provided, only the insert size is investigated of the 1st BAM
@@ -118,10 +118,7 @@ public class Mobster {
 					
 					props.put(MobileDefinitions.LENGTH_99PROCENT_OF_FRAGMENTS, Integer.toString(clustermax));
 					props.put(MobileDefinitions.MEAN_FRAGMENT_LENGTH, Integer.toString(mean));
-					props.put(MobileDefinitions.SD_FRAGMENT_LENGTH, Integer.toString(sd));
-					
-					
-					
+					props.put(MobileDefinitions.SD_FRAGMENT_LENGTH, Integer.toString(sd));					
 				}
 				
 				props.put(MobileDefinitions.INFILE_FROM_MOBIOME_MAPPING, props.getProperty(MobileDefinitions.OUTFILE).trim() + "_mappedpotentials.bam");
@@ -149,8 +146,9 @@ public class Mobster {
 				
 				AnchorClusterer.runFromPropertiesFile(props);
 				
-			}  catch (IOException e) {
+			} catch (IOException e) {
 				logger.error(e.getMessage());
+				System.exit(-1);
 			}
 		}
 		
@@ -158,7 +156,6 @@ public class Mobster {
 	
 	
 	public static int execUnixCommand(String cmd){
-		
 
 		ProcessBuilder builder = new ProcessBuilder("/bin/sh", "-c", cmd);
 		builder.redirectErrorStream(true);
@@ -181,7 +178,7 @@ public class Mobster {
 			logger.error(e.getMessage());
 			return -1;
 		} catch (InterruptedException e) {
-			logger.error("Error in executing command: " + cmd);
+			logger.error("Interrupted while executing command: " + cmd);
 			logger.error(e.getMessage());
 			return -2;
 		}
@@ -201,15 +198,16 @@ public class Mobster {
 					sampleName = args[i + 1];
 				}
 				else {
-					printUsage();
 					logger.info("Invalid arguments. Please try again.");
-					return;
+					printUsage();
+					throw new IllegalArgumentException("Invalid arguments. " + 
+						"Acceptable arguments are one of [\"-properties\", \"-in\", \"-out\", \"-sn\"]");
 				}
 			}
 		} else {
+			logger.info("No argument provided. Please try again.");
 			printUsage();
-			logger.info("Invalid arguments. Please try again.");
-			return;
+			throw new IllegalArgumentException("No argument provided.");
 		}
 	}
 	
@@ -227,7 +225,4 @@ public class Mobster {
 		System.out.println(("\t-sn [sample name]. This value will override corresponding value in properties file. Multiple sample names may be specified if seperated by a comma"));
 		System.out.println("Default mapping tool: " + SAMDefinitions.MAPPING_TOOL_UNSPECIFIED);
 	}
-	
-	
-	
 }
