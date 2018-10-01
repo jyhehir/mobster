@@ -165,14 +165,19 @@ public final class Mobster {
     //do the mobiome mapping here
     private static int runMobiomeMapping(final Properties props) {
         String mobiomeMappingCmd = props.getProperty(MobileDefinitions.MOBIOME_MAPPING_CMD).trim();
+
         // note that this assumes that upstream task RefAndMEPairFinder outputs "_potential.fq"
         mobiomeMappingCmd = mobiomeMappingCmd.replaceAll("\\(FASTQ\\)", props.getProperty(MobileDefinitions.OUTFILE).trim() + "_potential.fq");
-        mobiomeMappingCmd = mobiomeMappingCmd.replaceAll("\\(DAT_FILE\\)", props.getProperty(MobileDefinitions.OUTFILE).trim() + "_potential.dat"); // this line is specific to MOSAIK
+
+        if (mobiomeMappingCmd.toLowerCase().contains("mosaik")) {
+            mobiomeMappingCmd = mobiomeMappingCmd.replaceAll("\\(DAT_FILE\\)", props.getProperty(MobileDefinitions.OUTFILE).trim() + "_potential.dat"); // this line is specific to MOSAIK
+        }
+
         // note that this assumes the aligner used will automatically append ".bam", i.e. it will output "_mappedpotentials.bam"
         mobiomeMappingCmd = mobiomeMappingCmd.replaceAll("\\(OUT_FILE\\)", props.getProperty(MobileDefinitions.OUTFILE).trim() + "_mappedpotentials");
 
         props.put(MobileDefinitions.INFILE_FROM_MOBIOME_MAPPING,
-                  props.getProperty(MobileDefinitions.OUTFILE).trim() + "_mappedpotentials.bam");
+                props.getProperty(MobileDefinitions.OUTFILE).trim() + "_mappedpotentials.bam");
 
         return execUnixCommand(mobiomeMappingCmd);
     }
