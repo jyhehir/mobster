@@ -122,10 +122,5 @@ public abstract class MobileDefinitions {
 	public static final String GRIPS_SKIP_UU_EXCLUSION = "GRIPS_SKIP_UU_EXCLUSION"; 
 	
 	public static final String CLEANUP_FILES = "CLEANUP";
-	
-	
-	
-	
-	
-	
+
 }

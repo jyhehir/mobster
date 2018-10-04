@@ -352,39 +352,37 @@ public class PotentialMEIReadFinder {
 																minClipping, maxClipping, min_avg_qual, min_anchor_mapq);
 		logger.info("Skipping UM pairs?: " + skip_um_pairs);
 		potentialMEIReads.setSkippingOfUMPairs(skip_um_pairs);
+
 		//SAMFileHeader samFileHeader = potentialMEIReads.getSAMReader().getFileHeader();
 		
 		//File tmpFile = new File(tmp);
-		
-		
 
 		//If file already exists for 1st time then maybe program should issue an error?
 		//PrintWriter outFq = new PrintWriter(new FileWriter(outPrefix + "_potential.fq"), true);
 		//SAMFileWriter outputSam = SAMWriting.makeSAMWriter(new File(outPrefix + "_potential.bam"), samFileHeader, tmpFile, maxMemory, SAMFileHeader.SortOrder.unsorted, true);
-		
 
 		int c = 0;
 		int d = 0;
 	
 		for (SAMRecordHolderPair<NrMappingsSAMRecordHolder> pair : YieldUtils.toIterable(potentialMEIReads)){
-
 				pair.writeMobileReadsToFastQAndPotentialPairsToSAM(outFq, outSam, useSplit, true, readGroupPrefix);
 				c++;
-				if(pair.hasSplitReadOfCertainSize()){
+				if (pair.hasSplitReadOfCertainSize()) {
 					d++;
 				}
-
+            if ((c % 200000) == 0)
+                logger.info("Processed " + c + " mobile read pairs");
+            if ((d % 50000) == 0)
+                logger.info("Processed " + d + " mobile read pairs that have split read or certain size");
 		}
 	
 		//outFq.close();
 		//outputSam.close();
 		logger.info("Found nr of potential mobile pairs supporting MEI events: " + c);
 		logger.info("Of which " + d + " are of split-read nature.");
-
-
 	}
 	
-	private static Options addCmdOptions(){
+	private static Options addCmdOptions() {
 		Options options = new Options();
 		
 		OptionBuilder.withArgName("BAM File");
