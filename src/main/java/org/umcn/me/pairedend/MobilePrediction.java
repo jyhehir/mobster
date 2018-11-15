@@ -755,7 +755,7 @@ public class MobilePrediction  {
 			}else if(this.right_aligned_split_border > this.left_aligned_split_border){
 				return "deletion";
 			}else{
-				return "no tsd";
+				return "no_tsd";
 			}
 			
 		}else if (this.hasLeftAlignedSplitCluster() && this.hasRightMateCluster()){
