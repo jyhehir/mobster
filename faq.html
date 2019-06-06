@@ -99,7 +99,8 @@ statistics of mapping using Picard or samtools and then remove the appropriate r
 					<code>java -Xmx8g -Djava.util.Arrays.useLegacyMergeSort=true -cp ...</code><br><br>
 					<b>Note this error should not occur anymore with Mobster versions 0.2.0 and higher</b>
 					<hr>
-
+				        <h4>Q7. During the picard.CollectInsertSize metrics I'm getting a number format exception. Why?</h4>
+					This is most commonly caused by a jvm which has a non-english local as default. You can override the jvm local on the command line using <code>-Duser.country=US -Duser.language=en</code> if this does not work you may be required to set the following in you execution environment <code>export LANG=en_US.utf8</code> 	
 				</div>
 			</div>
 			<!-- /.row -->
