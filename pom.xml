@@ -33,22 +33,32 @@
             <version>1.2</version>
         </dependency>
     	<dependency>
-  			<groupId>java-yield</groupId>
-  			<artifactId>java-yield</artifactId>
-  			<version>1.0-SLIMJAR</version>
-		</dependency>
-		<dependency>
-  			<groupId>net.sf.samtools</groupId>
-  			<artifactId>samtools</artifactId>
-  			<version>1.113</version>
-		</dependency>
-		<dependency>
-			<groupId>net.sf.picard</groupId>
-			<artifactId>picard</artifactId>
-			<version>1.113</version>
-		</dependency>
-		
-     </dependencies>
+  		<groupId>java-yield</groupId>
+  		<artifactId>java-yield</artifactId>
+  		<version>1.0-SLIMJAR</version>
+	</dependency>
+	<dependency>
+  		<groupId>net.sf.samtools</groupId>
+  		<artifactId>samtools</artifactId>
+  		<version>1.113</version>
+	</dependency>
+	<dependency>
+		<groupId>net.sf.picard</groupId>
+		<artifactId>picard</artifactId>
+		<version>1.113</version>
+	</dependency>
+        <dependency>
+                <groupId>com.beust</groupId>
+                <artifactId>jcommander</artifactId>
+                <version>1.72</version>
+        </dependency>		
+        <dependency>
+                <groupId>org.beanio</groupId>
+                <artifactId>beanio</artifactId>
+                <version>2.1.0</version>
+        </dependency>   
+
+    </dependencies>
      
 
   <repositories>
