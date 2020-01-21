@@ -1,51 +1,20 @@
 package org.umcn.me.pairedend;
 
 import net.sf.samtools.*;
-
+import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.apache.commons.cli.*;
 import org.umcn.me.sam.MateCluster;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.splitread.ClippedRead;
 import org.umcn.me.splitread.InvalidHardClipCigarException;
-import org.umcn.me.tabix.BlacklistAnnotation;
-import org.umcn.me.tabix.RefGeneAnnotation;
-import org.umcn.me.tabix.RepMaskAnnotation;
-import org.umcn.me.tabix.SelfChainAnnotation;
-import org.umcn.me.tabix.TabixBaseAnnotater;
-import org.umcn.me.util.ClippedReadSet;
-import org.umcn.me.util.CollectionUtil;
-import org.umcn.me.util.MobileDefinitions;
-import org.umcn.me.util.ReadName;
-import org.umcn.me.util.ReadNameOption;
-import org.umcn.me.util.ReadNameRetriever;
-import org.umcn.me.util.RegionWithLabel;
-import org.umcn.me.util.SampleBam;
+import org.umcn.me.tabix.*;
+import org.umcn.me.util.*;
 
-import java.io.File;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import java.util.Vector;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.HashMap;
+import java.io.*;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -87,7 +56,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class AnchorClusterer {
 	
-	public static Logger logger = Logger.getLogger("AnchorClusterer");
+	public static Logger logger = Logger.getLogger(AnchorClusterer.class.getName());
 	
 	private static final int FILTER_REGION = 90;
 	private static final String VERSION;
@@ -1251,7 +1220,7 @@ public class AnchorClusterer {
 	 * @param predictionFile name of output prediction .txt file
 	 * @throws IOException
 	 */
-	public static Vector<MobilePrediction> clusterMateClusters(File clusterIn, File clusterIndex, int overlap, int maxdist) throws IOException{
+	public static Vector<MobilePrediction> clusterMateClusters(File clusterIn, File clusterIndex, int overlap, int maxdist) {
 		
 		SAMFileReader input = new SAMSilentReader(clusterIn, clusterIndex);
 		SAMFileReader input2 = new SAMSilentReader(clusterIn, clusterIndex);	
