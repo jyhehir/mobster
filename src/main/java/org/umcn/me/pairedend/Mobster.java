@@ -16,8 +16,8 @@ public final class Mobster {
     public static String outFile = null;
     public static String sampleName = null;
     public static boolean vcfOut = false;
+    public static String resourcesDir = null;
     public static final String VERSION;
-    public static final Properties defaultProperties;
 
     public static int EXTERNAL_DEPENDENT_PROGRAM_FAIL_EXIT_CODE = -1;
     public static int PROPERTIES_FILE_NOT_FOUND_EXIT_CODE = 1;
@@ -37,19 +37,6 @@ public final class Mobster {
             System.exit(COULD_NOT_READ_PROPERTIES_FILE_EXIT_CODE);
         }
         VERSION = prop.getProperty("version");
-
-        //Load default mobster properties
-        defaultProperties = new Properties();
-        try {
-            prop.load(Mobster.class.getResourceAsStream("/properties/version.properties"));
-        } catch (FileNotFoundException e) {
-            logger.error("Could not load Mobster properties", e);
-            System.exit(PROPERTIES_FILE_NOT_FOUND_EXIT_CODE);
-        } catch (IOException e) {
-            logger.error("Could not read Mobster properties", e);
-            System.exit(COULD_NOT_READ_PROPERTIES_FILE_EXIT_CODE);
-        }
-
     }
 
     public static void main(String[] args) {
@@ -57,10 +44,10 @@ public final class Mobster {
         //Setup configurator
         BasicConfigurator.configure();
 
-        //Copy the default parameters into a local variable
-        Properties props = (Properties) defaultProperties.clone();
+        //Setup properties object
+        Properties props = new Properties();
 
-        //Parse the arguments and override properties inside props
+        //Parse the arguments and add properties to props
         parseArgs(args, props);
 
         try {
@@ -97,7 +84,7 @@ public final class Mobster {
     // note that this is conditional, i.e. only if user requires this
     private static void configureAndRunPicard(final Properties props) throws IOException {
         //NOTE if multiple BAM Files are provided, only the insert size is investigated of the 1st BAM
-        String picardCommand = "java -Xmx4g -jar " + props.getProperty(MobileDefinitions.PICARD_COLLECT_INSERT_METRICS) +
+        String picardCommand = "java -Xmx4g -jar " + resourcesDir + props.getProperty(MobileDefinitions.PICARD_COLLECT_INSERT_METRICS) +
                 " VALIDATION_STRINGENCY=LENIENT HISTOGRAM_FILE=" + props.getProperty(MobileDefinitions.OUTFILE).trim() + "_hist.pdf" +
                 " INPUT=" + props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP,0)[0] + " OUTPUT=" + props.getProperty(MobileDefinitions.OUTFILE).trim() + "_insertstats" +
                 " STOP_AFTER=50000000";
@@ -162,6 +149,7 @@ public final class Mobster {
 
         if (mobiomeMappingCmd.toLowerCase().contains("mosaik")) {
             mobiomeMappingCmd = mobiomeMappingCmd.replaceAll("\\(DAT_FILE\\)", props.getProperty(MobileDefinitions.OUTFILE).trim() + "_potential.dat"); // this line is specific to MOSAIK
+            mobiomeMappingCmd = mobiomeMappingCmd.replaceAll("\\(RESOURCES_DIR\\)", resourcesDir == null? "" : resourcesDir); // this line is specific to MOSAIK
         }
 
         // note that this assumes the aligner used will automatically append ".bam", i.e. it will output "_mappedpotentials.bam"
@@ -220,34 +208,37 @@ public final class Mobster {
         System.out.println("Author: Djie Tjwan Thung");
         System.out.println();
         System.out.println("Predict non-reference Mobile Element Insertion (MEI) events using one properties file.");
-        System.out.println("None of the arguments below are required, but it is advisable to at least provide a properties file with the IN_FILE, OUT_FILE and SAMPLE_NAME properties set. Otherwise the default file is used.");
-        System.out.println("Aside from the arguments below, any property as listed in the default properties file can also be overridden by providing an argument like '--USE_PICARD [value]'.'");
+        System.out.println("Only the properties file is required, but it is advisable to also provide the other single dash ('-[argument]') arguments.");
+        System.out.println("These other arguments will override the default properties in the properties file.");
+        System.out.println("In addition, any property as listed in the default properties file can also be overridden by providing it as a double dash argument ('--USE_PICARD [value]').");
         System.out.println("A new properties file containing all the final properties will also be created with the output prefix.");
-        System.out.println("\t-properties [properties]\tPath to the properties file.");
-        System.out.println("\t-in [input .bam file].\tThis value will override corresponding value in the properties file. Multiple BAM files may be specified if separated by a comma");
-        System.out.println("\t-out [output prefix].\tThis value will override corresponding value in the properties file.");
-        System.out.println(("\t-sn [sample name].\tThis value will override corresponding value in the properties file. Multiple sample names may be specified if separated by a comma"));
-        System.out.println(("\t-vcf [true / false].\tThis value will override the corresponding value in the properties file. Will change the output of Mobster to VCF instead of the default format."));
-        System.out.println(("\t--<PROPERTY> [value].\tThis value will override the corresponding value in the properties file."));
+        System.out.println();
+        System.out.println("\t-properties [properties]\tThis value is required. Path to the properties file.");
+        System.out.println(("\t-rdir [resources folder]\tThis value will override corresponding value in the properties file. Specifies where the resources folder of mobster is installed."));
+        System.out.println("\t-in [input .bam file]\t\tThis value will override corresponding value in the properties file. Multiple BAM files may be specified if separated by a comma");
+        System.out.println("\t-out [output prefix]\t\tThis value will override corresponding value in the properties file.");
+        System.out.println(("\t-sn [sample name]\t\t\tThis value will override corresponding value in the properties file. Multiple sample names may be specified if separated by a comma"));
+        System.out.println(("\t-vcf\t\t\t\t\t\tIf this flag is given, the corresponding value in the properties file will be set to 'true'. Will change the output of Mobster to VCF instead of the default format."));
+        System.out.println(("\t--<PROPERTY> [value]\t\tThis value will override the corresponding value in the properties file."));
+        System.out.println();
         System.out.println("Default mapping tool: " + SAMDefinitions.MAPPING_TOOL_UNSPECIFIED);
+        System.out.println();
     }
 
     private static void parseArgs(String[] args, Properties props) {
 
         try{
-            Properties propsFile = new Properties();
             if (args.length > 0 && args[0] != null) {
 
                 //Loop over all properties to find if a properties file has been provided, load it
-                //And override all default properties
+                //And add the properties to the properties object
                 for (int i = 0; i < args.length; i = i + 2)
                     if (args[i].equalsIgnoreCase("-properties")) {
                         propertiesFile = args[i + 1];
-                        propsFile.load(new FileInputStream(propertiesFile));
-                        props.putAll(propsFile);
+                        props.load(new FileInputStream(propertiesFile));
                     }
 
-                //Again loop over all arguments and again override any properties in props when they are provided on the command line
+                //Again loop over all arguments and override any properties in props when they are provided on the command line
                 for (int i = 0; i < args.length; i = i + 2) {
                     String argument = args[i];
                     String argUpperCase = argument.replace("--", "").toUpperCase();
@@ -267,6 +258,9 @@ public final class Mobster {
                         vcfOut = Boolean.parseBoolean(value);
                         props.put(MobileDefinitions.VCF, value);
                     }
+                    else if (argument.equalsIgnoreCase("-rdir")){
+                        props.put(MobileDefinitions.RESOURCES_DIR, value);
+                    }
                     //When a property present in the default properties is provided, it is overridden.
                     else if(argument.startsWith("--")
                             && props.containsKey(argUpperCase)){
@@ -274,8 +268,8 @@ public final class Mobster {
                     } else if(!argument.equals("-properties")){
                         System.out.println(argument);
 
-                        logger.error("Invalid arguments. Please try again.");
                         printUsage();
+                        logger.error("Invalid arguments. Please try again.");
                         System.exit(-1);
                     }
                 }
@@ -283,6 +277,7 @@ public final class Mobster {
                 //Check whether there is a correct number of samples
                 if (props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0).length !=
                         props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0).length){
+                    printUsage();
                     logger.error("Number of supplied samples does not equal the number of supplied bams. Exiting");
                     System.exit(1);
                 } else if (props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0).length > 1){
@@ -290,18 +285,48 @@ public final class Mobster {
                     props.put(MobileDefinitions.MULTIPLE_SAMPLE_CALLING, "true");
                 }
 
-                //Write the current properties to a file
-                String output = props.getProperty(MobileDefinitions.OUTFILE) + "_Mobster.properties";
-                props.store(new FileOutputStream(output), "");
+                //When a resources directory has been provided, either in the properties file or on the command line,
+                //it is checked whether it actually exists and an optional '/' is appended.
+                //In both cases, the final properties are written to a file
+                if(props.containsKey(MobileDefinitions.RESOURCES_DIR)){
+                    resourcesDir = props.getProperty(MobileDefinitions.RESOURCES_DIR);
 
+                    //Check if exists
+                    File dir = new File(resourcesDir);
+                    if(!dir.isDirectory()){
+                        printUsage();
+                        logger.error("The provided resources folder does not exist.");
+                        System.exit(-1);
+                    }
+
+                    //Add '/'
+                    if(!resourcesDir.endsWith("/") && !resourcesDir.matches("(.|~)") && !resourcesDir.equals("")){
+                        resourcesDir = resourcesDir + "/";
+                        props.put(MobileDefinitions.RESOURCES_DIR, resourcesDir);
+                    }
+
+                    //Write the current properties to a file
+                    String output = props.getProperty(MobileDefinitions.OUTFILE) + "_Mobster.properties";
+                    props.store(new FileOutputStream(output), "");
+
+                } //Otherwise resourcesDir is set to an empty string
+                else {
+                    //Write the current properties to a file
+                    String output = props.getProperty(MobileDefinitions.OUTFILE) + "_Mobster.properties";
+                    props.store(new FileOutputStream(output), "");
+
+                    //Do not write the empty resourcesDir to a properties file
+                    resourcesDir = "";
+                    props.put(MobileDefinitions.RESOURCES_DIR, resourcesDir);
+                }
             } else {
-                logger.error("No arguments provided. Please try again.");
                 printUsage();
+                logger.error("No arguments provided. Please try again.");
                 System.exit(-1);
             }
         } catch(ArrayIndexOutOfBoundsException e){
-            logger.error("Invalid argument value provided. Please try again. Make sure each argument is followed by a value.");
             printUsage();
+            logger.error("Invalid argument value provided. Please try again. Make sure each argument is followed by a value.");
             System.exit(-1);
         } catch (FileNotFoundException e) {
             logger.error(e.getMessage());

@@ -259,7 +259,7 @@ public class AnchorClusterer {
 			throw new IOException("Can not create tmp directory: " + tmp);
 		}
 		if (props.containsKey(MobileDefinitions.REPEAT_MASK_FILE)){
-			repmask_file = props.getProperty(MobileDefinitions.REPEAT_MASK_FILE).trim();
+			repmask_file = props.getProperty(MobileDefinitions.RESOURCES_DIR) + props.getProperty(MobileDefinitions.REPEAT_MASK_FILE).trim();
 		}
 		if (props.containsKey(MobileDefinitions.PREFIX_REFERENCE)) {
 			usePrefixReference = Boolean.getBoolean(props.getProperty(MobileDefinitions.PREFIX_REFERENCE));
