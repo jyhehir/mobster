@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
+import net.sf.samtools.SAMFileHeader.GroupOrder;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMFileWriterFactory;
@@ -101,13 +102,22 @@ public class SAMWriting {
 			SortOrder order){
 		return makeSAMWriter(out, header, tmp_dir, max_records, order, false);
 	}
-	
+
 	public static SAMFileWriter makeSAMWriter(File out, SAMFileHeader header, File tmp_dir, int max_records,
-			SortOrder order, boolean presorted){
+			  SortOrder order, boolean presorted){
+		return makeSAMWriter(out, header, tmp_dir, max_records, order, presorted, null);
+	}
+
+	public static SAMFileWriter makeSAMWriter(File out, SAMFileHeader header, File tmp_dir, int max_records,
+			  SortOrder order, boolean presorted, GroupOrder groupOrder){
 		boolean index = false;
 		
 		if (order != null){
 			header.setSortOrder(order);
+		}
+
+		if (groupOrder != null){
+			header.setGroupOrder(groupOrder);
 		}
 		
 		if (header.getSortOrder().equals(SAMFileHeader.SortOrder.coordinate)){

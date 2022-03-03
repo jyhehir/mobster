@@ -1,16 +1,18 @@
 package org.umcn.me.pairedend;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import net.sf.samtools.*;
 import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.umcn.me.output.Save;
+import org.umcn.me.output.vcf.MobsterToVCF;
 import org.umcn.me.sam.MateCluster;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.samexternal.SAMWriting;
 import org.umcn.me.splitread.ClippedRead;
 import org.umcn.me.splitread.InvalidHardClipCigarException;
-import org.umcn.me.tabix.*;
 import org.umcn.me.util.*;
 
 import java.io.*;
@@ -97,54 +99,7 @@ public class AnchorClusterer {
 		VERSION = prop.getProperty("version");
 	}
 	
-	public static String getVersionAndParameterInfo(String[] params){
-		StringBuilder sb = new StringBuilder();
-		Date date = new Date();
-		sb.append("#Version: ");
-		sb.append(VERSION);
-		sb.append("\n");
-		sb.append("#Command Line Initialization: ");
-		
-		for (String param : params){
-			sb.append(param);
-			sb.append(" ");
-		}
-		sb.append("\n");
-		sb.append("#Creation date: ");
-		sb.append(date.toString());
-		sb.append("\n");
-
-		return sb.toString();
-	}
-	
-	public static String getVersionAndParameterInfo(Properties props){
-		StringBuilder sb = new StringBuilder();
-		Date date = new Date();
-		sb.append("#Version: ");
-		sb.append(VERSION);
-		sb.append("\n");
-		sb.append("#Properties file initialization, with following specified values : ");
-		
-		for (Object key : props.keySet()){
-			String stringKey = (String) key;
-			String value = props.getProperty(stringKey);
-			sb.append(stringKey);
-			sb.append("=");
-			sb.append(value);
-			sb.append(" ");
-			
-		}
-		sb.append("\n");
-		sb.append("#Creation date: ");
-		sb.append(date.toString());
-		sb.append("\n");
-		
-		return sb.toString();
-	
-	}
-	
-	
-	public static void runFromPropertiesFile(Properties props) throws IOException{
+	public static Vector<MobilePrediction> runFromProperties(Properties props) throws IOException{
 //		public static final String ANCHOR_FILE = "ANCHOR_BAM_FILE"; DONE
 //		public static final String SPLIT_ANCHOR_FILE = "ANCHOR_SPLIT_BAM_FILE";
 //		public static final String READS_PER_CLUSTER = "READS_PER_CLUSTER"; DONE
@@ -168,18 +123,14 @@ public class AnchorClusterer {
 		File clusterBam;
 		File splitAnchor = null;
 		File splitAnchorIndex = null;
-		String commentHeader;
 		String sample = ""; // default empty
 		String outPrefix;
 		int rpc; //default 2
 		int overlap; // default 50 
 		int maxdist; // default 450
-		List<ReadName> anchorReads;
-		List<ReadName> splitAnchorReads;
-		Map<String, ReadName> readnameMap = new HashMap<String, ReadName>();
-		
+
 		//anchorIndex = new File(line.getOptionValue("in").replaceAll(".bam$", ".bai"));
-		
+
 		mobster_properties = props;
 		
 		anchor = new File(props.getProperty(MobileDefinitions.ANCHOR_FILE).trim());
@@ -188,7 +139,7 @@ public class AnchorClusterer {
 		outPrefix = props.getProperty(MobileDefinitions.OUTFILE).trim();
 		
 		long start = System.currentTimeMillis();
-		
+
 		if (props.containsKey(MobileDefinitions.SAMPLE_NAME)){
 			sample = props.getProperty(MobileDefinitions.SAMPLE_NAME).trim();
 		}
@@ -283,9 +234,7 @@ public class AnchorClusterer {
 		}
 		
 		memory = Integer.parseInt(props.getProperty(MobileDefinitions.MEMORY).trim());
-		
-		//TODO this is a copy and paste of the main function, needs refactoring
-		
+
 		logger.info("Using reads per cluster: " + rpc);
 		logger.info("Using max overlap for double clusters: " + overlap);
 		logger.info("Using max distance between 5 and 3 end clusters for double clusters of: " +
@@ -304,206 +253,51 @@ public class AnchorClusterer {
 		//Step 3: Make single & double cluster predictions out of the clusters
 		Vector<MobilePrediction> matePredictions;
 		
-		try {
-			matePredictions = clusterMateClusters(clusterBam, new File(clusterBam.toString().replaceAll(".bam$", ".bai")),
-					overlap, maxdist);
-			
-			//Step 4: do split clustering when available
-			if(splitAnchor != null){
-				logger.info("Number of initial minimum hits for split clusters:" + min_initial_cluster_size_split);
-				clusterSplitAnchorsToBAM(splitAnchor, splitAnchorIndex,
-						new File(outPrefix + "_splitcluster.bam"), min_initial_cluster_size_split, usePrefixReference);
-				
+		matePredictions = clusterMateClusters(clusterBam, new File(clusterBam.toString().replaceAll(".bam$", ".bai")),
+				overlap, maxdist);
+
+		//Step 4: do split clustering when available
+		if(splitAnchor != null){
+			logger.info("Number of initial minimum hits for split clusters:" + min_initial_cluster_size_split);
+			clusterSplitAnchorsToBAM(splitAnchor, splitAnchorIndex,
+					new File(outPrefix + "_splitcluster.bam"), min_initial_cluster_size_split, usePrefixReference);
+
 //			execCommand(samdir + "samtools sort " + line.getOptionValue("out") + "_splitcluster.bam" +
 //			 " " + line.getOptionValue("out") + "_splitcluster_sorted");
 //			execCommand(samdir + "samtools index " + line.getOptionValue("out") + "_splitcluster_sorted.bam");
-				
-				try {
-					matePredictions = mergeSplitAndMateClusters(matePredictions, new File(outPrefix +
-							"_splitcluster.bam"), new File(outPrefix + "_splitcluster.bai"));
-				} catch (IllegalSAMPairException e) {
-					logger.error(e.getMessage());
-				}
-			}
-			
-			matePredictions = mergePredictions(matePredictions, overlap, maxdist);
-			
-			if (mobster_properties.containsKey(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS) &&
-					Boolean.parseBoolean(mobster_properties.getProperty(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS))){
-				logger.info("Anchorclusterer: will remove overlapping predictions");
-				matePredictions = GRIPFunctions.removeOverlappingPredictions(matePredictions);
-			}
-			commentHeader = getVersionAndParameterInfo(props);
-			if (grips_mode){
-				writeGRIPSToFile(outPrefix + "_GRIPS_unfiltered.txt", matePredictions, commentHeader, false);
-			}
-			
-			matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
-			
-			if (!grips_mode){
-				matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
-			}
-			
-			//Filter for multiple occuring source genes if detection is done using GRIPS
-			if (props.containsKey(MobileDefinitions.GRIPS_MAX_SOURCE_GENES)){
-				int maxSourceGenes = Integer.parseInt(props.getProperty(MobileDefinitions.GRIPS_MAX_SOURCE_GENES));
-				logger.info("Filtering GRIPS for max source genes: " + maxSourceGenes);
-				matePredictions = GRIPFunctions.reducePredictionsBasedOnSource(matePredictions, maxSourceGenes);
-			}
-			
-			
-			if (grips_mode){
-				//Prestep 1 for GRIPS: extracting the read names
-				anchorReads = extractReadnames(anchor,props);
-				splitAnchorReads = extractReadnames(splitAnchor,props);
-				
-				
-				System.out.println("Anchor reads size: " + anchorReads.size());
-				System.out.println("Split anchor reads size: " + splitAnchorReads.size());
-				readnameMap = CollectionUtil.readNamesToMap(anchorReads);
-				System.out.println("read name map size 1: " + readnameMap.size());
-				readnameMap.putAll(CollectionUtil.readNamesToMap(splitAnchorReads));
-				System.out.println("read name map size 2: " + readnameMap.size());
-				
-				
-				//Now only keep the reads in map which made it to the clusters supporting the predictions
-				Set<String> reads = new HashSet<String>();
-				for (MobilePrediction pred : matePredictions){
-					reads.addAll(pred.getReadNamesFromMateClusters());
-					reads.addAll(pred.getReadNamesFromSplitClusters());
-				}
-				System.out.println("Number of total supporting reads from clusters: " + reads.size());
-				Set<String> keys = readnameMap.keySet();
-				keys.retainAll(reads);
-				System.out.println("Number of keys in map: " + readnameMap.size());
-				
-				//annotate the predictions
-				String refGeneLoc = props.getProperty(MobileDefinitions.GRIPS_TRANSCRIPT);
-				String repMaskLoc = props.getProperty(MobileDefinitions.GRIPS_REPMASK);
-				String blackListLoc = props.getProperty(MobileDefinitions.GRIPS_BLACKLIST);
-				String selfChainLoc = props.getProperty(MobileDefinitions.GRIPS_SELFCHAIN);
-				
-				try {
-					annotateRefGene(readnameMap.values(), refGeneLoc);
-					annotateRepMask(readnameMap.values(), repMaskLoc, true);
-					annotateBlacklist(readnameMap.values(), blackListLoc);
-					annotateSelfChain(readnameMap.values(), selfChainLoc);
-				} catch (java.text.ParseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				
-				//Add in the repmask / refgene annotation
-				for (MobilePrediction pred : matePredictions){
-					pred.parseReadNames(readnameMap);
-				}
-				writeGRIPSToFile(outPrefix + "_GRIPS_predictons.txt", matePredictions, commentHeader, false);
-				writeGRIPSToFile(outPrefix + "_GRIPS_MORECONFIDENT_predictions.txt", matePredictions, commentHeader, true);
-			}else{
-				writePredictionsToFile(outPrefix + "_predictions.txt", matePredictions, commentHeader, sample);
-			}
 
-			long end = System.currentTimeMillis();
-			long millis = end - start;
-			String time = String.format("%d min, %d sec", 
-				    TimeUnit.MILLISECONDS.toMinutes(millis),
-				    TimeUnit.MILLISECONDS.toSeconds(millis) - 
-				    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))
-				);
-			
-			logger.info("Anchorclusterer ran in : " + time);
-		} catch (IOException e) {
-			logger.error("Anchorclusterer: Error in opening files: " + e.getMessage());
-		} finally {
-			if (tmp != null && ! tmp.delete() ){
-				logger.error("Anchor Clusterer: Could not delete temp: " + tmp);
+			try {
+				matePredictions = mergeSplitAndMateClusters(matePredictions, new File(outPrefix +
+						"_splitcluster.bam"), new File(outPrefix + "_splitcluster.bai"));
+			} catch (IllegalSAMPairException e) {
+				logger.error(e.getMessage());
 			}
 		}
 
-		
-	}
+		matePredictions = mergePredictions(matePredictions, overlap, maxdist);
 
-	public static void annotateSelfChain(Collection<ReadName> reads, String chainLocation) throws IOException, java.text.ParseException{
-		TabixBaseAnnotater<SelfChainAnnotation> tba = new TabixBaseAnnotater<SelfChainAnnotation>(chainLocation, new SelfChainAnnotation());
-		
-		for (ReadName name : reads){
-			if ( name.mateIsMapped ){
-				name.setSelfChain(tba.queryOverlapping(name.toPositionString())); //intentionally query from the anchor position
-			}
-			
-		}
-		
-	}
-	
-	public static void annotateRefGene(Collection<ReadName> reads, String transcriptLocation)
-			throws IOException, java.text.ParseException {
-		TabixBaseAnnotater<RefGeneAnnotation> tba = new TabixBaseAnnotater<RefGeneAnnotation>(transcriptLocation, new RefGeneAnnotation());
-		
-		
-		for (ReadName name : reads){
-			if( name.mateIsMapped){
-				name.setMateRefGeneAnnotation(tba.queryOverlapping(name.mateToPositionString()));
-			}
-			if (name.isMapped){
-				name.setRefGeneAnnotation(tba.queryOverlapping(name.toPositionString()));
-			}
-		}
-	}
-	
-	public static void annotateBlacklist(Collection<ReadName> reads, String blacklistLocation) throws IOException, java.text.ParseException{
-		TabixBaseAnnotater<BlacklistAnnotation> tba = new TabixBaseAnnotater<BlacklistAnnotation>(blacklistLocation, new BlacklistAnnotation());
-		
-		for (ReadName name : reads){
-			if (name.isMapped){
-				name.setBlacklist(tba.queryOverlapping(name.toPositionString()));
-			}
-			if (name.mateIsMapped){
-				name.setMateBlacklist(tba.queryOverlapping(name.mateToPositionString()));
-			}
-		}
-		
-	}
-	
-	public static void annotateRepMask(Collection<ReadName> reads, String repmaskLocation, boolean annotateMates)
-			throws IOException, java.text.ParseException {
-		TabixBaseAnnotater<RepMaskAnnotation> tba = new TabixBaseAnnotater<RepMaskAnnotation>(repmaskLocation, new RepMaskAnnotation());
-		
-		for (ReadName name : reads){
-			if(name.isMapped){
-				name.setRepMaskAnnotation(tba.queryOverlapping(name.toPositionString()));
-			}
-			if(annotateMates && name.mateIsMapped){
-				name.setMateRepMaskAnnotation(tba.queryOverlapping(name.mateToPositionString()));
-			}
-		}
-	}
+		long end = System.currentTimeMillis();
+		long millis = end - start;
+		String time = String.format("%d min, %d sec",
+				TimeUnit.MILLISECONDS.toMinutes(millis),
+				TimeUnit.MILLISECONDS.toSeconds(millis) -
+				TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))
+			);
 
-	public static List<ReadName> extractReadnames(File anchor, Properties props) {
-		boolean usePrefixReference = Boolean.getBoolean(props.getProperty(MobileDefinitions.PREFIX_REFERENCE));
-		ReadNameOption option = new ReadNameOption.Builder().addRegion(true).autoPrefixReference(usePrefixReference).build();
-		ReadNameRetriever retriever = new ReadNameRetriever(anchor, option);
-		List<ReadName> reads = new ArrayList<ReadName>();
-		
-		for (ReadName read : retriever){
-			reads.add(read);
+		logger.info("Anchorclusterer ran in : " + time);
+
+		//Try to delete tmp
+		if (tmp != null && ! tmp.delete() ){
+			logger.error("Anchor Clusterer: Could not delete temp: " + tmp);
 		}
-		return reads;
+
+		//Return predictions
+		return matePredictions;
 	}
 	
 	public static void main(String[] args) {
 		Options options;
-		File anchor;
-		File anchorIndex;
-		File clusterBam;
-		File splitAnchor = null;
-		File splitAnchorIndex = null;
-		String commentHeader;
-		String sample;
-		int rpc;
-		int overlap;
-		int maxdist;
-		Properties prop = new Properties();
+		Properties props = new Properties();
 		
 		BasicConfigurator.configure();
 		HelpFormatter formatter = new HelpFormatter();
@@ -516,104 +310,53 @@ public class AnchorClusterer {
 			try {
 				long start = System.currentTimeMillis();
 				CommandLine line = parser.parse(options, args);
-				
+
+				//When a properties file has been supplied, load it
 				if (line.hasOption("properties")){
-					prop.load(new FileInputStream(line.getOptionValue("properties")));
-					runFromPropertiesFile(prop);
-					System.exit(0);
+					props.load(new FileInputStream(line.getOptionValue("properties")));
 				}
-				
-				anchor = new File(line.getOptionValue("in"));
-				anchorIndex = new File(line.getOptionValue("in").replaceAll(".bam$", ".bai"));
-				clusterBam = new File(line.getOptionValue("out") + "_clusters.bam");
-				sd_frag_size = Integer.parseInt(line.getOptionValue("sd"));
-				mean_frag_size = Integer.parseInt(line.getOptionValue("mfl"));
-				rpc = Integer.parseInt(line.getOptionValue("rpc", Integer.toString(rpc_default)));
-				search = Integer.parseInt(line.getOptionValue("search", Integer.toString(search)));
-				overlap = Integer.parseInt(line.getOptionValue("overlap", Integer.toString(overlap_default)));
-				maxdist = Integer.parseInt(line.getOptionValue("maxdist", Integer.toString(maxdist_default)));
-				min_total_hits = Integer.parseInt(line.getOptionValue("mintotal", Integer.toString(min_total_hits)));
-				min_initial_cluster_size_split = Integer.parseInt(line.getOptionValue("splithits", Integer.toString(min_initial_cluster_size_split)));
-				//samdir = line.getOptionValue("samdir", "");
-				//lenient_search = line.hasOption("lenient");
-				sample = line.getOptionValue("sample", "");
-				multiple_sample_calling = line.hasOption("multiplesample");
-				filter_by_read_counts_single_sample = line.hasOption("multisample_stringent");
-				percentile_99_fragment = Integer.parseInt(line.getOptionValue("maxclust", Integer.toString(percentile_99_fragment)));
-				TMP = line.getOptionValue("tmp", System.getProperty("java.io.tmpdir"));
-				memory = Integer.parseInt(line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));				
-				grips_mode = line.hasOption("grips");
-				
-				if(line.hasOption("insplit")){
-					splitAnchor = new File(line.getOptionValue("insplit"));
-					splitAnchorIndex = new File(line.getOptionValue("insplit").replaceAll(".bam$", ".bai"));
-				}
-				
-				repmask_file = line.getOptionValue("repmask", repmask_file);
-				
 
-				logger.info("Using reads per cluster: " + rpc);
-				logger.info("Using max overlap for double clusters: " + overlap);
-				logger.info("Using max distance between 5 and 3 end clusters for double clusters of: " +
-						maxdist);
-				logger.info("Using GRIPs mode: " + grips_mode);
-				
-				//Step 1: Clustering
-				//Run simple clustering algorithm
+				//Load the right command line arguments into the properties
+				if(line.hasOption("insplit")) props.put(MobileDefinitions.SPLIT_ANCHOR_FILE, line.getOptionValue("insplit"));
+				props.put(MobileDefinitions.SAMPLE_NAME, line.getOptionValue("sample", ""));
+				props.put(MobileDefinitions.READS_PER_CLUSTER, line.getOptionValue("rpc", Integer.toString(rpc_default)));
+				props.put(MobileDefinitions.DISCORDANT_OVERLAP, line.getOptionValue("overlap", Integer.toString(overlap_default)));
+				props.put(MobileDefinitions.DISCORDANT_DISTANCE, line.getOptionValue("maxdist", Integer.toString(maxdist_default)));
+				props.put(MobileDefinitions.MEAN_FRAGMENT_LENGTH, line.getOptionValue("mfl"));
+				props.put(MobileDefinitions.SD_FRAGMENT_LENGTH, line.getOptionValue("sd"));
+				props.put(MobileDefinitions.LENGTH_99PROCENT_OF_FRAGMENTS, line.getOptionValue("maxclust", Integer.toString(percentile_99_fragment)));
+				props.put(MobileDefinitions.SEARCH_AREA, line.getOptionValue("search", Integer.toString(search)));
+				props.put(MobileDefinitions.MINIMUM_TOTAL_HITS, line.getOptionValue("mintotal", Integer.toString(min_total_hits)));
+				props.put(MobileDefinitions.MINIMUM_INITIAL_SPLIT_CLUSTER_READS, line.getOptionValue("splithits", Integer.toString(min_initial_cluster_size_split)));
+				props.put(MobileDefinitions.TMP, line.getOptionValue("tmp", System.getProperty("java.io.tmpdir")));
+				props.put(MobileDefinitions.REPEAT_MASK_FILE, line.getOptionValue("repmask", repmask_file));
+				props.put(MobileDefinitions.MULTIPLE_SAMPLE_CALLING, Boolean.toString(line.hasOption("multiplesample")));
+				props.put(MobileDefinitions.MULTIPLE_SAMPLE_CALLING_STRINGENT, line.hasOption("multisample_stringent"));
+				props.put(MobileDefinitions.GRIPS_MODE, Boolean.toString(line.hasOption("grips")));
+				props.put(MobileDefinitions.OUTFILE, line.getOptionValue("out") + "_predictions.txt");
+				props.put(MobileDefinitions.VCF, Boolean.toString(line.hasOption("vcf")));
+				props.put(MobileDefinitions.MEMORY, line.getOptionValue("max_memory", Integer.toString(SAMWriting.MAX_RECORDS_IN_RAM)));
 
-				logger.info("Using simple clustering with search area of: " + search);
-					
-				runSimpleAnchorClusterer(anchor, anchorIndex, clusterBam, search, rpc, true);
+				props.put(MobileDefinitions.MAX_SPACING_CLIPPED_READS, Integer.toString(clip_spacing));
+				props.put(MobileDefinitions.MAX_DISTANCE_CLIPPED_CLUSTERS, Integer.toString(del_max_size));
+				props.put(MobileDefinitions.MAX_OVERLAP_CLIPPED_CLUSTERS, Integer.toString(dup_max_size));
+				props.put(MobileDefinitions.PREFIX_REFERENCE, Boolean.toString(usePrefixReference));
 
-				
-				//Step 2: coordinate sorting the clusters (each cluster is a
-				//read name in the bam file)
-//				execCommand(samdir + "samtools sort " + clusterBam.toString() + " " +
-//						line.getOptionValue("out") + "_clusters_sorted");
-//				
-//				execCommand(samdir + "samtools index " + line.getOptionValue("out") + "_clusters_sorted.bam");
-				
-				//Step 3: Make single & double cluster predictions out of the clusters
-				Vector<MobilePrediction> matePredictions;
-				
-				matePredictions = clusterMateClusters(clusterBam, new File(clusterBam.toString().replaceAll(".bam$", ".bai")),
-						overlap, maxdist);
-				
-				//Step 4: do split clustering when available
-				if(splitAnchor != null){
-					logger.info("Number of initial minimum hits for split clusters:" + min_initial_cluster_size_split);
-					clusterSplitAnchorsToBAM(splitAnchor, splitAnchorIndex,
-							new File(line.getOptionValue("out") + "_splitcluster.bam"), min_initial_cluster_size_split, true);
-					
-//					execCommand(samdir + "samtools sort " + line.getOptionValue("out") + "_splitcluster.bam" +
-//					 " " + line.getOptionValue("out") + "_splitcluster_sorted");
-//					execCommand(samdir + "samtools index " + line.getOptionValue("out") + "_splitcluster_sorted.bam");
-					
-					try {
-						matePredictions = mergeSplitAndMateClusters(matePredictions, new File(line.getOptionValue("out") +
-								"_splitcluster.bam"), new File(line.getOptionValue("out") + "_splitcluster.bai"));
-					} catch (IllegalSAMPairException e) {
-						logger.error(e.getMessage());
-					}
-				}
-				
-				matePredictions = mergePredictions(matePredictions, overlap, maxdist);
-				
-				matePredictions = filterByMinTotalHits(matePredictions, min_total_hits);
-				matePredictions = filterKnownMEs(getKnownMEs(), matePredictions);
-				commentHeader = getVersionAndParameterInfo(args);
-				writePredictionsToFile(line.getOptionValue("out") + "_predictions.txt", matePredictions, commentHeader, sample);
-				
+				//Perform clustering
+				Vector<MobilePrediction> predictions = runFromProperties(props);
+
 				long end = System.currentTimeMillis();
 				long millis = end - start;
 				String time = String.format("%d min, %d sec", 
 					    TimeUnit.MILLISECONDS.toMinutes(millis),
-					    TimeUnit.MILLISECONDS.toSeconds(millis) - 
+					    TimeUnit.MILLISECONDS.toSeconds(millis) -
 					    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis))
 					);
 				
 				logger.info("Anchorclusterer ran in : " + time);
-				
+
+				//Filter and save the result
+				Save.runFromProperties(props, predictions);
 				
 			}  catch (IOException e){
 				logger.error("Error in opening files: " + e.getMessage());
@@ -624,43 +367,6 @@ public class AnchorClusterer {
 			
 		}
 
-	}
-	
-	private static Vector<MobilePrediction> filterByMinTotalHits(
-			Vector<MobilePrediction> matePredictions, int min_total_hits2) {
-		
-		Vector<MobilePrediction> copy_preds = new Vector<MobilePrediction>();
-		int c = 0;
-		boolean pass;
-				
-		for (MobilePrediction pred : matePredictions){
-			
-			pass = false;
-			
-			if (!multiple_sample_calling || !filter_by_read_counts_single_sample){
-				if (pred.getLeftTotalHits() + pred.getRightTotalHits() >= min_total_hits2){
-					copy_preds.add(pred);
-					pass = true;
-				}
-			}
-			
-			else{
-				Map<String, Integer> sampleCounts = pred.getSampleCounts();
-				for (String sample : sampleCounts.keySet()){
-					if (sampleCounts.get(sample) >= min_total_hits2){
-						copy_preds.add(pred);
-						pass = true;
-						break;
-					}
-				}
-			}
-			if (!pass){
-				c++;
-			}
-		}
-		
-		logger.info(c +" predictions did not meet the minimum required read support of: " + min_total_hits2 );
-		return copy_preds;
 	}
 
 	/**
@@ -762,54 +468,6 @@ public class AnchorClusterer {
 		
 		return success;
 
-	}
-	
-	public static void writePredictionsToFile(String outString, Vector<MobilePrediction> predictions, String comment, String sampleName){
-		try {
-			PrintWriter outFile = new PrintWriter(new FileWriter(outString), true);
-			outFile.print(comment);
-			
-			outFile.print(MobilePrediction.getHeader() + "\n");
-			
-			for(MobilePrediction pred : predictions){
-				//pred.setSampleName(sampleName);
-				outFile.print(pred + "\n");
-			}
-			
-			outFile.close();
-		} catch (IOException e) {
-			logger.error("Failed to write prediction file: " + e.getMessage());
-		}
-		
-		
-	}
-	
-	public static void writeGRIPSToFile(String outString, Vector<MobilePrediction> predictions, String comment, boolean filter){
-		try {
-			PrintWriter outFile = new PrintWriter(new FileWriter(outString), true);
-			
-			boolean writtenHeader = false;
-			outFile.print(comment);
-			for(MobilePrediction pred : predictions){
-				if (! writtenHeader){
-					outFile.println(pred.toGripsHeader());
-					writtenHeader = true;
-				}
-
-				if (filter && ! pred.gripNeedsFiltering()){
-					outFile.println(pred.toGripsString());
-				}else if (! filter){
-					outFile.println(pred.toGripsString());
-				}
-
-			}
-			
-			outFile.close();
-		} catch (IOException e) {
-			logger.error("Failed to write prediction file: " + e.getMessage());
-		}
-		
-		
 	}
 	
 	public static Options createCmdOptions(){
@@ -960,8 +618,10 @@ public class AnchorClusterer {
 		
 		Option grip = new Option("grips", "Change settings specifically for GRIP clustering");
 		options.addOption(grip);
-		
-		
+
+		Option vcf = new Option("vcf", "Output the results of Mobster in VCF format in addition to the default format.");
+		options.addOption(vcf);
+
 		return options;
 	}
 	
@@ -1014,7 +674,7 @@ public class AnchorClusterer {
 			usePrefixReference = Boolean.getBoolean(mobster_properties.getProperty(MobileDefinitions.PREFIX_REFERENCE));
 		
 		logger.info("Using a minPercentSameMateRefMapping threshold of: " + minPercentSameMateRefMapping);
-		logger.info("Using a max different mate chr threshold of: " + maxDiffMateMapping);
+		logger.info("Using a ZZdifferent mate chr threshold of: " + maxDiffMateMapping);
 		
 		if (multiple_sample_calling){
 			sampleCalling = SampleBam.MULTISAMPLE;
@@ -1217,8 +877,7 @@ public class AnchorClusterer {
 	 * overlap with the inner border of a 5' end cluster.
 	 * @param maxdist maximum distance between forward and reverse clusters to still cluster them as a
 	 * double cluster.
-	 * @param predictionFile name of output prediction .txt file
-	 * @throws IOException
+tyuasx	 * @throws IOException
 	 */
 	public static Vector<MobilePrediction> clusterMateClusters(File clusterIn, File clusterIndex, int overlap, int maxdist) {
 		
@@ -1288,7 +947,7 @@ public class AnchorClusterer {
 		mobileFamily = cluster.getAttribute(MobileDefinitions.SAM_TAG_MOBILE_HIT).toString();
 		ref = cluster.getReferenceName();
 		end = cluster.getAlignmentEnd();
-		
+
 		if(!reverse){
 			iter = input.query(ref, end - overlap, end + maxdist, false);
 			while(iter.hasNext()){
@@ -1412,49 +1071,6 @@ public class AnchorClusterer {
 		}
 		
 		
-	}
-	
-	
-	/**
-	 * Write a tab delimited file
-	 * 
-	 * @param lines Nested vector. Each inner vector contains a string value for each column.
-	 * @param header Vector. Each String inside vector contains a column header.
-	 * @param outname Name of outputted file.
-	 * @param delim Delimiter to be used between column names and values.
-	 * @throws IOException
-	 */
-	public static void writeDelimitedFile(Vector<Vector<String>> lines, Vector<String> header, String outname,
-			String delim)
-		throws IOException{
-		
-		PrintWriter outFile = new PrintWriter(new FileWriter(outname), true);
-		writeDelimitedLine(header, outFile, delim);
-		
-		for(Vector<String> line : lines){
-			writeDelimitedLine(line, outFile, delim);
-		}
-		
-		outFile.close();
-		
-		
-	}
-	
-	/**
-	 * Write a single delimited line from a PrintWriter object.
-	 * @param line Vector containing string values to be printed.
-	 * @param out PrintWriter object to write from.
-	 * @param delim Delimiter used for seperating string values in parameter line.
-	 */
-	public static void writeDelimitedLine(Vector<String> line, PrintWriter out, String delim){
-		
-		for(int i = 0; i < line.size(); i++){
-			out.print(line.get(i));
-			if (i != line.size() - 1){
-				out.print(delim);
-			}
-		}
-		out.println();
 	}
 	
 	/**

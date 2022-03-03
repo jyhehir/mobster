@@ -6,6 +6,8 @@ import java.util.Vector;
 
 import org.umcn.me.samexternal.IllegalSAMPairException;
 
+import static org.umcn.me.output.Save.writePredictionsToFile;
+
 public class SplitClustersInMateClustersTest {
 
 	public static void main(String[] args){
@@ -19,7 +21,7 @@ public class SplitClustersInMateClustersTest {
 			Vector<MobilePrediction> predictions = AnchorClusterer.clusterMateClusters(clusterIn, clusterIndex, 50, 700);
 			predictions = AnchorClusterer.mergeSplitAndMateClusters(predictions, splitCluster, splitClusterIn);
 			predictions = AnchorClusterer.filterKnownMEs(AnchorClusterer.getKnownMEs(), predictions);
-			AnchorClusterer.writePredictionsToFile("D:/ClusterRefacV4_0.1mmpSoloSplitSwitchLandRYESSplitBWA_splitmerged.txt", predictions, "#testcomment\n", "testsample");
+			writePredictionsToFile("D:/ClusterRefacV4_0.1mmpSoloSplitSwitchLandRYESSplitBWA_splitmerged.txt", predictions, "#testcomment\n", "testsample");
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

@@ -1,4 +1,4 @@
-package org.umcn.mobster.vcf;
+package org.umcn.me.output.vcf;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -18,11 +18,11 @@ public class MobsterToVCF {
 
 	private String date = "April 8th 2015";
 	
-	@Parameter(names = "-file", description = "Mobster predictions file (containing metaheader with # and 1 normal line header)", converter = FileConverter.class, required = true)
-	private File file;
+	@Parameter(names = "-file", description = "Mobster predictions file (containing metaheader with # and 1 normal line header)", required = true)
+	private String in;
 	
-	@Parameter(names = "-out", description = "Output vcf file", converter = FileConverter.class, required = true)
-	private File out;
+	@Parameter(names = "-out", description = "Output vcf file", required = true)
+	private String out;
 	
 	public static void main(String[] args) {
 		MobsterToVCF mToVCF = new MobsterToVCF();
@@ -33,7 +33,7 @@ public class MobsterToVCF {
 			jc.parse(args);
 			mToVCF.run();
 		} catch (IOException e) {
-			System.err.println("MobsterToVCF: could not write outfile.");
+			System.err.println("MobsterToVCF: could not read in or write outfile.");
 			System.err.println(e.getMessage());
 		} catch (ParameterException e){
 			if (args.length > 0){
@@ -46,23 +46,25 @@ public class MobsterToVCF {
 	}
 
 	private void run() throws IOException {
+		run(in, out);
+	}
+
+	public static void run(String inString, String outString) throws IOException{
 		List<MobsterRecord> records;
-		FileWriter fw = new FileWriter(this.out);
+		FileWriter fw = new FileWriter(outString);
 		BufferedWriter bw = new BufferedWriter(fw);
-		
-		MobsterParser parser = new MobsterParser(file);
+
+		MobsterParser parser = new MobsterParser(new File(inString));
 		records = parser.parse();
 		Collections.sort(records);
-		
+
 		bw.write(MobsterRecordVCFWrapper.VCFHEADER);
-		
+
 		for (MobsterRecord record : records){
 			MobsterRecordVCFWrapper vcfRecord = new MobsterRecordVCFWrapper(record);
 			bw.write(vcfRecord.toString());
-			bw.write("\n");			
+			bw.write("\n");
 		}
 		bw.close();
-		
 	}
-	
 }

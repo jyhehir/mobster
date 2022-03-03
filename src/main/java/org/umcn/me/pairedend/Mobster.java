@@ -2,9 +2,10 @@ package org.umcn.me.pairedend;
 
 import java.io.*;
 import java.util.Properties;
-
+import java.util.Vector;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.umcn.me.output.Save;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.util.MobileDefinitions;
 
@@ -15,7 +16,6 @@ public final class Mobster {
     public static String inFile = null;
     public static String outFile = null;
     public static String sampleName = null;
-    public static boolean vcfOut = false;
     public static String resourcesDir = null;
     public static final String VERSION;
 
@@ -69,11 +69,14 @@ public final class Mobster {
                 System.exit(EXTERNAL_DEPENDENT_PROGRAM_FAIL_EXIT_CODE);
             }
 
-            //???
+            //Extract anchors mapping to mobiome
             runMEIPairFinder(props);
 
-            //Cluster the supporting reads to find the MEIs and write them to output files
-            AnchorClusterer.runFromPropertiesFile(props);
+            //Cluster the supporting reads to find the MEI predictions
+            Vector<MobilePrediction> predictions = AnchorClusterer.runFromProperties(props);
+
+            //Filter and save the predictions
+            Save.runFromProperties(props, predictions);
 
         } catch (IOException e) {
             logger.error(e.getMessage());
@@ -214,11 +217,11 @@ public final class Mobster {
         System.out.println("A new properties file containing all the final properties will also be created with the output prefix.");
         System.out.println();
         System.out.println("\t-properties [properties]\tThis value is required. Path to the properties file.");
-        System.out.println(("\t-rdir [resources folder]\tThis value will override corresponding value in the properties file. Specifies where the resources folder of mobster is installed."));
+        System.out.println(("\t-rdir [resources folder]\tThis value will override corresponding value in the properties file. Specify where the resources folder of mobster is installed."));
         System.out.println("\t-in [input .bam file]\t\tThis value will override corresponding value in the properties file. Multiple BAM files may be specified if separated by a comma");
         System.out.println("\t-out [output prefix]\t\tThis value will override corresponding value in the properties file.");
         System.out.println(("\t-sn [sample name]\t\t\tThis value will override corresponding value in the properties file. Multiple sample names may be specified if separated by a comma"));
-        System.out.println(("\t-vcf\t\t\t\t\t\tIf this flag is given, the corresponding value in the properties file will be set to 'true'. Will change the output of Mobster to VCF instead of the default format."));
+        System.out.println(("\t-vcf\t\t\t\t\t\tIf this flag is given, the corresponding value in the properties file will be set to 'true'. Output the results of Mobster in VCF format in addition to the default format."));
         System.out.println(("\t--<PROPERTY> [value]\t\tThis value will override the corresponding value in the properties file."));
         System.out.println();
         System.out.println("Default mapping tool: " + SAMDefinitions.MAPPING_TOOL_UNSPECIFIED);
@@ -232,18 +235,25 @@ public final class Mobster {
 
                 //Loop over all properties to find if a properties file has been provided, load it
                 //And add the properties to the properties object
-                for (int i = 0; i < args.length; i = i + 2)
+                for (int i = 0; i < args.length; i += 1)
                     if (args[i].equalsIgnoreCase("-properties")) {
                         propertiesFile = args[i + 1];
                         props.load(new FileInputStream(propertiesFile));
                     }
 
                 //Again loop over all arguments and override any properties in props when they are provided on the command line
-                for (int i = 0; i < args.length; i = i + 2) {
+                for (int i = 0; i < args.length; i += 1) {
                     String argument = args[i];
-                    String argUpperCase = argument.replace("--", "").toUpperCase();
-                    String value = args[i+1];
 
+                    //First check for flags
+                    if(argument.equalsIgnoreCase("-vcf")){
+                        props.put(MobileDefinitions.VCF, true);
+                        continue;
+                    }
+
+                    //Then for arguments
+                    String argUpperCase = argument.replace("--", "").toUpperCase();
+                    String value = args[++i];
                     if (argument.equalsIgnoreCase("-in")){
                         inFile = value;
                         props.put(MobileDefinitions.INFILE, inFile);
@@ -255,7 +265,6 @@ public final class Mobster {
                         props.put(MobileDefinitions.SAMPLE_NAME, sampleName);
                     }
                     else if (argument.equalsIgnoreCase("-vcf")){
-                        vcfOut = Boolean.parseBoolean(value);
                         props.put(MobileDefinitions.VCF, value);
                     }
                     else if (argument.equalsIgnoreCase("-rdir")){
@@ -326,7 +335,7 @@ public final class Mobster {
             }
         } catch(ArrayIndexOutOfBoundsException e){
             printUsage();
-            logger.error("Invalid argument value provided. Please try again. Make sure each argument is followed by a value.");
+            logger.error("Invalid arguments provided. Please try again. Make sure the correct arguments are followed by a value.");
             System.exit(-1);
         } catch (FileNotFoundException e) {
             logger.error(e.getMessage());

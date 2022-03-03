@@ -1,4 +1,4 @@
-package org.umcn.mobster.vcf;
+package org.umcn.me.output.vcf;
 
 import org.beanio.annotation.Field;
 import org.beanio.annotation.Record;
@@ -52,9 +52,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 	private double clippedAvgLength;
 	private String tsd;
 	
-	public String getChromosome() {
-		return chromosome;
-	}
+	public String getChromosome() { return chromosome; }
 	
 	@Field(at=0, required=true)
 	public void setChromosome(String chromosome) {
@@ -80,7 +78,6 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 			return 1;
 		}
 		return this.insertionPoint;
-		
 	}
 	
 	@Field(at=2, required=true)

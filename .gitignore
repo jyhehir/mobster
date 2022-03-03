@@ -11,3 +11,6 @@
 resources/repmask/alu_l1_herv_sva_other_grch38_accession_ucsc.rpmsk
 resources/repmask/alu_l1_herv_sva_other_grch38_ucsc.rpmsk
 resources/repmask/hg19_alul1svaerv.rpmsk
+resources/hg19.fa
+resources/hg19.fai
+lib/jar/MobileInsertions-0.2.4.1.jar
