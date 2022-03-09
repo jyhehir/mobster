@@ -294,7 +294,7 @@ public class FilterPredictions {
         this.predictions = predictionsToReturn;
     }
 
-    public static Map<String, Integer> getSourceGeneCounts(Vector<MobilePrediction> predictions){
+    private Map<String, Integer> getSourceGeneCounts(Vector<MobilePrediction> predictions){
 
         Map<String, Integer> counts = new HashMap<String, Integer>();
 
