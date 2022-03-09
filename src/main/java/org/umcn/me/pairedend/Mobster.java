@@ -5,7 +5,7 @@ import java.util.Properties;
 import java.util.Vector;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.umcn.me.output.Save;
+import org.umcn.me.output.SavePredictions;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.util.MobileDefinitions;
 
@@ -76,7 +76,7 @@ public final class Mobster {
             Vector<MobilePrediction> predictions = AnchorClusterer.runFromProperties(props);
 
             //Filter and save the predictions
-            Save.runFromProperties(props, predictions);
+            SavePredictions.runFromProperties(props, predictions);
 
         } catch (IOException e) {
             logger.error(e.getMessage());

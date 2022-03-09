@@ -1,12 +1,10 @@
 package org.umcn.me.pairedend;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import net.sf.samtools.*;
 import org.apache.commons.cli.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.umcn.me.output.Save;
-import org.umcn.me.output.vcf.MobsterToVCF;
+import org.umcn.me.output.SavePredictions;
 import org.umcn.me.sam.MateCluster;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMSilentReader;
@@ -356,7 +354,7 @@ public class AnchorClusterer {
 				logger.info("Anchorclusterer ran in : " + time);
 
 				//Filter and save the result
-				Save.runFromProperties(props, predictions);
+				SavePredictions.runFromProperties(props, predictions);
 				
 			}  catch (IOException e){
 				logger.error("Error in opening files: " + e.getMessage());

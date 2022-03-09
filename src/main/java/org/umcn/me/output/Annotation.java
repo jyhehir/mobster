@@ -56,7 +56,7 @@ public class Annotation {
         }
     }
 
-    public static void annotateBlacklist(Collection<ReadName> reads, String blacklistLocation) throws IOException, java.text.ParseException{
+    public static void annotateExclusionList(Collection<ReadName> reads, String blacklistLocation) throws IOException, java.text.ParseException{
         TabixBaseAnnotater<BlacklistAnnotation> tba = new TabixBaseAnnotater<BlacklistAnnotation>(blacklistLocation, new BlacklistAnnotation());
 
         for (ReadName name : reads){

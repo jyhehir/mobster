@@ -9,7 +9,7 @@ import org.umcn.me.samexternal.IllegalSAMPairException;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
 
-import static org.umcn.me.output.Save.writePredictionsToFile;
+import static org.umcn.me.output.SavePredictions.writePredictionsToFile;
 
 public class OnlySplitClusterToPred {
 

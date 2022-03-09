@@ -11,7 +11,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
-import org.umcn.me.output.Filter;
+import org.umcn.me.output.FilterPredictions;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.tabix.BlacklistAnnotation;
@@ -99,7 +99,7 @@ public class MobilePrediction  {
 	private int right_mate_median_mapq = -1;
 
 	
-	public static Logger logger = Logger.getLogger(Filter.class.getName());
+	public static Logger logger = Logger.getLogger(AnchorClusterer.class.getName());
 	
 	public final static int SINGLE_CLUSTER_BORDER_FUZZINESS = 20;
 	

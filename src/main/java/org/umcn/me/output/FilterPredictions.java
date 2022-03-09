@@ -1,28 +1,28 @@
 package org.umcn.me.output;
 
 import org.apache.log4j.Logger;
-import org.umcn.me.pairedend.AnchorClusterer;
 import org.umcn.me.pairedend.MobilePrediction;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.SimpleRegion;
 
 import java.io.*;
 import java.util.*;
 
-public class Filter {
+public class FilterPredictions {
 
-    public static Logger logger = Logger.getLogger(Filter.class.getName());
-    private static boolean multiple_sample_calling = false;
-    private static boolean filter_by_read_counts_single_sample = false;
+    public static Logger logger = Logger.getLogger(FilterPredictions.class.getName());
+    private boolean multiple_sample_calling = false;
+    private boolean filter_by_read_counts_single_sample = false;
     private static final int FILTER_REGION = 90;
-    private static String repmask_file = "./hg19_alul1svaerv.txt";
+    private static String repmask_file = "../resources/hg19_alul1svaerv.txt";
+    private Vector<MobilePrediction> predictions;
+    private Map<String, HashMap<String, HashSet<String>>> knownMEs;
 
-    public static Vector<MobilePrediction> filterByMinTotalHits(Properties props,
-            Vector<MobilePrediction> matePredictions, int min_total_hits) {
+    public FilterPredictions(Vector<MobilePrediction> predictions){
+        this.predictions = predictions;
+    }
 
-        //---Setup variables---
-        Vector<MobilePrediction> copy_preds = new Vector<MobilePrediction>();
-        int c = 0;
-        boolean pass;
+    public FilterPredictions(Properties props, Vector<MobilePrediction> predictions) throws IOException {
         if (props.containsKey(MobileDefinitions.MULTIPLE_SAMPLE_CALLING) && "true".equals(props.getProperty(MobileDefinitions.MULTIPLE_SAMPLE_CALLING).toLowerCase())){
             multiple_sample_calling = true;
         }
@@ -30,8 +30,21 @@ public class Filter {
                 "true".equals(props.getProperty(MobileDefinitions.MULTIPLE_SAMPLE_CALLING_STRINGENT).toLowerCase())){
             filter_by_read_counts_single_sample = true;
         }
+        this.predictions = predictions;
+    }
 
-        for (MobilePrediction pred : matePredictions){
+    public Vector<MobilePrediction> getPredictions(){
+        return this.predictions;
+    }
+
+    //----- Normal filter methods --------
+
+    public void filterByMinTotalHits(int min_total_hits) {
+
+        int c = 0;
+        boolean pass;
+        Vector<MobilePrediction> copy_preds = new Vector<MobilePrediction>();
+        for (MobilePrediction pred : predictions){
 
             pass = false;
 
@@ -58,16 +71,15 @@ public class Filter {
         }
 
         logger.info(c +" predictions did not meet the minimum required read support of: " + min_total_hits);
-        return copy_preds;
+        this.predictions = copy_preds;
     }
 
-
-    public static Vector<MobilePrediction> filterKnownMEs(Properties props, Vector<MobilePrediction> predictions) throws IOException{
-        return filterKnownMEs(getKnownMEs(props), predictions);
+    public void filterKnownMEs(Properties props) throws IOException {
+        loadKnownMEs(props);
+        filterKnownMEs();
     }
 
-    public static Vector<MobilePrediction> filterKnownMEs(Map<String, HashMap<String, HashSet<String>>> knownMEs,
-                                                          Vector<MobilePrediction> predictions){
+    public void filterKnownMEs(){
         String ref;
         //String me;
         int border5;
@@ -130,7 +142,7 @@ public class Filter {
         logger.info("filtered already known sva: " + sva);
         logger.info("filtered already known l1: " + l1);
         logger.info("filtered already known herv (hervk): " + herv);
-        return filteredPredictions;
+        this.predictions = filteredPredictions;
     }
 
     /**
@@ -142,7 +154,7 @@ public class Filter {
      * mobile elements as keys and position start and position end as string values seperated by "-"
      * @throws IOException
      */
-    public static Map<String, HashMap<String, HashSet<String>>> getKnownMEs(Properties props) throws IOException{
+    public void loadKnownMEs(Properties props) throws IOException{
         /*
          * Map contains:
          * - Chromosomes as key
@@ -209,6 +221,96 @@ public class Filter {
         br.close();
         is.close();
 
-        return meMap;
+        this.knownMEs = meMap;
+    }
+
+
+    //----- GRIPS filter methods --------
+
+    /**
+     * Only return predictions which occur a maximum of x times based on the name of the source genes in the vector.
+     * @param max an integer: only predictions with < max same source genes are kept
+     * @return a copy of predictions containing only the predictions which adhere to the filtering criteria.
+     */
+    public void reducePredictionsBasedOnSource(int max){
+
+        Map<String, Integer> sourceGeneCounts = new HashMap<String, Integer>();
+        Set<String> sourceGenesToLog = new HashSet<String>();
+        Vector<MobilePrediction> predictionsToKeep = new Vector<MobilePrediction>();
+        sourceGeneCounts = getSourceGeneCounts(predictions);
+
+
+        for (int i=0; i < predictions.size(); i++){
+            MobilePrediction pred = predictions.get(i);
+
+            for (String sourceGene : pred.getMobileMappings()){
+                if (sourceGeneCounts.containsKey(sourceGene)){
+                    int actualCount = sourceGeneCounts.get(sourceGene);
+
+                    if (actualCount < max){
+                        predictionsToKeep.add(pred);
+                    }
+                    if (sourceGenesToLog.add(sourceGene)){
+                        logger.debug("Source gene: " + sourceGene +  " - occurs: " + actualCount);
+                    }
+                }
+            }
+        }
+
+        logger.info("Separate predictions are allowed to have a maximum of: " + max + " same source genes");
+        logger.info("Number of predictions filtered because of same source gene: " + (predictions.size() - predictionsToKeep.size()));
+
+        this.predictions = predictionsToKeep;
+    }
+
+    public void removeOverlappingPredictions(){
+
+        Vector<MobilePrediction> predictionsCopy = new Vector<MobilePrediction>(predictions);
+        Vector<MobilePrediction> predictionsToReturn = new Vector<MobilePrediction>();
+
+
+        for (MobilePrediction pred : predictions){
+            boolean foundOverlap = false;
+
+            SimpleRegion currentPred = pred.predictionWindowToRegion();
+
+            for (MobilePrediction predCopy : predictionsCopy){
+                if (!pred.equals(predCopy) && currentPred.hasOverlapInBP(predCopy.predictionWindowToRegion()) > 0){
+                    logger.info("Prediction:  " + pred.getChromosome() + ":" + pred.getInsertionEstimate() + "-" + pred.getMobileMappings().toString() +
+                            "and prediction: " + predCopy.getChromosome() + ":" + predCopy.getInsertionEstimate() + "-" + predCopy.getMobileMappings().toString()
+                            + " are overlapping and removed");
+                    foundOverlap = true;
+                    break;
+                }
+            }
+
+            if (! foundOverlap){
+                predictionsToReturn.add(pred);
+            }
+        }
+
+        logger.info("Number of predictions removed because they were overlapping: " + (predictions.size() - predictionsToReturn.size()));
+
+        this.predictions = predictionsToReturn;
+    }
+
+    public static Map<String, Integer> getSourceGeneCounts(Vector<MobilePrediction> predictions){
+
+        Map<String, Integer> counts = new HashMap<String, Integer>();
+
+        for (MobilePrediction pred : predictions){
+            for (String sourceGene : pred.getMobileMappings()){
+
+                if (counts.containsKey(sourceGene)){
+                    int newCount = counts.get(sourceGene) + 1;
+                    counts.put(sourceGene, newCount);
+                }else{
+                    counts.put(sourceGene, 1);
+                }
+
+            }
+        }
+        return counts;
+
     }
 }

@@ -6,7 +6,7 @@ import java.util.Vector;
 
 import org.umcn.me.samexternal.IllegalSAMPairException;
 
-import static org.umcn.me.output.Save.writePredictionsToFile;
+import static org.umcn.me.output.SavePredictions.writePredictionsToFile;
 
 public class SplitClustersInMateClustersTest {
 

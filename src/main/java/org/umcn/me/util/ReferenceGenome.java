@@ -5,12 +5,14 @@ import net.sf.picard.reference.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class Reference {
+public class ReferenceGenome {
     private static ReferenceSequenceFile reference = null;
     private static FastaSequenceIndex index = null;
 
-    public static void loadReference(String refPath) throws IOException {
+    public ReferenceGenome(String refPath) throws IOException {
 
         //Check if the reference exists
         File refFile = new File(refPath);
@@ -38,14 +40,13 @@ public class Reference {
 
     static public void createIndex(String refPath, String indexPath) throws IOException {
 
-        try (BufferedReader refRead = new BufferedReader(new InputStreamReader(new FileInputStream(refPath))); BufferedWriter indexWrite = new BufferedWriter(new FileWriter(indexPath))) {
+        try (BufferedReader refRead = new BufferedReader(new InputStreamReader(new FileInputStream(refPath)));
+             BufferedWriter indexWrite = new BufferedWriter(new FileWriter(indexPath))) {
 
             //Setup variables
             long offset = 0;
             ArrayList<Integer> lengths = new ArrayList<Integer>();
-            int cInt;
-            char c;
-            boolean append;
+            String line;
             class SequenceIndex {
                 String name;
                 ArrayList<Integer> lengths;
@@ -55,50 +56,31 @@ public class Reference {
             //Create indices for each sequence
             SequenceIndex seqIndex = null;
             ArrayList<SequenceIndex> seqIndices = new ArrayList<SequenceIndex>();
-            while ((cInt = refRead.read()) != -1) {
-                c = (char) cInt;
+            while ((line = refRead.readLine()) != null) {
+                offset += line.length() + 1;
 
                 //When header...
-                if (c == '>') {
+                if (line.startsWith(">")) {
                     seqIndex = new SequenceIndex();
                     seqIndex.lengths = new ArrayList<>();
-                    offset++;
-                    StringBuilder name = new StringBuilder();
-                    append = true;
+                    String name;
 
-                    //Read it until new line
-                    while ((cInt = refRead.read()) != -1) {
-                        c = (char) cInt;
-                        offset++;
-                        if (c == '\n') break;
-
-                        else if (Character.isWhitespace(c)) append = false;
-                        if (append) name.append(c);
-                    }
+                    //Extract the name (until the first space)
+                    Pattern pattern = Pattern.compile(">([^ ]+)");
+                    Matcher matcher = pattern.matcher(line);
+                    if(matcher.find())
+                        name = matcher.group(1);
+                    else
+                        throw new IOException("'" + line + "' is not a valid header");
 
                     //Add info to index row
-                    seqIndex.name = name.toString();
+                    seqIndex.name = name;
                     seqIndex.begin = offset;
                     seqIndices.add(seqIndex);
-
-                    System.out.println(name);
                 }
-                //When sequence...
-                else {
-
-                    ///Read it until new line/end of file
-                    Integer length = 0;
-                    do{
-                        c = (char) cInt;
-                        offset++;
-                        if (c == '\n') break;
-                        length++;
-                    }
-                    while ((cInt = refRead.read()) != -1);
-
-                    //And add info to index row
-                    seqIndex.lengths.add(length);
-                }
+                //When sequence line, add the length of it to the sequence index
+                else
+                    seqIndex.lengths.add(line.length());
             }
 
             //Write the indexes for the sequences to the file
@@ -118,11 +100,11 @@ public class Reference {
         }
     }
 
-    public static String getBaseAt(String chr, long position) throws InvalidNucleotideSequenceException {
-        return getSubSequenceAt(chr, position, position).getSequence();
+    public char getBaseAt(String chr, long position) throws InvalidNucleotideSequenceException {
+        return getSubSequenceAt(chr, position, position).getSequence().charAt(0);
     }
 
-    public static NucleotideSequence getSubSequenceAt(String chr, long start, long stop) throws InvalidNucleotideSequenceException {
+    public NucleotideSequence getSubSequenceAt(String chr, long start, long stop) throws InvalidNucleotideSequenceException {
         return new NucleotideSequence(new String(reference.getSubsequenceAt(chr, start, stop).getBases(), StandardCharsets.UTF_8));
     }
 }

@@ -1,11 +1,7 @@
 package org.umcn.me.output;
 
 import org.apache.log4j.Logger;
-import org.umcn.me.output.vcf.MobsterParser;
-import org.umcn.me.output.vcf.MobsterRecord;
-import org.umcn.me.output.vcf.MobsterRecordVCFWrapper;
 import org.umcn.me.output.vcf.MobsterToVCF;
-import org.umcn.me.pairedend.GRIPFunctions;
 import org.umcn.me.pairedend.MobilePrediction;
 import org.umcn.me.pairedend.Mobster;
 import org.umcn.me.util.CollectionUtil;
@@ -16,11 +12,10 @@ import java.io.*;
 import java.util.*;
 
 import static org.umcn.me.output.Annotation.*;
-import static org.umcn.me.output.Filter.*;
 
-public class Save {
+public class SavePredictions {
 
-    public static Logger logger = Logger.getLogger(Save.class.getName());
+    public static Logger logger = Logger.getLogger(SavePredictions.class.getName());
     private static final String VERSION;
     private static boolean grips_mode = false;
     private static String outPrefix;
@@ -56,12 +51,13 @@ public class Save {
 
 
         //---Start filtering---
+        FilterPredictions filter = new FilterPredictions(props, predictions);
 
         //Remove overlapping predictions
         if (props.containsKey(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS) &&
                 Boolean.parseBoolean(props.getProperty(MobileDefinitions.FILTER_OVERLAPPING_PREDICTIONS))){
             logger.info("Filter: will remove overlapping predictions");
-            predictions = GRIPFunctions.removeOverlappingPredictions(predictions);
+            filter.removeOverlappingPredictions();
         }
 
         //When grips is enabled, save unfiltered results
@@ -73,21 +69,22 @@ public class Save {
 
         //Remove predictions that have not enough supporting hits
         logger.info("Start filtering...");
-        predictions = filterByMinTotalHits(props, predictions, min_total_hits);
+        filter.filterByMinTotalHits(min_total_hits);
 
         //When grips is disabled, remove predictions that overlap known MEIs
         if (!grips_mode){
-            predictions = filterKnownMEs(getKnownMEs(props), predictions);
+            filter.filterKnownMEs(props);
         }
 
         //When grips is enabled, filter for multiple occurring source genes
         if (props.containsKey(MobileDefinitions.GRIPS_MAX_SOURCE_GENES)){
             int maxSourceGenes = Integer.parseInt(props.getProperty(MobileDefinitions.GRIPS_MAX_SOURCE_GENES));
             logger.info("Filtering GRIPS for max source genes: " + maxSourceGenes);
-            predictions = GRIPFunctions.reducePredictionsBasedOnSource(predictions, maxSourceGenes);
+            filter.reducePredictionsBasedOnSource(maxSourceGenes);
         }
         logger.info("End of filtering...");
 
+        predictions = filter.getPredictions();
 
         //---Save output---
         if (grips_mode){
@@ -128,7 +125,7 @@ public class Save {
             try {
                 annotateRefGene(readnameMap.values(), refGeneLoc);
                 annotateRepMask(readnameMap.values(), repMaskLoc, true);
-                annotateBlacklist(readnameMap.values(), blackListLoc);
+                annotateExclusionList(readnameMap.values(), blackListLoc);
                 annotateSelfChain(readnameMap.values(), selfChainLoc);
             } catch (java.text.ParseException e) {
                 // TODO Auto-generated catch block
