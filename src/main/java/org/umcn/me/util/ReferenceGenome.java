@@ -40,18 +40,13 @@ public class ReferenceGenome {
 
     static public void createIndex(String refPath, String indexPath) throws IOException {
 
-        try (BufferedReader refRead = new BufferedReader(new InputStreamReader(new FileInputStream(refPath)));
+        try (BufferedReader refRead = new BufferedReader(new FileReader(refPath));
              BufferedWriter indexWrite = new BufferedWriter(new FileWriter(indexPath))) {
 
             //Setup variables
             long offset = 0;
             ArrayList<Integer> lengths = new ArrayList<Integer>();
             String line;
-            class SequenceIndex {
-                String name;
-                ArrayList<Integer> lengths;
-                long begin;
-            }
 
             //Create indices for each sequence
             SequenceIndex seqIndex = null;
@@ -107,4 +102,11 @@ public class ReferenceGenome {
     public NucleotideSequence getSubSequenceAt(String chr, long start, long stop) throws InvalidNucleotideSequenceException {
         return new NucleotideSequence(new String(reference.getSubsequenceAt(chr, start, stop).getBases(), StandardCharsets.UTF_8));
     }
+}
+
+//Container class for use by ReferenceGenome.createIndex
+class SequenceIndex {
+    String name;
+    ArrayList<Integer> lengths;
+    long begin;
 }
