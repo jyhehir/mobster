@@ -291,7 +291,7 @@ public class PotentialMEIReadFinder {
 				samFileHeader = collection.getMergedHeader(SAMFileHeader.SortOrder.unsorted);
 				outputSam = SAMWriting.makeSAMWriter(new File(valuesParsedFromPropertiesFile.outfile + "_potential.bam"),
 						samFileHeader, valuesParsedFromPropertiesFile.tmp, valuesParsedFromPropertiesFile.memory,
-						SAMFileHeader.SortOrder.unsorted, true);
+						SAMFileHeader.SortOrder.unsorted, true, SAMFileHeader.GroupOrder.none);
 				
 				//TODO: Loop over runPotentialMEIFinder depending on the number of BAM files given
 				for (BAMSample bamSample : collection.getCloneOfBAMSampleList()){
@@ -305,7 +305,7 @@ public class PotentialMEIReadFinder {
 				samFileHeader = reader.getFileHeader();
 				outputSam = SAMWriting.makeSAMWriter(new File(valuesParsedFromPropertiesFile.outfile + "_potential.bam"),
 						samFileHeader, valuesParsedFromPropertiesFile.tmp, valuesParsedFromPropertiesFile.memory,
-						SAMFileHeader.SortOrder.unsorted, true);
+						SAMFileHeader.SortOrder.unsorted, true, SAMFileHeader.GroupOrder.none);
 				reader.close();
 
 				File bamSample = new File(bams[0]);

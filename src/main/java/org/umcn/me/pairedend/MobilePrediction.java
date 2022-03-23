@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
+import org.umcn.me.output.FilterPredictions;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.tabix.BlacklistAnnotation;
@@ -98,7 +99,7 @@ public class MobilePrediction  {
 	private int right_mate_median_mapq = -1;
 
 	
-	public static Logger logger = Logger.getLogger("MobilePrediction");
+	public static Logger logger = Logger.getLogger(AnchorClusterer.class.getName());
 	
 	public final static int SINGLE_CLUSTER_BORDER_FUZZINESS = 20;
 	
@@ -457,7 +458,7 @@ public class MobilePrediction  {
 		String mobileHit;
 		mobileHit = cluster.getAttribute(MobileDefinitions.SAM_TAG_MOBILE_HIT).toString();
 		this.parseSampleCountTag(cluster.getAttribute(MobileDefinitions.SAM_TAG_SAMPLECOUNT).toString());
-		
+
 		
 		for (String mobileMapping : mobileHit.split(";", -1)){
 			if (!mobileHit.equals("")){
@@ -472,7 +473,7 @@ public class MobilePrediction  {
 					"Clusters are not originating from same reference: " + cluster.getReferenceName()
 					+ "vs" + this.original_reference );
 		}
-		
+
 		
 				
 		isSplitCluster = Boolean.parseBoolean(cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_CLUSTER).toString());
@@ -547,7 +548,7 @@ public class MobilePrediction  {
 		String rightClippedMedianEnd;
 		
 		this.split_read_names.add(cluster.getReadName());
-		
+
 		leftClippedHits = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_LEFTCLIPPED_HITS).toString();
 		this.right_aligned_split_hits = Integer.parseInt(leftClippedHits); //left clipped reads are aligned to right of MEI
 		leftClippedMedianEnd = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_LEFTCLIPPED_MEDIAN_END).toString();

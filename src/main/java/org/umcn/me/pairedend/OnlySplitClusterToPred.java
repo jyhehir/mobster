@@ -9,6 +9,8 @@ import org.umcn.me.samexternal.IllegalSAMPairException;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
 
+import static org.umcn.me.output.SavePredictions.writePredictionsToFile;
+
 public class OnlySplitClusterToPred {
 
 	public static void main(String[] args){
@@ -33,7 +35,7 @@ public class OnlySplitClusterToPred {
 		try {
 			predictions = AnchorClusterer.filterKnownMEs(AnchorClusterer.getKnownMEs(), predictions);
 			System.out.println("after filtering: " + predictions.size());
-			AnchorClusterer.writePredictionsToFile("C:/ClusterRefacV4_0.1mm5cov_2splithits.txt", predictions, "#testcomment\n", "testsample");
+			writePredictionsToFile("C:/ClusterRefacV4_0.1mm5cov_2splithits.txt", predictions, "#testcomment\n", "testsample");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -1,4 +1,4 @@
-package org.umcn.mobster.vcf;
+package org.umcn.me.output.vcf;
 
 public class NAConverter {
 

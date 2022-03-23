@@ -6,6 +6,7 @@ import java.util.Vector;
 import net.sf.samtools.SAMRecord;
 
 import org.apache.log4j.BasicConfigurator;
+import org.umcn.me.output.FilterPredictions;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.util.SimpleRegion;
@@ -34,19 +35,19 @@ public class GRIPFunctionsTest extends TestCase {
 		 *  3x SKA3
 		 */
 		predictions = this.readInRecords(this.grips);
+		FilterPredictions filter = new FilterPredictions(predictions);
+
+		filter.reducePredictionsBasedOnSource(3);
 		
-		Vector<MobilePrediction> filteredPredictions = GRIPFunctions.reducePredictionsBasedOnSource(predictions, 3);
+		assertEquals(3, filter.getPredictions().size());
 		
-		assertEquals(3, filteredPredictions.size());
+		filter.reducePredictionsBasedOnSource(4);
 		
-		filteredPredictions = GRIPFunctions.reducePredictionsBasedOnSource(predictions, 4);
+		assertEquals(6, filter.getPredictions().size());
 		
-		assertEquals(6, filteredPredictions.size());
+		filter.reducePredictionsBasedOnSource(5);
 		
-		filteredPredictions = GRIPFunctions.reducePredictionsBasedOnSource(predictions, 5);
-		
-		assertEquals(10, filteredPredictions.size());
-		
+		assertEquals(10, filter.getPredictions().size());
 	}
 	
 	public void testRemovingOverlappingClusters(){
@@ -55,19 +56,19 @@ public class GRIPFunctionsTest extends TestCase {
 		 * The prediction set contains 23 predictions of which 12 have non-onverlapping prediction windows.
 		 */
 		Vector<MobilePrediction> predictions = this.readInRecords(gripsWithOverlappingClusters);
-		
-		Vector<MobilePrediction> remainingPredictions = GRIPFunctions.removeOverlappingPredictions(predictions);
+		FilterPredictions filter = new FilterPredictions(predictions);
+
+		filter.removeOverlappingPredictions();
 		
 		//Assert 12 predictions remain now.
-		assertEquals(12, remainingPredictions.size());
-		
+		assertEquals(12, filter.getPredictions().size());
 		
 		/**
 		 * 
 		 */
 		Vector<SimpleRegion> srs = new Vector<SimpleRegion>();
 		
-		for (MobilePrediction pred : remainingPredictions){
+		for (MobilePrediction pred : filter.getPredictions()){
 			SimpleRegion sr = pred.predictionWindowToRegion();
 			srs.add(sr);
 		}

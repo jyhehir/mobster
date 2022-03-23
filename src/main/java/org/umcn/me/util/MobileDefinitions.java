@@ -43,7 +43,9 @@ public abstract class MobileDefinitions {
 	//properties PotentialMEIReadFinder
 	
 	public static final String INFILE = "IN_FILE";
+	public static final String RESOURCES_DIR = "RESOURCES_DIR";
 	public static final String OUTFILE = "OUT_FILE";
+	public static final String VCF = "VCF_OUT";
 	public static final String MAPPING_TOOL = "MAPPING_TOOL";
 	public static final String USE_SPLIT = "USE_SPLIT";
 	public static final String TMP = "TEMP_DIR";
