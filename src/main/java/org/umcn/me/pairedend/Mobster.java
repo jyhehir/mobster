@@ -3,10 +3,14 @@ package org.umcn.me.pairedend;
 import java.io.*;
 import java.util.Properties;
 import java.util.Vector;
+
+import net.sf.picard.sam.ValidateSamFile;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.umcn.me.output.SavePredictions;
+import org.umcn.me.output.VAFPredictions;
 import org.umcn.me.samexternal.SAMDefinitions;
+import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.util.MobileDefinitions;
 
 public final class Mobster {
@@ -74,6 +78,9 @@ public final class Mobster {
 
             //Cluster the supporting reads to find the MEI predictions
             Vector<MobilePrediction> predictions = AnchorClusterer.runFromProperties(props);
+
+            //Predict AF for the predictions
+            predictions = VAFPredictions.runFromProperties(props, predictions);
 
             //Filter and save the predictions
             SavePredictions.runFromProperties(props, predictions);
@@ -281,6 +288,16 @@ public final class Mobster {
                         logger.error("Invalid arguments. Please try again.");
                         System.exit(-1);
                     }
+                }
+
+                //Check if the provided BAM file has an index file
+                //If not VAF determination will be disabled
+                if(new File(inFile+".bai").isFile()){
+                    props.put(MobileDefinitions.INFILE_INDEX, inFile+".bai");
+                } else if(new File(inFile.replace(".bam", ".bai")).isFile()){
+                    props.put(MobileDefinitions.INFILE_INDEX, inFile.replace(".bam", ".bai"));
+                }else {
+                    logger.info("Provided input file has no index file available. VAF determination will be disabled.");
                 }
 
                 //Check whether there is a correct number of samples

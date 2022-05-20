@@ -1,14 +1,9 @@
 package org.umcn.me.pairedend;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.function.DoublePredicate;
 
 import org.apache.log4j.Logger;
 import org.umcn.me.output.FilterPredictions;
@@ -25,15 +20,15 @@ import org.umcn.me.util.SimpleRegion;
 
 import net.sf.samtools.SAMRecord;
 
-public class MobilePrediction  {
-	
+public class MobilePrediction implements Comparable<MobilePrediction> {
+
 	private static final int MIN_DISCORDANT_UX = 2;
 
 	private String original_reference = "";
-	
+
 	private int median_fragment_length;
 	private int sd_fragment_length;
-	
+
 	private int left_mate_cluster_border = 0;
 	private int left_cluster_length = 0;
 	private int left_mate_hits = 0;
@@ -41,7 +36,7 @@ public class MobilePrediction  {
 	private int left_aligned_split_border = 0;
 	private int left_aligned_polyA_hits = 0;
 	private int left_aligned_polyT_hits = 0;
-	
+
 	private int right_mate_cluster_border = 0;
 	private int right_cluster_length = 0;
 	private int right_mate_hits = 0;
@@ -49,29 +44,31 @@ public class MobilePrediction  {
 	private int right_aligned_split_border = 0;
 	private int right_aligned_polyA_hits = 0;
 	private int right_aligned_polyT_hits = 0;
-	
+
 	private int unique_hits = 0;
 	private int multiple_hits = 0;
 	private int unmapped_hits = 0;
-	
+
 	private int max_expected_cluster_size;
-	
+
 	private String leftclipped_max_distance = "-1";
 	private String rightclipped_max_distance = "-1";
 	private String leftclipped_same_fraction = "-1";
 	private String rightclipped_same_fraction = "-1";
 	private String clipped_avg_qual = "-1";
 	private String clipped_avg_len = "-1";
-	
+
+	private String vaf = "-1";
+
 	private boolean merged = false;
-	
+
 	private String mate_mobile_mapping = "";
 	private Set<String> mobile_mappings = new HashSet<String>();
 	private Set<String> sample_names = new HashSet<String>();
 	private Set<String> split_read_names = new HashSet<String>();
 	private Set<String> discordant_read_names = new HashSet<String>();
 	private Map<String, Integer> sample_counts = new HashMap<String, Integer>();
-	
+
 	private Map<String, Integer> refseqMateCounts = new HashMap<String, Integer>();
 	private Map<String, Integer> repMaskAnchor_counts = new HashMap<String, Integer>();
 	private Map<String, Integer> repMaskMate_counts = new HashMap<String, Integer>();
@@ -132,7 +129,8 @@ public class MobilePrediction  {
 	public final static String COLUMN_TSD = "target site duplication";
 	public final static String COLUMN_SAMPLE = "sample";
 	public final static String COLUMN_SAMPLE_COUNT = "sample_counts";
-	
+	private static final String COLUMN_VAF = "variant allele fraction";
+
 	private final static String[] HEADER = {COLUMN_REFERENCE, COLUMN_MOBILE, COLUMN_INSERTPOINT,
 	                                        COLUMN_BORDER5, COLUMN_BORDER3, COLUMN_MERGED, COLUMN_SAMPLE, COLUMN_SAMPLE_COUNT, COLUMN_CLUSTER5_LEN,
 	                                        COLUMN_CLUSTER3_LEN, COLUMN_CLUSTER5_HITS,
@@ -141,7 +139,7 @@ public class MobilePrediction  {
 	                                        COLUMN_POLYT3_HITS, COLUMN_UNIQUE_HITS, COLUMN_MULTIPLE_HITS, COLUMN_UNMAPPED_HITS,
 	                                        COLUMN_LEFTCLIPPED_MAX_DISTANCE, COLUMN_RIGHTCLIPPED_MAX_DISTANCE,
 	                                        COLUMN_LEFTCLIPPED_FRAC_DISTANCE, COLUMN_RIGHTCLIPPED_FRAC_DISTANCE,
-	                                        COLUMN_CLIPPED_AVG_QUAL, COLUMN_AVG_CLIPPED_LEN, COLUMN_TSD};
+	                                        COLUMN_CLIPPED_AVG_QUAL, COLUMN_AVG_CLIPPED_LEN, COLUMN_TSD, COLUMN_VAF};
 
 	private static final int MIN_INSERT_SIZE = 10000;
 	
@@ -150,8 +148,7 @@ public class MobilePrediction  {
 //												  COLUMN_GRIP_REPFAMILY_MATE};
 	
 	private static Map<String, String> features = new HashMap<String, String>();
-	
-	
+
 	public MobilePrediction(int mfl, int sd, int maxExpectedClusterSize, SAMRecord cluster) throws IllegalSAMPairException{
 		parseSAMRecordCluster(cluster);
 		this.median_fragment_length = mfl;
@@ -224,7 +221,7 @@ public class MobilePrediction  {
 					this.left_cluster_length = leftClusterToAdd.getAlignmentEnd() - leftClusterToAdd.getAlignmentStart() + 1;
 					this.left_mate_cluster_border = leftClusterToAdd.getAlignmentEnd();
 				}
-				
+
 				this.unique_hits += Integer.parseInt(leftClusterToAdd.getAttribute(MobileDefinitions.SAM_TAG_UNIQUE_HITS).toString());
 				this.multiple_hits += Integer.parseInt(leftClusterToAdd.getAttribute(MobileDefinitions.SAM_TAG_MULTIPLE_HITS).toString());
 				this.unmapped_hits += Integer.parseInt(leftClusterToAdd.getAttribute(MobileDefinitions.SAM_TAG_UNMAPPED_HITS).toString());
@@ -267,7 +264,7 @@ public class MobilePrediction  {
 					this.right_cluster_length = rightClusterToAdd.getAlignmentEnd() - rightClusterToAdd.getAlignmentStart() + 1;
 					this.right_mate_cluster_border = rightClusterToAdd.getAlignmentStart();
 				}
-				
+
 				this.unique_hits += Integer.parseInt(rightClusterToAdd.getAttribute(MobileDefinitions.SAM_TAG_UNIQUE_HITS).toString());
 				this.multiple_hits += Integer.parseInt(rightClusterToAdd.getAttribute(MobileDefinitions.SAM_TAG_MULTIPLE_HITS).toString());
 				this.unmapped_hits += Integer.parseInt(rightClusterToAdd.getAttribute(MobileDefinitions.SAM_TAG_UNMAPPED_HITS).toString());
@@ -560,7 +557,7 @@ public class MobilePrediction  {
 		this.left_aligned_split_hits = Integer.parseInt(rightClippedHits); //right clipped reads are aligned to left of MEI
 		rightClippedMedianEnd = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_MEDIAN_END).toString();
 		this.left_aligned_split_border = Integer.parseInt(rightClippedMedianEnd);
-		
+
 		this.leftclipped_max_distance = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_LEFTCLIPPED_MAX_DISTANCE).toString();
 		this.rightclipped_max_distance = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_MAX_DISTANCE).toString();
 		this.leftclipped_same_fraction = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_LEFTCLIPPED_FRAC_SAME_DISTANCE).toString();
@@ -613,7 +610,7 @@ public class MobilePrediction  {
 			if (feature.equals(COLUMN_BORDER3)){
 				features.put(feature, Integer.toString(this.getRightPredictionBorder()));
 			}else if (feature.equals(COLUMN_BORDER5)){
-				features.put(feature, Integer.toString(this.getLeftPredictionBorder()));
+				 features.put(feature, Integer.toString(this.getLeftPredictionBorder()));
 			}else if (feature.equals(COLUMN_CLUSTER3_HITS)){
 				String cluster3Hits = (this.getRightTotalHits()== 0) ? "NA" : Integer.toString(this.getRightTotalHits());
 				features.put(feature, cluster3Hits);
@@ -675,6 +672,8 @@ public class MobilePrediction  {
 				String sampleCount = this.sample_counts.toString();
 				sampleCount = sampleCount.substring(1, sampleCount.length() - 1);
 				features.put(feature, sampleCount);
+			} else if(feature.equals(COLUMN_VAF)){
+				features.put(feature, this.vaf);
 			}
 		}
 	}
@@ -706,10 +705,12 @@ public class MobilePrediction  {
 	public int getLeftMateClusterLength(){
 		return this.left_cluster_length;
 	}
-	
-	public int getRightMateClusterBorder(){
-		return this.right_mate_cluster_border;
+
+	public int getRightMateClusterLength(){
+		return this.right_cluster_length;
 	}
+	
+	public int getRightMateClusterBorder(){ return this.right_mate_cluster_border;}
 	
 	public int getLeftMateClusterBorder(){
 		return this.left_mate_cluster_border;
@@ -860,7 +861,7 @@ public class MobilePrediction  {
 	public int getLeftPredictionBorder(int extraWindow){
 		return getLeftPredictionBorder() - extraWindow;
 	}
-	
+
 	public Set<String> getDiscordantClusterIds(){
 		return this.discordant_read_names;
 	}
@@ -987,7 +988,18 @@ public class MobilePrediction  {
 	public List<Integer> getInsertsFromSupportingReads(){
 		return this.getInsertsFromSupportingReads(true);
 	}
-	
+
+	public void setVAF(double vaf){
+		if(vaf != -1){
+			BigDecimal bd = new BigDecimal(vaf).setScale(2, RoundingMode.HALF_UP);
+			this.vaf = Double.toString(bd.doubleValue());
+		}
+	}
+
+	public String getVAF(){
+		return this.vaf;
+	}
+
 	public String toGripsString(){
 		Set<String> overlappingRepClass = CollectionUtil.returnOverlappingKeysInMap(this.repMaskAnchor_counts, this.repMaskMate_counts);
 		Set<String> overlappingRepFamily = CollectionUtil.returnOverlappingKeysInMap(this.repFamilyAnchorCounts, this.repFamilyMateCounts);
@@ -1205,5 +1217,9 @@ public class MobilePrediction  {
 			return false;
 		return true;
 	}
-	
+
+	@Override
+	public int compareTo(MobilePrediction otherPred) {
+		return Integer.compare(getInsertionEstimate(), otherPred.getInsertionEstimate());
+	}
 }

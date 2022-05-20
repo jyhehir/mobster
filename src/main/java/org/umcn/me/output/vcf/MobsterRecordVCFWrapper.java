@@ -21,6 +21,7 @@ public class MobsterRecordVCFWrapper implements VCFFunctions {
 			"##INFO=<ID=CLLEN,Number=2,Type=Integer,Description=\"Length of the 5' side cluster composed of discordant anchors, length of the 3' side cluster composed of discordant anchors. Value is 0 when there are no discordant anchors on the particular side of the insertion\">\n" + 
 			"##INFO=<ID=ORIGIN,Number=3,Type=Integer,Description=\"Specification of how the discordant pairs supporting the event were aligned in the original BAM file: Number of pairs both aligning uniquely but discordantly, number of pairs where one end aligns multiple times to the reference, number of pairs where one end is unmapped\">\n" + 
 			"##INFO=<ID=CLIPPED,Number=6,Type=Float,Description=\"Information about the clipped reads in the form of: The maximum distance between clipping positions of reads which are clipped on left side, The maximum distance between clipping positions of reads clipped on the right side, Fraction of left-clipped reads with same clipping position, Fraction of right-clipped reads with same clipping position, Mean base quality of clipped subsequences, Mean length of clipped part of read\">\n" +
+			"##INFO=<ID=AF,Number=1,Type=Float,Description=\"The allele frequency based on raw read counts. Likely an underestimation.\">\n" +
 			"#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO\n";
 	
 	
@@ -73,7 +74,7 @@ public class MobsterRecordVCFWrapper implements VCFFunctions {
 				this.getCIPos() + VCFDefinitions.INFO_SEPERATOR + 
 				this.getSupportingReads() + VCFDefinitions.INFO_SEPERATOR + this.getPolyASupport() +
 				VCFDefinitions.INFO_SEPERATOR + this.getTSD() + VCFDefinitions.INFO_SEPERATOR + this.getClusterLengths() +
-				VCFDefinitions.INFO_SEPERATOR + this.getOrigins() + VCFDefinitions.INFO_SEPERATOR + this.getClippingInfo();
+				VCFDefinitions.INFO_SEPERATOR + this.getOrigins() + VCFDefinitions.INFO_SEPERATOR + this.getClippingInfo() + VCFDefinitions.INFO_SEPERATOR + this.getVAF();
 	}
 	
 	
@@ -126,7 +127,12 @@ public class MobsterRecordVCFWrapper implements VCFFunctions {
 		return VCFDefinitions.TSD + "=" + this.record.getTsd();
 	}
 
-   
+	public String getVAF(){
+		double vaf = this.record.getVAF();
+		if(vaf == -1) return VCFDefinitions.VAF + "=-1";
+		else return VCFDefinitions.VAF + "=" + this.record.getVAF();
+	}
+
    public String toString(){
 	   return this.getFirstSevenFields() + "\t" + this.getInfo();
    }

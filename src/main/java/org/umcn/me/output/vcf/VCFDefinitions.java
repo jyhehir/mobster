@@ -21,7 +21,7 @@ public class VCFDefinitions {
 	public static final String CLIPPED_INFO="CLIPPED";
 	public static final String TSD = "TSD";
 	public static final String SAMPLECOUNTS = "SAMPS";
-	
-	
-	
+	public static final String VAF = "AF";
+
+
 }
