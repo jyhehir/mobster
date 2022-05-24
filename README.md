@@ -2,7 +2,7 @@
 NGS tool for detecting MEI and gene retrotransposition events in WGS and WES data
 
 
-## Publication:
+## Publication
 
 Mobster: accurate detection of mobile element insertions in next generation sequencing data.
 
