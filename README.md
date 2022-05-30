@@ -111,4 +111,4 @@ There are many output options, here are the changes that you'll need to make:
 
 Then, you have to filter this file and keep only the lines with:
 - repFamily = 'Alu' OR 'L1' OR 'SVA' 
-- or repName like 'HERV%' 
+- or repName like 'HERV%' OR 'SVA%'
