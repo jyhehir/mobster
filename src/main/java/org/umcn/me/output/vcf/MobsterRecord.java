@@ -51,7 +51,8 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 	private double clippedAvgQual;
 	private double clippedAvgLength;
 	private String tsd;
-	
+	private double vaf;
+
 	public String getChromosome() { return chromosome; }
 	
 	@Field(at=0, required=true)
@@ -292,15 +293,16 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		this.clippedAvgLength = clippedAvgLength;
 	}
 	
-	public String getTsd() {
-		return tsd;
-	}
-	
+	public String getTsd() { return tsd; }
+
 	@Field(at=27, required=true)
-	public void setTsd(String tsd) {
-		this.tsd = tsd;
-	}
-	
+	public void setTsd(String tsd) { this.tsd = tsd; }
+
+	public double getVAF() { return vaf; }
+
+	@Field(at=28, required=true)
+	public void setVAF(double vaf) { this.vaf = vaf; }
+
 	//Other methods
 	
 	/**

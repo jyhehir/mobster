@@ -35,7 +35,7 @@ public abstract class MobileDefinitions {
 	public static final String SAM_TAG_SAMPLENAME = "YY";
 	public static final String SAM_TAG_SAMPLECOUNT = "YX";
 	public static final String SAM_TAG_READNAMES = "YZ";
-	
+
 	//properties Mobster
 	public static final String READ_LENGTH = "READ_LENGTH";
 	public static final String USE_READ_LENGTH = "USE_READ_LENGTH";
@@ -43,6 +43,7 @@ public abstract class MobileDefinitions {
 	//properties PotentialMEIReadFinder
 	
 	public static final String INFILE = "IN_FILE";
+	public static final String INFILE_INDEX = "IN_FILE_INDEX";
 	public static final String RESOURCES_DIR = "RESOURCES_DIR";
 	public static final String OUTFILE = "OUT_FILE";
 	public static final String VCF = "VCF_OUT";
@@ -105,7 +106,7 @@ public abstract class MobileDefinitions {
 	public static final String MULTIPLE_SAMPLE_CALLING_STRINGENT = "MULTIPLE_SAMPLE_CALLING_STRINGENT";
 	
 	public static final String DEFAULT_SEP=",";
-	
+	public static final String VAF_DETERMINATION_WINDOW = "VAF_DETERMINATION_WINDOW";
 	
 	//properties for GRIPS
 	
