@@ -1,12 +1,7 @@
 package org.umcn.me.pairedend;
 
 import junit.framework.TestCase;
-import net.sf.samtools.SAMRecord;
 import org.junit.Test;
-import org.umcn.me.samexternal.IllegalSAMPairException;
-
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class MobilePredictionTest extends TestCase {
 
@@ -60,13 +55,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals(prediction.hasTSD(), "no_tsd");
-        assertEquals(no_tsd_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(no_tsd_left_split, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_left_split, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_left_split, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_right_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(no_tsd_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -86,13 +81,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(dup_right_split, prediction._getLeftPredictionBorder());
-        assertEquals(dup_right_split, prediction._getInsertionEstimate());
-        assertEquals(dup_right_split, prediction._getRightPredictionBorder());
+        assertEquals(dup_right_split, prediction.getLeftPredictionBorder());
+        assertEquals(dup_right_split, prediction.getInsertionEstimate());
+        assertEquals(dup_right_split, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(dup_left_split, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(dup_left_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -112,13 +107,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("deletion", prediction.hasTSD());
-        assertEquals(del_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(del_left_split, prediction._getInsertionEstimate());
-        assertEquals(del_left_split, prediction._getRightPredictionBorder());
+        assertEquals(del_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(del_left_split, prediction.getInsertionEstimate());
+        assertEquals(del_left_split, prediction.getRightPredictionBorder());
 
-        assertEquals(del_right_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(del_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(del_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(del_right_split, prediction.getEndRightPredictionBorder());
     }
 
     //Test for two split and two discordant clusters
@@ -139,13 +134,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("no_tsd", prediction.hasTSD());
-        assertEquals(no_tsd_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(no_tsd_left_split, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_left_split, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_left_split, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_right_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(no_tsd_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -165,13 +160,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(dup_right_split, prediction._getLeftPredictionBorder());
-        assertEquals(dup_right_split, prediction._getInsertionEstimate());
-        assertEquals(dup_right_split, prediction._getRightPredictionBorder());
+        assertEquals(dup_right_split, prediction.getLeftPredictionBorder());
+        assertEquals(dup_right_split, prediction.getInsertionEstimate());
+        assertEquals(dup_right_split, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(dup_left_split, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(dup_left_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -191,13 +186,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("deletion", prediction.hasTSD());
-        assertEquals(del_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(del_left_split, prediction._getInsertionEstimate());
-        assertEquals(del_left_split, prediction._getRightPredictionBorder());
+        assertEquals(del_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(del_left_split, prediction.getInsertionEstimate());
+        assertEquals(del_left_split, prediction.getRightPredictionBorder());
 
-        assertEquals(del_right_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(del_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(del_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(del_right_split, prediction.getEndRightPredictionBorder());
     }
 
     //Test methods for two split and one left discordant cluster
@@ -218,13 +213,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("no_tsd", prediction.hasTSD());
-        assertEquals(no_tsd_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(no_tsd_left_split, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_left_split, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_left_split, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_right_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(no_tsd_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -244,13 +239,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(dup_right_split, prediction._getLeftPredictionBorder());
-        assertEquals(dup_right_split, prediction._getInsertionEstimate());
-        assertEquals(dup_right_split, prediction._getRightPredictionBorder());
+        assertEquals(dup_right_split, prediction.getLeftPredictionBorder());
+        assertEquals(dup_right_split, prediction.getInsertionEstimate());
+        assertEquals(dup_right_split, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(dup_left_split, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(dup_left_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -269,13 +264,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("deletion", prediction.hasTSD());
-        assertEquals(del_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(del_left_split, prediction._getInsertionEstimate());
-        assertEquals(del_left_split, prediction._getRightPredictionBorder());
+        assertEquals(del_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(del_left_split, prediction.getInsertionEstimate());
+        assertEquals(del_left_split, prediction.getRightPredictionBorder());
 
-        assertEquals(del_right_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(del_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(del_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(del_right_split, prediction.getEndRightPredictionBorder());
     }
 
     //Test methods for two split and one right discordant cluster
@@ -296,13 +291,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("no_tsd", prediction.hasTSD());
-        assertEquals(no_tsd_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(no_tsd_left_split, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_left_split, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_left_split, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_right_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(no_tsd_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -322,13 +317,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(dup_right_split, prediction._getLeftPredictionBorder());
-        assertEquals(dup_right_split, prediction._getInsertionEstimate());
-        assertEquals(dup_right_split, prediction._getRightPredictionBorder());
+        assertEquals(dup_right_split, prediction.getLeftPredictionBorder());
+        assertEquals(dup_right_split, prediction.getInsertionEstimate());
+        assertEquals(dup_right_split, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(dup_left_split, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(dup_left_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -348,13 +343,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("deletion", prediction.hasTSD());
-        assertEquals(del_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(del_left_split, prediction._getInsertionEstimate());
-        assertEquals(del_left_split, prediction._getRightPredictionBorder());
+        assertEquals(del_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(del_left_split, prediction.getInsertionEstimate());
+        assertEquals(del_left_split, prediction.getRightPredictionBorder());
 
-        assertEquals(del_right_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(del_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(del_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(del_right_split, prediction.getEndRightPredictionBorder());
     }
 
     //Test methods for a left split and right discordant cluster
@@ -375,13 +370,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(no_tsd_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(no_tsd_left_split, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_right_dis, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_right_dis, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_left_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(no_tsd_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_dis, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_dis, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -401,13 +396,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(dup_left_split - dup_right_dis < 15? dup_right_dis - (15 - (dup_left_split - dup_right_dis)) :  dup_right_dis, prediction._getLeftPredictionBorder());
-        assertEquals(dup_right_dis, prediction._getInsertionEstimate());
-        assertEquals(dup_right_dis, prediction._getRightPredictionBorder());
+        assertEquals(dup_left_split - dup_right_dis < 15? dup_right_dis - (15 - (dup_left_split - dup_right_dis)) :  dup_right_dis, prediction.getLeftPredictionBorder());
+        assertEquals(dup_right_dis, prediction.getInsertionEstimate());
+        assertEquals(dup_right_dis, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(dup_left_split, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(dup_left_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -427,13 +422,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(del_left_split, prediction._getLeftPredictionBorder());
-        assertEquals(del_left_split, prediction._getInsertionEstimate());
-        assertEquals(del_right_dis, prediction._getRightPredictionBorder());
+        assertEquals(del_left_split, prediction.getLeftPredictionBorder());
+        assertEquals(del_left_split, prediction.getInsertionEstimate());
+        assertEquals(del_right_dis, prediction.getRightPredictionBorder());
 
-        assertEquals(del_left_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(del_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(del_right_dis, prediction._getEndRightPredictionBorder());
+        assertEquals(del_left_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(del_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(del_right_dis, prediction.getEndRightPredictionBorder());
     }
 
     //Test methods for a left discordant and right split cluster
@@ -454,13 +449,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(no_tsd_left_dis, prediction._getLeftPredictionBorder());
-        assertEquals(no_tsd_right_split, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_right_split, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_dis, prediction.getLeftPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_right_split, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_left_dis, prediction._getEndLeftPredictionBorder());
-        assertEquals(no_tsd_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_left_dis, prediction.getEndLeftPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -480,13 +475,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(dup_right_split, prediction._getLeftPredictionBorder());
-        assertEquals(dup_right_split, prediction._getInsertionEstimate());
-        assertEquals(dup_right_split, prediction._getRightPredictionBorder());
+        assertEquals(dup_right_split, prediction.getLeftPredictionBorder());
+        assertEquals(dup_right_split, prediction.getInsertionEstimate());
+        assertEquals(dup_right_split, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_dis, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_left_dis, prediction._getEndInsertionEstimate());
-        assertEquals(dup_left_dis - dup_right_split < 15? dup_left_dis + (15 - (dup_left_dis - dup_right_split)) :  dup_left_dis, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_dis, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_left_dis, prediction.getEndInsertionEstimate());
+        assertEquals(dup_left_dis - dup_right_split < 15? dup_left_dis + (15 - (dup_left_dis - dup_right_split)) :  dup_left_dis, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -506,13 +501,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(del_left_dis, prediction._getLeftPredictionBorder());
-        assertEquals(del_right_split, prediction._getInsertionEstimate());
-        assertEquals(del_right_split, prediction._getRightPredictionBorder());
+        assertEquals(del_left_dis, prediction.getLeftPredictionBorder());
+        assertEquals(del_right_split, prediction.getInsertionEstimate());
+        assertEquals(del_right_split, prediction.getRightPredictionBorder());
 
-        assertEquals(del_left_dis, prediction._getEndLeftPredictionBorder());
-        assertEquals(del_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(del_right_split, prediction._getEndRightPredictionBorder());
+        assertEquals(del_left_dis, prediction.getEndLeftPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(del_right_split, prediction.getEndRightPredictionBorder());
 
     }
 
@@ -534,13 +529,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(no_tsd_left_dis, prediction._getLeftPredictionBorder());
-        assertEquals((no_tsd_left_dis+no_tsd_right_dis)/2, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_right_dis, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_dis, prediction.getLeftPredictionBorder());
+        assertEquals((no_tsd_left_dis+no_tsd_right_dis)/2, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_right_dis, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_left_dis, prediction._getEndLeftPredictionBorder());
-        assertEquals((no_tsd_left_dis+no_tsd_right_dis)/2, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_dis, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_left_dis, prediction.getEndLeftPredictionBorder());
+        assertEquals((no_tsd_left_dis+no_tsd_right_dis)/2, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_dis, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -560,13 +555,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(dup_left_dis - dup_right_dis < 15? dup_right_dis - (15 - (dup_left_dis - dup_right_dis))/2 :  dup_right_dis, prediction._getLeftPredictionBorder());
-        assertEquals(dup_right_dis, prediction._getInsertionEstimate());
-        assertEquals(dup_right_dis, prediction._getRightPredictionBorder());
+        assertEquals(dup_left_dis - dup_right_dis < 15? dup_right_dis - (15 - (dup_left_dis - dup_right_dis))/2 :  dup_right_dis, prediction.getLeftPredictionBorder());
+        assertEquals(dup_right_dis, prediction.getInsertionEstimate());
+        assertEquals(dup_right_dis, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_dis, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_left_dis, prediction._getEndInsertionEstimate());
-        assertEquals(dup_left_dis - dup_right_dis < 15? dup_left_dis + (15 - (dup_left_dis - dup_right_dis))/2 :  dup_left_dis, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_dis, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_left_dis, prediction.getEndInsertionEstimate());
+        assertEquals(dup_left_dis - dup_right_dis < 15? dup_left_dis + (15 - (dup_left_dis - dup_right_dis))/2 :  dup_left_dis, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -586,13 +581,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(del_left_dis, prediction._getLeftPredictionBorder());
-        assertEquals((del_left_dis+del_right_dis)/2, prediction._getInsertionEstimate());
-        assertEquals(del_right_dis, prediction._getRightPredictionBorder());
+        assertEquals(del_left_dis, prediction.getLeftPredictionBorder());
+        assertEquals((del_left_dis+del_right_dis)/2, prediction.getInsertionEstimate());
+        assertEquals(del_right_dis, prediction.getRightPredictionBorder());
 
-        assertEquals(del_left_dis, prediction._getEndLeftPredictionBorder());
-        assertEquals((del_left_dis+del_right_dis)/2, prediction._getEndInsertionEstimate());
-        assertEquals(del_right_dis, prediction._getEndRightPredictionBorder());
+        assertEquals(del_left_dis, prediction.getEndLeftPredictionBorder());
+        assertEquals((del_left_dis+del_right_dis)/2, prediction.getEndInsertionEstimate());
+        assertEquals(del_right_dis, prediction.getEndRightPredictionBorder());
     }
 
 
@@ -616,13 +611,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(no_tsd_left_split - 20, prediction._getLeftPredictionBorder());
-        assertEquals(no_tsd_left_split, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_left_split + 20, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_split - 20, prediction.getLeftPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_left_split + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_left_split - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(no_tsd_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_left_split + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_left_split - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(no_tsd_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_left_split + 20, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -642,13 +637,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(dup_left_split - 20, prediction._getLeftPredictionBorder());
-        assertEquals(dup_left_split, prediction._getInsertionEstimate());
-        assertEquals(dup_left_split + 20, prediction._getRightPredictionBorder());
+        assertEquals(dup_left_split - 20, prediction.getLeftPredictionBorder());
+        assertEquals(dup_left_split, prediction.getInsertionEstimate());
+        assertEquals(dup_left_split + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_split - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(dup_left_split + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_split - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(dup_left_split + 20, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -668,13 +663,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(del_left_split - 20, prediction._getLeftPredictionBorder());
-        assertEquals(del_left_split, prediction._getInsertionEstimate());
-        assertEquals(del_left_split + 20, prediction._getRightPredictionBorder());
+        assertEquals(del_left_split - 20, prediction.getLeftPredictionBorder());
+        assertEquals(del_left_split, prediction.getInsertionEstimate());
+        assertEquals(del_left_split + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(del_left_split - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(del_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(del_left_split + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(del_left_split - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(del_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(del_left_split + 20, prediction.getEndRightPredictionBorder());
 
     }
 
@@ -696,13 +691,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(no_tsd_left_dis - 20, prediction._getLeftPredictionBorder());
-        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? no_tsd_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : no_tsd_left_dis, prediction._getInsertionEstimate());
-        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : no_tsd_left_dis + 20, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_dis - 20, prediction.getLeftPredictionBorder());
+        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? no_tsd_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : no_tsd_left_dis, prediction.getInsertionEstimate());
+        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : no_tsd_left_dis + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_left_dis - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? no_tsd_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : no_tsd_left_dis, prediction._getEndInsertionEstimate());
-        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : no_tsd_left_dis + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_left_dis - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? no_tsd_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : no_tsd_left_dis, prediction.getEndInsertionEstimate());
+        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : no_tsd_left_dis + 20, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -722,13 +717,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals(prediction.hasTSD(), "unknown");
-        assertEquals(dup_left_dis - 20, prediction._getLeftPredictionBorder());
-        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? dup_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : dup_left_dis, prediction._getInsertionEstimate());
-        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? dup_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : dup_left_dis + 20, prediction._getRightPredictionBorder());
+        assertEquals(dup_left_dis - 20, prediction.getLeftPredictionBorder());
+        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? dup_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : dup_left_dis, prediction.getInsertionEstimate());
+        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? dup_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : dup_left_dis + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_dis - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? dup_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : dup_left_dis, prediction._getEndInsertionEstimate());
-        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? dup_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : dup_left_dis + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_dis - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? dup_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : dup_left_dis, prediction.getEndInsertionEstimate());
+        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? dup_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : dup_left_dis + 20, prediction.getEndRightPredictionBorder());
 
     }
 
@@ -749,13 +744,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(del_left_dis - 20, prediction._getLeftPredictionBorder());
-        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? del_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : del_left_dis, prediction._getInsertionEstimate());
-        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? del_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : del_left_dis + 20, prediction._getRightPredictionBorder());
+        assertEquals(del_left_dis - 20, prediction.getLeftPredictionBorder());
+        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? del_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : del_left_dis, prediction.getInsertionEstimate());
+        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? del_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : del_left_dis + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(del_left_dis - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? del_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : del_left_dis, prediction._getEndInsertionEstimate());
-        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? del_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : del_left_dis + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(del_left_dis - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(left_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? del_left_dis + (prediction.median_fragment_length-left_cluster_len+prediction.sd_fragment_length)/2 : del_left_dis, prediction.getEndInsertionEstimate());
+        assertEquals(left_cluster_len < prediction.max_expected_cluster_size - 20? del_left_dis + (prediction.max_expected_cluster_size - left_cluster_len) : del_left_dis + 20, prediction.getEndRightPredictionBorder());
 
     }
 
@@ -777,13 +772,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(no_tsd_right_split - 20, prediction._getLeftPredictionBorder());
-        assertEquals(no_tsd_right_split, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_right_split + 20, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_right_split - 20, prediction.getLeftPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_right_split + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_right_split - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(no_tsd_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_split + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_right_split - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(no_tsd_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_split + 20, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -803,13 +798,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(dup_right_split - 20, prediction._getLeftPredictionBorder());
-        assertEquals(dup_right_split, prediction._getInsertionEstimate());
-        assertEquals(dup_right_split + 20, prediction._getRightPredictionBorder());
+        assertEquals(dup_right_split - 20, prediction.getLeftPredictionBorder());
+        assertEquals(dup_right_split, prediction.getInsertionEstimate());
+        assertEquals(dup_right_split + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_right_split - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(dup_right_split + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_right_split - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(dup_right_split + 20, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -829,13 +824,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(del_right_split - 20, prediction._getLeftPredictionBorder());
-        assertEquals(del_right_split, prediction._getInsertionEstimate());
-        assertEquals(del_right_split + 20, prediction._getRightPredictionBorder());
+        assertEquals(del_right_split - 20, prediction.getLeftPredictionBorder());
+        assertEquals(del_right_split, prediction.getInsertionEstimate());
+        assertEquals(del_right_split + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(del_right_split - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(del_right_split, prediction._getEndInsertionEstimate());
-        assertEquals(del_right_split + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(del_right_split - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(del_right_split, prediction.getEndInsertionEstimate());
+        assertEquals(del_right_split + 20, prediction.getEndRightPredictionBorder());
     }
 
     //Test methods for one right discordant cluster
@@ -856,13 +851,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_right_dis - (prediction.max_expected_cluster_size - right_cluster_len) : no_tsd_right_dis - 20, prediction._getLeftPredictionBorder());
-        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (no_tsd_right_dis + (no_tsd_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : no_tsd_right_dis, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_right_dis + 20, prediction._getRightPredictionBorder());
+        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_right_dis - (prediction.max_expected_cluster_size - right_cluster_len) : no_tsd_right_dis - 20, prediction.getLeftPredictionBorder());
+        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (no_tsd_right_dis + (no_tsd_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : no_tsd_right_dis, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_right_dis + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_right_dis - (prediction.max_expected_cluster_size - right_cluster_len) : no_tsd_right_dis - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (no_tsd_right_dis + (no_tsd_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : no_tsd_right_dis, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_dis + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_right_dis - (prediction.max_expected_cluster_size - right_cluster_len) : no_tsd_right_dis - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (no_tsd_right_dis + (no_tsd_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : no_tsd_right_dis, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_dis + 20, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -882,13 +877,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? dup_right_dis - (prediction.max_expected_cluster_size - left_cluster_len) : dup_right_dis - 20, prediction._getLeftPredictionBorder());
-        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (dup_right_dis + (dup_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : dup_right_dis, prediction._getInsertionEstimate());
-        assertEquals(dup_right_dis + 20, prediction._getRightPredictionBorder());
+        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? dup_right_dis - (prediction.max_expected_cluster_size - left_cluster_len) : dup_right_dis - 20, prediction.getLeftPredictionBorder());
+        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (dup_right_dis + (dup_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : dup_right_dis, prediction.getInsertionEstimate());
+        assertEquals(dup_right_dis + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? dup_right_dis - (prediction.max_expected_cluster_size - left_cluster_len) : dup_right_dis - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (dup_right_dis + (dup_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : dup_right_dis, prediction._getEndInsertionEstimate());
-        assertEquals(dup_right_dis + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? dup_right_dis - (prediction.max_expected_cluster_size - left_cluster_len) : dup_right_dis - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (dup_right_dis + (dup_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : dup_right_dis, prediction.getEndInsertionEstimate());
+        assertEquals(dup_right_dis + 20, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -908,13 +903,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? del_right_dis - (prediction.max_expected_cluster_size - left_cluster_len) : del_right_dis - 20, prediction._getLeftPredictionBorder());
-        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (del_right_dis + (del_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : del_right_dis, prediction._getInsertionEstimate());
-        assertEquals(del_right_dis + 20, prediction._getRightPredictionBorder());
+        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? del_right_dis - (prediction.max_expected_cluster_size - left_cluster_len) : del_right_dis - 20, prediction.getLeftPredictionBorder());
+        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (del_right_dis + (del_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : del_right_dis, prediction.getInsertionEstimate());
+        assertEquals(del_right_dis + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? del_right_dis - (prediction.max_expected_cluster_size - left_cluster_len) : del_right_dis - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (del_right_dis + (del_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : del_right_dis, prediction._getEndInsertionEstimate());
-        assertEquals(del_right_dis + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(right_cluster_len < prediction.max_expected_cluster_size - 20? del_right_dis - (prediction.max_expected_cluster_size - left_cluster_len) : del_right_dis - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(right_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (del_right_dis + (del_right_dis - (prediction.median_fragment_length - right_cluster_len) - prediction.sd_fragment_length)) / 2 : del_right_dis, prediction.getEndInsertionEstimate());
+        assertEquals(del_right_dis + 20, prediction.getEndRightPredictionBorder());
     }
 
     //Edge case tests
@@ -935,13 +930,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(no_tsd_left_dis - 20, prediction._getLeftPredictionBorder());
-        assertEquals(left_large_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? no_tsd_left_dis + (prediction.median_fragment_length-left_large_cluster_len+prediction.sd_fragment_length)/2 : no_tsd_left_dis, prediction._getInsertionEstimate());
-        assertEquals(left_large_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_left_dis + (prediction.max_expected_cluster_size - left_large_cluster_len) : no_tsd_left_dis + 20, prediction._getRightPredictionBorder());
+        assertEquals(no_tsd_left_dis - 20, prediction.getLeftPredictionBorder());
+        assertEquals(left_large_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? no_tsd_left_dis + (prediction.median_fragment_length-left_large_cluster_len+prediction.sd_fragment_length)/2 : no_tsd_left_dis, prediction.getInsertionEstimate());
+        assertEquals(left_large_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_left_dis + (prediction.max_expected_cluster_size - left_large_cluster_len) : no_tsd_left_dis + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(no_tsd_left_dis - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(left_large_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? no_tsd_left_dis + (prediction.median_fragment_length-left_large_cluster_len+prediction.sd_fragment_length)/2 : no_tsd_left_dis, prediction._getEndInsertionEstimate());
-        assertEquals(left_large_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_left_dis + (prediction.max_expected_cluster_size - left_large_cluster_len) : no_tsd_left_dis + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(no_tsd_left_dis - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(left_large_cluster_len < (prediction.median_fragment_length)+ prediction.sd_fragment_length? no_tsd_left_dis + (prediction.median_fragment_length-left_large_cluster_len+prediction.sd_fragment_length)/2 : no_tsd_left_dis, prediction.getEndInsertionEstimate());
+        assertEquals(left_large_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_left_dis + (prediction.max_expected_cluster_size - left_large_cluster_len) : no_tsd_left_dis + 20, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -961,13 +956,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("unknown", prediction.hasTSD());
-        assertEquals(right_large_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_right_dis - (prediction.max_expected_cluster_size - right_large_cluster_len) : no_tsd_right_dis - 20, prediction._getLeftPredictionBorder());
-        assertEquals(right_large_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (no_tsd_right_dis + (no_tsd_right_dis - (prediction.median_fragment_length - right_large_cluster_len) - prediction.sd_fragment_length)) / 2 : no_tsd_right_dis, prediction._getInsertionEstimate());
-        assertEquals(no_tsd_right_dis + 20, prediction._getRightPredictionBorder());
+        assertEquals(right_large_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_right_dis - (prediction.max_expected_cluster_size - right_large_cluster_len) : no_tsd_right_dis - 20, prediction.getLeftPredictionBorder());
+        assertEquals(right_large_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (no_tsd_right_dis + (no_tsd_right_dis - (prediction.median_fragment_length - right_large_cluster_len) - prediction.sd_fragment_length)) / 2 : no_tsd_right_dis, prediction.getInsertionEstimate());
+        assertEquals(no_tsd_right_dis + 20, prediction.getRightPredictionBorder());
 
-        assertEquals(right_large_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_right_dis - (prediction.max_expected_cluster_size - right_large_cluster_len) : no_tsd_right_dis - 20, prediction._getEndLeftPredictionBorder());
-        assertEquals(right_large_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (no_tsd_right_dis + (no_tsd_right_dis - (prediction.median_fragment_length - right_large_cluster_len) - prediction.sd_fragment_length)) / 2 : no_tsd_right_dis, prediction._getEndInsertionEstimate());
-        assertEquals(no_tsd_right_dis + 20, prediction._getEndRightPredictionBorder());
+        assertEquals(right_large_cluster_len < prediction.max_expected_cluster_size - 20? no_tsd_right_dis - (prediction.max_expected_cluster_size - right_large_cluster_len) : no_tsd_right_dis - 20, prediction.getEndLeftPredictionBorder());
+        assertEquals(right_large_cluster_len < prediction.median_fragment_length + prediction.sd_fragment_length? (no_tsd_right_dis + (no_tsd_right_dis - (prediction.median_fragment_length - right_large_cluster_len) - prediction.sd_fragment_length)) / 2 : no_tsd_right_dis, prediction.getEndInsertionEstimate());
+        assertEquals(no_tsd_right_dis + 20, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -987,13 +982,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(dup_left_split - edge_dup_right_dis < 15? edge_dup_right_dis - (15 - (dup_left_split - edge_dup_right_dis)) :  edge_dup_right_dis, prediction._getLeftPredictionBorder());
-        assertEquals(edge_dup_right_dis, prediction._getInsertionEstimate());
-        assertEquals(edge_dup_right_dis, prediction._getRightPredictionBorder());
+        assertEquals(dup_left_split - edge_dup_right_dis < 15? edge_dup_right_dis - (15 - (dup_left_split - edge_dup_right_dis)) :  edge_dup_right_dis, prediction.getLeftPredictionBorder());
+        assertEquals(edge_dup_right_dis, prediction.getInsertionEstimate());
+        assertEquals(edge_dup_right_dis, prediction.getRightPredictionBorder());
 
-        assertEquals(dup_left_split, prediction._getEndLeftPredictionBorder());
-        assertEquals(dup_left_split, prediction._getEndInsertionEstimate());
-        assertEquals(dup_left_split, prediction._getEndRightPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndLeftPredictionBorder());
+        assertEquals(dup_left_split, prediction.getEndInsertionEstimate());
+        assertEquals(dup_left_split, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -1013,13 +1008,13 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(dup_right_split, prediction._getLeftPredictionBorder());
-        assertEquals(dup_right_split, prediction._getInsertionEstimate());
-        assertEquals(dup_right_split, prediction._getRightPredictionBorder());
+        assertEquals(dup_right_split, prediction.getLeftPredictionBorder());
+        assertEquals(dup_right_split, prediction.getInsertionEstimate());
+        assertEquals(dup_right_split, prediction.getRightPredictionBorder());
 
-        assertEquals(edge_dup_left_dis, prediction._getEndLeftPredictionBorder());
-        assertEquals(edge_dup_left_dis, prediction._getEndInsertionEstimate());
-        assertEquals(edge_dup_left_dis - dup_right_split < 15? edge_dup_left_dis + (15 - (edge_dup_left_dis - dup_right_split)) :  edge_dup_left_dis, prediction._getEndRightPredictionBorder());
+        assertEquals(edge_dup_left_dis, prediction.getEndLeftPredictionBorder());
+        assertEquals(edge_dup_left_dis, prediction.getEndInsertionEstimate());
+        assertEquals(edge_dup_left_dis - dup_right_split < 15? edge_dup_left_dis + (15 - (edge_dup_left_dis - dup_right_split)) :  edge_dup_left_dis, prediction.getEndRightPredictionBorder());
     }
 
     @Test
@@ -1039,12 +1034,42 @@ public class MobilePredictionTest extends TestCase {
         );
 
         assertEquals("duplication", prediction.hasTSD());
-        assertEquals(edge2_dup_left_dis - edge2_dup_right_dis < 15? edge2_dup_right_dis - (15 - (edge2_dup_left_dis - edge2_dup_right_dis))/2 :  edge2_dup_right_dis, prediction._getLeftPredictionBorder());
-        assertEquals(edge2_dup_right_dis, prediction._getInsertionEstimate());
-        assertEquals(edge2_dup_right_dis, prediction._getRightPredictionBorder());
+        assertEquals(edge2_dup_left_dis - edge2_dup_right_dis < 15? edge2_dup_right_dis - (15 - (edge2_dup_left_dis - edge2_dup_right_dis))/2 :  edge2_dup_right_dis, prediction.getLeftPredictionBorder());
+        assertEquals(edge2_dup_right_dis, prediction.getInsertionEstimate());
+        assertEquals(edge2_dup_right_dis, prediction.getRightPredictionBorder());
 
-        assertEquals(edge2_dup_left_dis, prediction._getEndLeftPredictionBorder());
-        assertEquals(edge2_dup_left_dis, prediction._getEndInsertionEstimate());
-        assertEquals(edge2_dup_left_dis - edge2_dup_right_dis < 15? edge2_dup_left_dis + (15 - (edge2_dup_left_dis - edge2_dup_right_dis))/2 :  edge2_dup_left_dis, prediction._getEndRightPredictionBorder());
+        assertEquals(edge2_dup_left_dis, prediction.getEndLeftPredictionBorder());
+        assertEquals(edge2_dup_left_dis, prediction.getEndInsertionEstimate());
+        assertEquals(edge2_dup_left_dis - edge2_dup_right_dis < 15? edge2_dup_left_dis + (15 - (edge2_dup_left_dis - edge2_dup_right_dis))/2 :  edge2_dup_left_dis, prediction.getEndRightPredictionBorder());
+    }
+}
+
+class DummyMobilePrediction extends MobilePrediction {
+
+    public final static int EXPECTED_DUPLICATION_LENGTH = 15;
+
+    public DummyMobilePrediction(
+            int left_mate_cluster_border,
+            int left_cluster_length,
+            int left_mate_hits,
+            int left_aligned_split_hits,
+            int left_aligned_split_border,
+            int right_mate_cluster_border,
+            int right_cluster_length,
+            int right_mate_hits,
+            int right_aligned_split_hits,
+            int right_aligned_split_border
+    ) {
+        super(470, 35, 500);
+        this.left_mate_cluster_border = left_mate_cluster_border;
+        this.left_cluster_length = left_cluster_length;
+        this.left_mate_hits = left_cluster_length;
+        this.left_aligned_split_hits = left_aligned_split_hits;
+        this.left_aligned_split_border = left_aligned_split_border;
+        this.right_mate_cluster_border = right_mate_cluster_border;
+        this.right_cluster_length = right_cluster_length;
+        this.right_mate_hits = right_mate_hits;
+        this.right_aligned_split_hits = right_aligned_split_hits;
+        this.right_aligned_split_border = right_aligned_split_border;
     }
 }

@@ -44,6 +44,7 @@ public class MobilePrediction {
 
 	protected int max_expected_cluster_size;
 
+	
 	protected String leftclipped_max_distance = "-1";
 	protected String rightclipped_max_distance = "-1";
 	protected String leftclipped_same_fraction = "-1";
@@ -92,6 +93,7 @@ public class MobilePrediction {
 	public static Logger logger = Logger.getLogger(AnchorClusterer.class.getName());
 
 	public final static int SINGLE_CLUSTER_BORDER_FUZZINESS = 20;
+	public final static int EXPECTED_DUPLICATION_LENGTH = 15;
 
 	public final static String DUPLICATION = "duplication";
 	public final static String DELETION = "deletion";
@@ -573,37 +575,6 @@ public class MobilePrediction {
 
 	}
 
-	public int getInsertionEstimate(){
-
-		int insertionEstimate = 0;
-
-		//1st priority for estimating insertion for leftmost TSD
-		if (this.hasRightAlignedSplitCluster() && this.right_aligned_split_border != 0){
-			insertionEstimate = this.right_aligned_split_border;
-		}else if (this.hasLeftAlignedSplitCluster() && this.left_aligned_split_border != 0){
-			insertionEstimate = this.left_aligned_split_border;
-		}else if(hasLeftMateCluster() && hasRightMateCluster()){
-			//TODO  right_mate_cluster_border < left_mate_cluster_border is suggestive for TSD estimate then leftmost TSD
-			insertionEstimate = Math.round((this.left_mate_cluster_border + this.right_mate_cluster_border) / 2);
-		}else if(hasLeftMateCluster() && !hasRightMateCluster()){
-			if (this.left_cluster_length >= median_fragment_length + sd_fragment_length){
-				insertionEstimate = this.left_mate_cluster_border;
-			}else{
-				insertionEstimate = (this.left_mate_cluster_border +
-						this.left_mate_cluster_border + (median_fragment_length - this.left_cluster_length) + sd_fragment_length) / 2;
-			}
-		}else if(hasRightMateCluster() && !hasLeftMateCluster()){
-			if (this.right_cluster_length >= median_fragment_length + sd_fragment_length){
-				insertionEstimate = this.right_mate_cluster_border;
-			}else{
-				insertionEstimate = (this.right_mate_cluster_border + (this.right_mate_cluster_border -
-						(median_fragment_length - this.right_cluster_length) - sd_fragment_length)) / 2;
-			}
-		}
-
-		return insertionEstimate;
-	}
-
 	protected void createFeatures(){
 		for (String feature : HEADER){
 			if (feature.equals(COLUMN_BORDER3)){
@@ -715,40 +686,6 @@ public class MobilePrediction {
 		return this.left_mate_cluster_border;
 	}
 
-	public int getRightPredictionBorder(){
-
-//		if(this.getLeftTotalHits() >= 1 && this.getRightTotalHits() >= 1){
-//			return getHighestCoordinate();
-//		}else if(hasRightAlignedSplitCluster()){
-//			return this.right_aligned_split_border;
-//		}else if(hasRightMateCluster()){
-//			return this.right_mate_cluster_border;
-//		}else{
-//			int insertEstimate = this.getInsertionEstimate();
-//			return (insertEstimate + (insertEstimate - this.left_mate_cluster_border));
-//		}
-
-		if(this.getLeftTotalHits() >= 1 && this.getRightTotalHits() >= 1){
-			return getHighestCoordinate();
-		}else if(hasLeftAlignedSplitCluster()){
-			return this.left_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if(hasRightAlignedSplitCluster()){
-			return this.right_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if(hasRightMateCluster()){
-			return this.right_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}
-		else{
-//			int insertEstimate = this.getInsertionEstimate();
-//			return (insertEstimate + (insertEstimate - this.left_mate_cluster_border) + SINGLE_CLUSTER_BORDER_FUZZINESS);
-			//New way of estimating right prediction border by taking the max expected cluster size into account
-			if(this.left_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
-				return (this.left_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS);
-			}
-
-			return (this.left_mate_cluster_border + this.max_expected_cluster_size - this.left_cluster_length);
-		}
-	}
-
 	public String hasTSD(){
 		if (this.hasLeftAlignedSplitCluster() && this.hasRightAlignedSplitCluster()){
 			if (this.right_aligned_split_border < this.left_aligned_split_border){
@@ -796,36 +733,6 @@ public class MobilePrediction {
 
 	public String getChromosome(){
 		return this.original_reference;
-	}
-
-	public int getLeftPredictionBorder(){
-
-//		if (this.getLeftTotalHits() >= 1 && this.getRightTotalHits() >= 1){
-//			return getLowestCoordinate();
-//		}else if (hasLeftAlignedSplitCluster()){
-//			return this.left_aligned_split_border;
-//		}else if (hasLeftMateCluster()){
-//			return this.left_mate_cluster_border;
-//		}else{
-//			int insertEstimate = this.getInsertionEstimate();
-//			return (insertEstimate - (this.right_mate_cluster_border - insertEstimate));
-//		}
-		if (this.getLeftTotalHits() >= 1 && this.getRightTotalHits() >= 1){
-			return getLowestCoordinate();
-		}else if (hasRightAlignedSplitCluster()){
-			return this.right_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if (hasLeftAlignedSplitCluster()){
-			return this.left_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if (hasLeftMateCluster()){
-			return this.left_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else{
-//			int insertEstimate = this.getInsertionEstimate();
-//			return (insertEstimate - (this.right_mate_cluster_border - insertEstimate) - SINGLE_CLUSTER_BORDER_FUZZINESS);
-			if (this.right_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
-				return this.right_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-			}
-			return (this.right_mate_cluster_border - (this.max_expected_cluster_size - this.right_cluster_length));
-		}
 	}
 
 	protected int getLowestCoordinate(){
@@ -1160,6 +1067,325 @@ public class MobilePrediction {
 		return (this.right_mate_hits > 0 && this.left_mate_hits == 0);
 	}
 
+
+	public int getLeftClusterBorder(){
+		if(hasLeftAlignedSplitCluster())
+			return left_aligned_split_border;
+		else if (hasLeftMateCluster())
+			return left_mate_cluster_border;
+		else return 0;
+	}
+	public int getRightClusterBorder(){
+		if(hasRightAlignedSplitCluster())
+			return right_aligned_split_border;
+		else if (hasRightMateCluster())
+			return right_mate_cluster_border;
+		else return 0;
+	}
+
+	public boolean hasLeftAndRightCluster(){
+		return (hasLeftAlignedSplitCluster() || hasLeftMateCluster())
+				&& (hasRightAlignedSplitCluster() || hasRightMateCluster());
+	}
+
+	public int getTSDlength(){
+		return Math.abs(getLeftClusterBorder() - getRightClusterBorder());
+	}
+
+	private int getSingleClusterInsertionEstimate(){
+
+		//When there are both left and right clusters, raise an exception
+		if(hasLeftAndRightCluster())
+			throw new IllegalStateException("There are no single clusters on only the left and right side.");
+
+		//Just return the border for split clusters
+		if(this.hasLeftAlignedSplitCluster())
+			return left_aligned_split_border;
+		else if(this.hasRightAlignedSplitCluster())
+			return right_aligned_split_border;
+
+			//Correct the border for mate clusters if necessary
+		else if(hasLeftMateCluster())
+			if(this.left_cluster_length >= median_fragment_length + sd_fragment_length)
+				return left_mate_cluster_border;
+			else return (left_mate_cluster_border +
+					left_mate_cluster_border + (median_fragment_length - left_cluster_length) + sd_fragment_length) / 2;
+		else if(hasRightMateCluster())
+			if(right_cluster_length >= median_fragment_length + sd_fragment_length)
+				return right_mate_cluster_border;
+			else return (right_mate_cluster_border + (right_mate_cluster_border -
+					(median_fragment_length - right_cluster_length) - sd_fragment_length)) / 2;
+		else return 0;
+	}
+
+	public int getInsertionEstimate(){
+		int insertionEstimate = 0;
+
+		//Left+right clusters: When a target site duplication is present, return the right border
+		//Otherwise return the left split border, right split border or for two mate clusters their middle
+		if(hasLeftAndRightCluster())
+			if(hasTSD().equals(DUPLICATION))
+				insertionEstimate = getRightClusterBorder();
+			else if(hasLeftAlignedSplitCluster())
+				insertionEstimate = left_aligned_split_border;
+			else if(hasRightAlignedSplitCluster())
+				insertionEstimate = right_aligned_split_border;
+			else
+				insertionEstimate = Math.round((this.left_mate_cluster_border + this.right_mate_cluster_border) / 2);
+
+			//Single clusters: Return only their border
+		else
+			insertionEstimate = getSingleClusterInsertionEstimate();
+
+		return insertionEstimate;
+	}
+
+	public int getEndInsertionEstimate(){
+		int endInsertionEstimate = 0;
+
+		//Left+right clusters: When a target site duplication is present, return the left border
+		//Otherwise return the right split border, left split border or for two mate clusters their middle
+		if(hasLeftAndRightCluster())
+			if(hasTSD().equals(DUPLICATION))
+				endInsertionEstimate = getLeftClusterBorder();
+			else if(hasRightAlignedSplitCluster())
+				endInsertionEstimate = right_aligned_split_border;
+			else if(hasLeftAlignedSplitCluster())
+				endInsertionEstimate = left_aligned_split_border;
+			else
+				endInsertionEstimate = Math.round((this.left_mate_cluster_border + this.right_mate_cluster_border) / 2);
+
+			//Single clusters: Return only their border
+		else
+			endInsertionEstimate = getSingleClusterInsertionEstimate();
+
+		return endInsertionEstimate;
+	}
+
+	public int getLeftPredictionBorder(){
+		int leftPredictionBorder = 0;
+
+		//For a left+right split cluster, return the insertion point
+		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
+			leftPredictionBorder = getInsertionEstimate();
+
+			//For a left split + right mate cluster with duplication,
+			//the border is the mate cluster border increased up to the expected target site duplication length
+			//For a left mate + right split with duplication,
+			//the border is the that of the right split cluster
+			//In case there is no duplication, the lowest coordinate is taken
+		else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				int TSDlength = getTSDlength();
+				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
+					leftPredictionBorder = right_mate_cluster_border - (EXPECTED_DUPLICATION_LENGTH - TSDlength);
+				else
+					leftPredictionBorder = right_mate_cluster_border;
+			} else
+				leftPredictionBorder = getLowestCoordinate();
+		} else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				leftPredictionBorder = right_aligned_split_border;
+			} else
+				leftPredictionBorder = getLowestCoordinate();
+		}
+
+		//For two mate clusters with duplication,
+		//the border is the mate cluster border increased up to half of expected target site duplication length
+		//Otherwise the lowest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				int TSDlength = getTSDlength();
+				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
+					leftPredictionBorder = right_mate_cluster_border - (EXPECTED_DUPLICATION_LENGTH - TSDlength) / 2;
+				else
+					leftPredictionBorder = right_mate_cluster_border;
+			} else
+				leftPredictionBorder = getLowestCoordinate();
+		}
+
+		//For single clusters substract the fuzziness
+		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
+		else if(hasRightAlignedSplitCluster()){
+			leftPredictionBorder =  this.right_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasLeftAlignedSplitCluster()){
+			leftPredictionBorder =  this.left_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasLeftMateCluster()){
+			leftPredictionBorder =  this.left_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else{
+			if (this.right_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
+				leftPredictionBorder = this.right_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+			}
+			else
+				leftPredictionBorder =  (this.right_mate_cluster_border - (this.max_expected_cluster_size - this.right_cluster_length));
+		}
+
+		return leftPredictionBorder;
+	}
+
+	public int getRightPredictionBorder(){
+		int rightPredictionBorder = 0;
+
+		//For a left+right split cluster, return the insertion point
+		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
+			rightPredictionBorder = getInsertionEstimate();
+
+			//For a split + mate cluster with duplication,
+			//the border is the mate cluster border increased up to the expected target site duplication length
+			//Otherwise the highest coordinate is taken
+		else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				rightPredictionBorder = right_mate_cluster_border;
+			} else
+				rightPredictionBorder = getHighestCoordinate();
+		} else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				rightPredictionBorder = right_aligned_split_border;
+			} else
+				rightPredictionBorder = getHighestCoordinate();
+		}
+
+		//For two mate clusters with duplication,
+		//the border is the mate cluster border
+		//Otherwise the lowest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				rightPredictionBorder = right_mate_cluster_border;
+			} else
+				rightPredictionBorder = getHighestCoordinate();
+		}
+
+		//For single clusters add the fuzziness
+		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
+		else if(hasLeftAlignedSplitCluster()){
+			rightPredictionBorder = this.left_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasRightAlignedSplitCluster()){
+			rightPredictionBorder = this.right_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasRightMateCluster()){
+			rightPredictionBorder = this.right_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}
+		else{
+			if(this.left_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
+				rightPredictionBorder = (this.left_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS);
+			}
+			else
+				rightPredictionBorder = (this.left_mate_cluster_border + this.max_expected_cluster_size - this.left_cluster_length);
+		}
+
+		return rightPredictionBorder;
+	}
+
+	public int getEndLeftPredictionBorder(){
+		int endLeftPredictionBorder = 0;
+
+		//For a left+right split cluster, return the end insertion point
+		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
+			endLeftPredictionBorder = getEndInsertionEstimate();
+
+			//For a split + mate cluster with duplication,
+			//the border is the mate cluster border increased up to the expected target site duplication length
+			//Otherwise the lowest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				endLeftPredictionBorder = left_mate_cluster_border;
+			} else
+				endLeftPredictionBorder = getLowestCoordinate();
+		} else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				endLeftPredictionBorder = left_aligned_split_border;
+			} else
+				endLeftPredictionBorder = getLowestCoordinate();
+		}
+
+		//For two mate clusters with duplication,
+		//the border is the mate cluster border
+		//Otherwise the highest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				endLeftPredictionBorder = left_mate_cluster_border;
+			} else
+				endLeftPredictionBorder = getLowestCoordinate();
+		}
+
+		//For single clusters substract the fuzziness
+		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
+		else if (hasRightAlignedSplitCluster()){
+			endLeftPredictionBorder = this.right_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if (hasLeftAlignedSplitCluster()){
+			endLeftPredictionBorder = this.left_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if (hasLeftMateCluster()){
+			endLeftPredictionBorder = this.left_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else{
+			if (this.right_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
+				endLeftPredictionBorder = this.right_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+			}
+			else
+				endLeftPredictionBorder = (this.right_mate_cluster_border - (this.max_expected_cluster_size - this.right_cluster_length));
+		}
+
+		return endLeftPredictionBorder;
+	}
+
+	public int getEndRightPredictionBorder(){
+		int endRightPredictionBorder = 0;
+
+		//For a left+right split cluster, return the end insertion point
+		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
+			endRightPredictionBorder = getEndInsertionEstimate();
+
+			//For a split + mate cluster with duplication,
+			//the border is the mate cluster border increased up to the expected target site duplication length
+			//Otherwise the highest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				int TSDlength = getTSDlength();
+				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
+					endRightPredictionBorder = left_mate_cluster_border + (EXPECTED_DUPLICATION_LENGTH - TSDlength);
+				else
+					endRightPredictionBorder = left_mate_cluster_border;
+			} else
+				endRightPredictionBorder = getHighestCoordinate();
+		} else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				endRightPredictionBorder = left_aligned_split_border;
+			} else
+				endRightPredictionBorder = getHighestCoordinate();
+		}
+
+		//For two mate clusters with duplication,
+		//the border is the mate cluster border increased up to half of expected target site duplication length
+		//Otherwise the highest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				int TSDlength = getTSDlength();
+				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
+					endRightPredictionBorder = left_mate_cluster_border + (EXPECTED_DUPLICATION_LENGTH - TSDlength) / 2;
+				else
+					endRightPredictionBorder = left_mate_cluster_border;
+			} else
+				endRightPredictionBorder = getHighestCoordinate();
+		}
+
+		//For single clusters add the fuzziness
+		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
+		else if(hasLeftAlignedSplitCluster()){
+			endRightPredictionBorder = this.left_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasRightAlignedSplitCluster()){
+			endRightPredictionBorder = this.right_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasRightMateCluster()){
+			endRightPredictionBorder = this.right_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}
+		else{
+			if(this.left_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
+				endRightPredictionBorder = (this.left_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS);
+			}
+			else
+				endRightPredictionBorder = (this.left_mate_cluster_border + this.max_expected_cluster_size - this.left_cluster_length);
+		}
+
+		return endRightPredictionBorder;
+	}
+	
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -1215,353 +1441,5 @@ public class MobilePrediction {
 		} else if (!split_read_names.equals(other.split_read_names))
 			return false;
 		return true;
-	}
-}
-
-class DummyMobilePrediction extends MobilePrediction {
-
-	public final static int EXPECTED_DUPLICATION_LENGTH = 15;
-
-	public DummyMobilePrediction(
-			int left_mate_cluster_border,
-			int left_cluster_length,
-			int left_mate_hits,
-			int left_aligned_split_hits,
-			int left_aligned_split_border,
-			int right_mate_cluster_border,
-			int right_cluster_length,
-			int right_mate_hits,
-			int right_aligned_split_hits,
-			int right_aligned_split_border
-	) {
-		super(470, 35, 500);
-		this.left_mate_cluster_border = left_mate_cluster_border;
-		this.left_cluster_length = left_cluster_length;
-		this.left_mate_hits = left_cluster_length;
-		this.left_aligned_split_hits = left_aligned_split_hits;
-		this.left_aligned_split_border = left_aligned_split_border;
-		this.right_mate_cluster_border = right_mate_cluster_border;
-		this.right_cluster_length = right_cluster_length;
-		this.right_mate_hits = right_mate_hits;
-		this.right_aligned_split_hits = right_aligned_split_hits;
-		this.right_aligned_split_border = right_aligned_split_border;
-	}
-
-	public int _getLeftClusterBorder(){
-		if(hasLeftAlignedSplitCluster())
-			return left_aligned_split_border;
-		else if (hasLeftMateCluster())
-			return left_mate_cluster_border;
-		else return 0;
-	}
-	public int _getRightClusterBorder(){
-		if(hasRightAlignedSplitCluster())
-			return right_aligned_split_border;
-		else if (hasRightMateCluster())
-			return right_mate_cluster_border;
-		else return 0;
-	}
-
-	public boolean _hasLeftAndRightCluster(){
-		return (hasLeftAlignedSplitCluster() || hasLeftMateCluster())
-				&& (hasRightAlignedSplitCluster() || hasRightMateCluster());
-	}
-
-	public int _getTSDlength(){
-		return Math.abs(_getLeftClusterBorder() - _getRightClusterBorder());
-	}
-
-	private int _getSingleClusterInsertionEstimate(){
-
-		//When there are both left and right clusters, raise an exception
-		if(_hasLeftAndRightCluster())
-			throw new IllegalStateException("There are no single clusters on only the left and right side.");
-
-		//Just return the border for split clusters
-		if(this.hasLeftAlignedSplitCluster())
-			return left_aligned_split_border;
-		else if(this.hasRightAlignedSplitCluster())
-			return right_aligned_split_border;
-
-		//Correct the border for mate clusters if necessary
-		else if(hasLeftMateCluster())
-			if(this.left_cluster_length >= median_fragment_length + sd_fragment_length)
-				return left_mate_cluster_border;
-			else return (left_mate_cluster_border +
-					left_mate_cluster_border + (median_fragment_length - left_cluster_length) + sd_fragment_length) / 2;
-		else if(hasRightMateCluster())
-			if(right_cluster_length >= median_fragment_length + sd_fragment_length)
-				return right_mate_cluster_border;
-			else return (right_mate_cluster_border + (right_mate_cluster_border -
-					(median_fragment_length - right_cluster_length) - sd_fragment_length)) / 2;
-		else return 0;
-	}
-
-	public int _getInsertionEstimate(){
-		int insertionEstimate = 0;
-
-		//Left+right clusters: When a target site duplication is present, return the right border
-		//Otherwise return the left split border, right split border or for two mate clusters their middle
-		if(_hasLeftAndRightCluster())
-			if(hasTSD().equals(DUPLICATION))
-				insertionEstimate = _getRightClusterBorder();
-			else if(hasLeftAlignedSplitCluster())
-				insertionEstimate = left_aligned_split_border;
-			else if(hasRightAlignedSplitCluster())
-				insertionEstimate = right_aligned_split_border;
-			else
-				insertionEstimate = Math.round((this.left_mate_cluster_border + this.right_mate_cluster_border) / 2);
-
-			//Single clusters: Return only their border
-		else
-			insertionEstimate = _getSingleClusterInsertionEstimate();
-
-		return insertionEstimate;
-	}
-
-	public int _getEndInsertionEstimate(){
-		int endInsertionEstimate = 0;
-
-		//Left+right clusters: When a target site duplication is present, return the left border
-		//Otherwise return the right split border, left split border or for two mate clusters their middle
-		if(_hasLeftAndRightCluster())
-			if(hasTSD().equals(DUPLICATION))
-				endInsertionEstimate = _getLeftClusterBorder();
-			else if(hasRightAlignedSplitCluster())
-				endInsertionEstimate = right_aligned_split_border;
-			else if(hasLeftAlignedSplitCluster())
-				endInsertionEstimate = left_aligned_split_border;
-			else
-				endInsertionEstimate = Math.round((this.left_mate_cluster_border + this.right_mate_cluster_border) / 2);
-
-		//Single clusters: Return only their border
-		else
-			endInsertionEstimate = _getSingleClusterInsertionEstimate();
-
-		return endInsertionEstimate;
-	}
-
-	public int _getLeftPredictionBorder(){
-		int leftPredictionBorder = 0;
-
-		//For a left+right split cluster, return the insertion point
-		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
-			leftPredictionBorder = _getInsertionEstimate();
-
-			//For a left split + right mate cluster with duplication,
-			//the border is the mate cluster border increased up to the expected target site duplication length
-			//For a left mate + right split with duplication,
-			//the border is the that of the right split cluster
-			//In case there is no duplication, the lowest coordinate is taken
-		else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				int TSDlength = _getTSDlength();
-				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
-					leftPredictionBorder = right_mate_cluster_border - (EXPECTED_DUPLICATION_LENGTH - TSDlength);
-				else
-					leftPredictionBorder = right_mate_cluster_border;
-			} else
-				leftPredictionBorder = getLowestCoordinate();
-		} else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				leftPredictionBorder = right_aligned_split_border;
-			} else
-				leftPredictionBorder = getLowestCoordinate();
-		}
-
-		//For two mate clusters with duplication,
-		//the border is the mate cluster border increased up to half of expected target site duplication length
-		//Otherwise the lowest coordinate is taken
-		else if(hasLeftMateCluster() && hasRightMateCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				int TSDlength = _getTSDlength();
-				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
-					leftPredictionBorder = right_mate_cluster_border - (EXPECTED_DUPLICATION_LENGTH - TSDlength) / 2;
-				else
-					leftPredictionBorder = right_mate_cluster_border;
-			} else
-				leftPredictionBorder = getLowestCoordinate();
-		}
-
-		//For single clusters substract the fuzziness
-		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
-		else if(hasRightAlignedSplitCluster()){
-			leftPredictionBorder =  this.right_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if(hasLeftAlignedSplitCluster()){
-			leftPredictionBorder =  this.left_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if(hasLeftMateCluster()){
-			leftPredictionBorder =  this.left_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else{
-			if (this.right_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
-				leftPredictionBorder = this.right_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-			}
-			else
-				leftPredictionBorder =  (this.right_mate_cluster_border - (this.max_expected_cluster_size - this.right_cluster_length));
-		}
-
-		return leftPredictionBorder;
-	}
-
-	public int _getRightPredictionBorder(){
-		int rightPredictionBorder = 0;
-
-		//For a left+right split cluster, return the insertion point
-		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
-			rightPredictionBorder = _getInsertionEstimate();
-
-			//For a split + mate cluster with duplication,
-			//the border is the mate cluster border increased up to the expected target site duplication length
-			//Otherwise the highest coordinate is taken
-		else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				rightPredictionBorder = right_mate_cluster_border;
-			} else
-				rightPredictionBorder = getHighestCoordinate();
-		} else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				rightPredictionBorder = right_aligned_split_border;
-			} else
-				rightPredictionBorder = getHighestCoordinate();
-		}
-
-		//For two mate clusters with duplication,
-		//the border is the mate cluster border
-		//Otherwise the lowest coordinate is taken
-		else if(hasLeftMateCluster() && hasRightMateCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				rightPredictionBorder = right_mate_cluster_border;
-			} else
-				rightPredictionBorder = getHighestCoordinate();
-		}
-
-		//For single clusters add the fuzziness
-		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
-		else if(hasLeftAlignedSplitCluster()){
-			rightPredictionBorder = this.left_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if(hasRightAlignedSplitCluster()){
-			rightPredictionBorder = this.right_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if(hasRightMateCluster()){
-			rightPredictionBorder = this.right_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}
-		else{
-			if(this.left_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
-				rightPredictionBorder = (this.left_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS);
-			}
-			else
-				rightPredictionBorder = (this.left_mate_cluster_border + this.max_expected_cluster_size - this.left_cluster_length);
-		}
-
-		return rightPredictionBorder;
-	}
-
-	public int _getEndLeftPredictionBorder(){
-		int endLeftPredictionBorder = 0;
-
-		//For a left+right split cluster, return the end insertion point
-		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
-			endLeftPredictionBorder = _getEndInsertionEstimate();
-
-			//For a split + mate cluster with duplication,
-			//the border is the mate cluster border increased up to the expected target site duplication length
-			//Otherwise the lowest coordinate is taken
-		else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				endLeftPredictionBorder = left_mate_cluster_border;
-			} else
-				endLeftPredictionBorder = getLowestCoordinate();
-		} else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				endLeftPredictionBorder = left_aligned_split_border;
-			} else
-				endLeftPredictionBorder = getLowestCoordinate();
-		}
-
-		//For two mate clusters with duplication,
-		//the border is the mate cluster border
-		//Otherwise the highest coordinate is taken
-		else if(hasLeftMateCluster() && hasRightMateCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				endLeftPredictionBorder = left_mate_cluster_border;
-			} else
-				endLeftPredictionBorder = getLowestCoordinate();
-		}
-
-		//For single clusters substract the fuzziness
-		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
-		else if (hasRightAlignedSplitCluster()){
-			endLeftPredictionBorder = this.right_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if (hasLeftAlignedSplitCluster()){
-			endLeftPredictionBorder = this.left_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if (hasLeftMateCluster()){
-			endLeftPredictionBorder = this.left_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else{
-			if (this.right_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
-				endLeftPredictionBorder = this.right_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
-			}
-			else
-				endLeftPredictionBorder = (this.right_mate_cluster_border - (this.max_expected_cluster_size - this.right_cluster_length));
-		}
-
-		return endLeftPredictionBorder;
-	}
-
-	public int _getEndRightPredictionBorder(){
-		int endRightPredictionBorder = 0;
-
-		//For a left+right split cluster, return the end insertion point
-		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
-			endRightPredictionBorder = _getEndInsertionEstimate();
-
-			//For a split + mate cluster with duplication,
-			//the border is the mate cluster border increased up to the expected target site duplication length
-			//Otherwise the highest coordinate is taken
-		else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				int TSDlength = _getTSDlength();
-				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
-					endRightPredictionBorder = left_mate_cluster_border + (EXPECTED_DUPLICATION_LENGTH - TSDlength);
-				else
-					endRightPredictionBorder = left_mate_cluster_border;
-			} else
-				endRightPredictionBorder = getHighestCoordinate();
-		} else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				endRightPredictionBorder = left_aligned_split_border;
-			} else
-				endRightPredictionBorder = getHighestCoordinate();
-		}
-
-		//For two mate clusters with duplication,
-		//the border is the mate cluster border increased up to half of expected target site duplication length
-		//Otherwise the highest coordinate is taken
-		else if(hasLeftMateCluster() && hasRightMateCluster()){
-			if(hasTSD().equals(DUPLICATION)){
-				int TSDlength = _getTSDlength();
-				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
-					endRightPredictionBorder = left_mate_cluster_border + (EXPECTED_DUPLICATION_LENGTH - TSDlength) / 2;
-				else
-					endRightPredictionBorder = left_mate_cluster_border;
-			} else
-				endRightPredictionBorder = getHighestCoordinate();
-		}
-
-		//For single clusters add the fuzziness
-		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
-		else if(hasLeftAlignedSplitCluster()){
-			endRightPredictionBorder = this.left_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if(hasRightAlignedSplitCluster()){
-			endRightPredictionBorder = this.right_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}else if(hasRightMateCluster()){
-			endRightPredictionBorder = this.right_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
-		}
-		else{
-			if(this.left_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
-				endRightPredictionBorder = (this.left_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS);
-			}
-			else
-				endRightPredictionBorder = (this.left_mate_cluster_border + this.max_expected_cluster_size - this.left_cluster_length);
-		}
-
-		return endRightPredictionBorder;
 	}
 }
