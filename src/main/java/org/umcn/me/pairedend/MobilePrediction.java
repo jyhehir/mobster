@@ -1,105 +1,103 @@
 package org.umcn.me.pairedend;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.function.DoublePredicate;
-
+import net.sf.samtools.SAMRecord;
 import org.apache.log4j.Logger;
-import org.umcn.me.output.FilterPredictions;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.tabix.BlacklistAnnotation;
 import org.umcn.me.tabix.RefGeneAnnotation;
 import org.umcn.me.tabix.RepMaskAnnotation;
-import org.umcn.me.util.CollectionUtil;
-import org.umcn.me.util.MathFunction;
-import org.umcn.me.util.MobileDefinitions;
-import org.umcn.me.util.ReadName;
-import org.umcn.me.util.SimpleRegion;
+import org.umcn.me.util.*;
 
-import net.sf.samtools.SAMRecord;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
 
-public class MobilePrediction implements Comparable<MobilePrediction> {
+public class MobilePrediction {
 
-	private static final int MIN_DISCORDANT_UX = 2;
+	protected static final int MIN_DISCORDANT_UX = 2;
 
-	private String original_reference = "";
+	protected String original_reference = "";
 
-	private int median_fragment_length;
-	private int sd_fragment_length;
+	protected int median_fragment_length;
+	protected int sd_fragment_length;
 
-	private int left_mate_cluster_border = 0;
-	private int left_cluster_length = 0;
-	private int left_mate_hits = 0;
-	private int left_aligned_split_hits = 0; //aligned on left thus clipped on right
-	private int left_aligned_split_border = 0;
-	private int left_aligned_polyA_hits = 0;
-	private int left_aligned_polyT_hits = 0;
+	protected int left_mate_cluster_border = 0;
+	protected int left_cluster_length = 0;
+	protected int left_mate_hits = 0;
+	protected int left_aligned_split_hits = 0; //aligned on left thus clipped on right
+	protected int left_aligned_split_border = 0;
+	protected int left_aligned_polyA_hits = 0;
+	protected int left_aligned_polyT_hits = 0;
 
-	private int right_mate_cluster_border = 0;
-	private int right_cluster_length = 0;
-	private int right_mate_hits = 0;
-	private int right_aligned_split_hits = 0; //aligned on right thus clipped on left
-	private int right_aligned_split_border = 0;
-	private int right_aligned_polyA_hits = 0;
-	private int right_aligned_polyT_hits = 0;
+	protected int right_mate_cluster_border = 0;
+	protected int right_cluster_length = 0;
+	protected int right_mate_hits = 0;
+	protected int right_aligned_split_hits = 0; //aligned on right thus clipped on left
+	protected int right_aligned_split_border = 0;
+	protected int right_aligned_polyA_hits = 0;
+	protected int right_aligned_polyT_hits = 0;
 
-	private int unique_hits = 0;
-	private int multiple_hits = 0;
-	private int unmapped_hits = 0;
+	protected int unique_hits = 0;
+	protected int multiple_hits = 0;
+	protected int unmapped_hits = 0;
 
-	private int max_expected_cluster_size;
+	protected int max_expected_cluster_size;
 
-	private String leftclipped_max_distance = "-1";
-	private String rightclipped_max_distance = "-1";
-	private String leftclipped_same_fraction = "-1";
-	private String rightclipped_same_fraction = "-1";
-	private String clipped_avg_qual = "-1";
-	private String clipped_avg_len = "-1";
+	protected String leftclipped_max_distance = "-1";
+	protected String rightclipped_max_distance = "-1";
+	protected String leftclipped_same_fraction = "-1";
+	protected String rightclipped_same_fraction = "-1";
+	protected String clipped_avg_qual = "-1";
+	protected String clipped_avg_len = "-1";
 
-	private String vaf = "-1";
+	protected String vaf = "-1";
 
-	private boolean merged = false;
+	protected boolean merged = false;
 
-	private String mate_mobile_mapping = "";
-	private Set<String> mobile_mappings = new HashSet<String>();
-	private Set<String> sample_names = new HashSet<String>();
-	private Set<String> split_read_names = new HashSet<String>();
-	private Set<String> discordant_read_names = new HashSet<String>();
-	private Map<String, Integer> sample_counts = new HashMap<String, Integer>();
+	protected String mate_mobile_mapping = "";
+	protected Set<String> mobile_mappings = new HashSet<String>();
+	protected Set<String> sample_names = new HashSet<String>();
+	protected Set<String> split_read_names = new HashSet<String>();
+	protected Set<String> discordant_read_names = new HashSet<String>();
+	protected Map<String, Integer> sample_counts = new HashMap<String, Integer>();
 
-	private Map<String, Integer> refseqMateCounts = new HashMap<String, Integer>();
-	private Map<String, Integer> repMaskAnchor_counts = new HashMap<String, Integer>();
-	private Map<String, Integer> repMaskMate_counts = new HashMap<String, Integer>();
-	private Set<String> refSeqAnchorLocations = new HashSet<String>();
-	private Map<String, Integer> blacklistAnchorCounts = new HashMap<String, Integer>();
-	private Map<String, Integer> blacklistMateCounts = new HashMap<String, Integer>();
-	private Map<String, Integer> repFamilyAnchorCounts = new HashMap<String, Integer>();
-	private Map<String, Integer> repFamilyMateCounts = new HashMap<String, Integer>();
-	private List<Double> chainScores = new ArrayList<Double>();
-	private List<Integer> insertSizes = new ArrayList<Integer>();
-	
-	private SAMRecord samrecord_splitcluster = null;
+	protected Map<String, Integer> refseqMateCounts = new HashMap<String, Integer>();
+	protected Map<String, Integer> repMaskAnchor_counts = new HashMap<String, Integer>();
+	protected Map<String, Integer> repMaskMate_counts = new HashMap<String, Integer>();
+	protected Set<String> refSeqAnchorLocations = new HashSet<String>();
+	protected Map<String, Integer> blacklistAnchorCounts = new HashMap<String, Integer>();
+	protected Map<String, Integer> blacklistMateCounts = new HashMap<String, Integer>();
+	protected Map<String, Integer> repFamilyAnchorCounts = new HashMap<String, Integer>();
+	protected Map<String, Integer> repFamilyMateCounts = new HashMap<String, Integer>();
+	protected List<Double> chainScores = new ArrayList<Double>();
+	protected List<Integer> insertSizes = new ArrayList<Integer>();
 
-	private SAMRecord right_cluster_sam_record;
+	protected SAMRecord samrecord_splitcluster = null;
 
-	private SAMRecord left_cluster_sam_record;
+	protected SAMRecord right_cluster_sam_record;
 
-	private int selfChainOverlap = 0;
-	private String selfChainOverlapString = "";
+	protected SAMRecord left_cluster_sam_record;
 
-	private Map<String, Integer> refSeqMateUUCounts = new HashMap<String, Integer>();
+	protected int selfChainOverlap = 0;
+	protected String selfChainOverlapString = "";
 
-	private int left_mate_median_mapq = -1;
+	protected Map<String, Integer> refSeqMateUUCounts = new HashMap<String, Integer>();
 
-	private int right_mate_median_mapq = -1;
+	protected int left_mate_median_mapq = -1;
 
-	
+	protected int right_mate_median_mapq = -1;
+
+
 	public static Logger logger = Logger.getLogger(AnchorClusterer.class.getName());
-	
+
 	public final static int SINGLE_CLUSTER_BORDER_FUZZINESS = 20;
-	
+
+	public final static String DUPLICATION = "duplication";
+	public final static String DELETION = "deletion";
+	public final static String NO_TSD = "no_tsd";
+	public final static String UNKNOWN = "unknown";
+
 	public final static String COLUMN_REFERENCE = "Chr";
 	public final static String COLUMN_MOBILE = "Mobile Element";
 	public final static String COLUMN_INSERTPOINT = "Insert Point";
@@ -116,7 +114,7 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 	public final static String COLUMN_POLYT5_HITS = "polyT5 hits";
 	public final static String COLUMN_POLYA3_HITS = "polyA3 hits";
 	public final static String COLUMN_POLYT3_HITS = "polyT3 hits";
-	
+
 	public final static String COLUMN_UNIQUE_HITS = "original discordant unique";
 	public final static String COLUMN_MULTIPLE_HITS = "original multiple";
 	public final static String COLUMN_UNMAPPED_HITS = "original unmapped";
@@ -129,9 +127,9 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 	public final static String COLUMN_TSD = "target site duplication";
 	public final static String COLUMN_SAMPLE = "sample";
 	public final static String COLUMN_SAMPLE_COUNT = "sample_counts";
-	private static final String COLUMN_VAF = "variant allele fraction";
+	protected static final String COLUMN_VAF = "variant allele fraction";
 
-	private final static String[] HEADER = {COLUMN_REFERENCE, COLUMN_MOBILE, COLUMN_INSERTPOINT,
+	protected final static String[] HEADER = {COLUMN_REFERENCE, COLUMN_MOBILE, COLUMN_INSERTPOINT,
 	                                        COLUMN_BORDER5, COLUMN_BORDER3, COLUMN_MERGED, COLUMN_SAMPLE, COLUMN_SAMPLE_COUNT, COLUMN_CLUSTER5_LEN,
 	                                        COLUMN_CLUSTER3_LEN, COLUMN_CLUSTER5_HITS,
 	                                        COLUMN_CLUSTER3_HITS, COLUMN_SPLIT5_HITS, COLUMN_SPLIT3_HITS,
@@ -141,79 +139,80 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 	                                        COLUMN_LEFTCLIPPED_FRAC_DISTANCE, COLUMN_RIGHTCLIPPED_FRAC_DISTANCE,
 	                                        COLUMN_CLIPPED_AVG_QUAL, COLUMN_AVG_CLIPPED_LEN, COLUMN_TSD, COLUMN_VAF};
 
-	private static final int MIN_INSERT_SIZE = 10000;
-	
-//	private final static String[] GRIPS_HEADER = {COLUMN_GRIP_REFSEQ, COLUMN_GRIP_REPNAME_ANCHOR, COLUMN_GRIP_REPCLASS_ANCHOR,
+	protected static final int MIN_INSERT_SIZE = 10000;
+
+//	protected final static String[] GRIPS_HEADER = {COLUMN_GRIP_REFSEQ, COLUMN_GRIP_REPNAME_ANCHOR, COLUMN_GRIP_REPCLASS_ANCHOR,
 //												  COLUMN_GRIP_REPFAMILY_ANCHOR, COLUMN_GRIP_REPNAME_MATE, COLUMN_GRIP_REPCLASS_MATE,
 //												  COLUMN_GRIP_REPFAMILY_MATE};
-	
-	private static Map<String, String> features = new HashMap<String, String>();
 
-	public MobilePrediction(int mfl, int sd, int maxExpectedClusterSize, SAMRecord cluster) throws IllegalSAMPairException{
-		parseSAMRecordCluster(cluster);
+	protected static Map<String, String> features = new HashMap<String, String>();
+
+	public MobilePrediction(int mfl, int sd, int maxExpectedClusterSize){
 		this.median_fragment_length = mfl;
 		this.sd_fragment_length = sd;
 		this.max_expected_cluster_size = maxExpectedClusterSize;
+	}
+
+	public MobilePrediction(int mfl, int sd, int maxExpectedClusterSize, SAMRecord cluster) throws IllegalSAMPairException{
+		this(mfl, sd, maxExpectedClusterSize);
+		parseSAMRecordCluster(cluster);
 	}
 
 	public MobilePrediction(int mfl, int sd, int maxExpectedClusterSize, SAMRecord cluster1, SAMRecord cluster2)
 			throws IllegalSAMPairException{
-		parseSAMRecordCluster(cluster1);
+		this(mfl, sd, maxExpectedClusterSize, cluster1);
 		parseSAMRecordCluster(cluster2);
-		this.median_fragment_length = mfl;
-		this.sd_fragment_length = sd;
-		this.max_expected_cluster_size = maxExpectedClusterSize;
 	}
-	
+
 	public boolean addDiscordantReadsOfMobilePrediction(MobilePrediction pred, int overlap, int maxdist) throws IllegalSAMPairException{
-		
+
 		boolean success = false;
-		
+
 		overlap = - Math.abs(overlap);//make sure overlap is negative
-		
-		
+
+
 		//dont merge mobile predictions of different families
 		if (!pred.mobile_mappings.equals(this.mobile_mappings)){
 			return false;
 		}
-		
+
 		if (!pred.original_reference.equals(this.original_reference)){
 			return false;
 		}
-		
+
 		SAMRecord leftClusterToAdd = pred.left_cluster_sam_record;
 		SAMRecord rightClusterToAdd = pred.right_cluster_sam_record;
-		
+
 		if (pred.onlyLeftDiscordantReads() && this.onlyRightDiscordantReads()){
 			if (this.right_mate_cluster_border - pred.left_mate_cluster_border >= maxdist){
 				return false;
 			}
 		}
-		
+
 		if (pred.onlyRightDiscordantReads() && this.onlyLeftDiscordantReads()){
 			if (pred.right_mate_cluster_border - this.left_mate_cluster_border >= maxdist){
 				return false;
 			}
 		}
-		
-		if (leftClusterToAdd != null && 
+
+		if (leftClusterToAdd != null &&
 				!this.discordant_read_names.contains(leftClusterToAdd.getReadName())){
-			
+
 			if (this.right_cluster_sam_record == null || (this.right_cluster_sam_record != null && this.right_cluster_sam_record.getAlignmentStart() -
 					leftClusterToAdd.getAlignmentEnd() >= overlap)){
-				
-				
+
+
 				if (this.left_cluster_sam_record != null){
 					int[] coordinates = {this.left_cluster_sam_record.getAlignmentStart(), this.left_cluster_sam_record.getAlignmentEnd(),
 							leftClusterToAdd.getAlignmentStart(), leftClusterToAdd.getAlignmentEnd()};
 					Arrays.sort(coordinates);
-					
+
 					if (coordinates[2] - coordinates[1] >= maxdist){
 						logger.info("Same orientation clusters are too distant to be merged in region: " + this.getChromosome() + ":" +
 								this.getLeftPredictionBorder() + "-" + this.getRightPredictionBorder());
 						return false;
 					}
-					
+
 					this.left_cluster_length = coordinates[3] - coordinates[0] + 1;
 					this.left_mate_cluster_border = coordinates[3];
 				}else{
@@ -228,26 +227,26 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 				this.discordant_read_names.add(leftClusterToAdd.getReadName());
 				this.left_mate_hits += Integer.parseInt(leftClusterToAdd.getAttribute(MobileDefinitions.SAM_TAG_CLUSTER_HITS).toString());
 				this.parseSampleCountTag(leftClusterToAdd.getAttribute(MobileDefinitions.SAM_TAG_SAMPLECOUNT).toString());
-	
+
 				this.merged = true;
 				success = true;
-				
+
 			}else{
 				logger.info("Did not merge in following region because left cluster to add had more than allowed " +
 						"overlap with this.right_mate_cluster in region: " + this.getChromosome() + ":" +
 						this.getLeftPredictionBorder() + "-" + this.getRightPredictionBorder());
 				return false;
 			}
-			
+
 
 		}
-		
+
 		if(rightClusterToAdd != null &&
 				!this.discordant_read_names.contains(rightClusterToAdd.getReadName())){
 			if (this.left_cluster_sam_record == null || (this.left_cluster_sam_record != null && rightClusterToAdd.getAlignmentStart() -
 					this.left_cluster_sam_record.getAlignmentEnd() >= overlap)){
 
-				
+
 				if (this.right_cluster_sam_record != null){
 					int[] coordinates = {this.right_cluster_sam_record.getAlignmentStart(), this.right_cluster_sam_record.getAlignmentEnd(),
 						rightClusterToAdd.getAlignmentStart(), rightClusterToAdd.getAlignmentEnd()};
@@ -280,7 +279,7 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 				return false;
 			}
 		}
-		
+
 		//Add extra split cluster when this prediction does not have any split clusters
 		if(pred.samrecord_splitcluster != null && this.samrecord_splitcluster == null){
 			logger.info("Added split cluster when merging in region: " + this.getChromosome() + ":" +
@@ -289,54 +288,54 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 			success = true;
 			this.merged = true;
 		}
-		
+
 		return success;
-			
+
 	}
-	
+
 	public void parseReadNames(Map<String,ReadName> readnameMap){
-		
+
 		List<String> mateClusterReadNames = this.getReadNamesFromMateClusters();
 		List<String> splitClusterReadNames = this.getReadNamesFromSplitClusters();
-		
+
 		//Step 1: parse the refseq mappings from reads
 		parseReadNamesForRefSeq(mateClusterReadNames, readnameMap);
-		
+
 		//Step 2: parse the repmask mappings from reads
 		parseReadNamesForRepMask(mateClusterReadNames, readnameMap, true);
 		parseReadNamesForRepMask(splitClusterReadNames, readnameMap, false);
-		
+
 		//Step 3: parse blacklist mappings
 		parseReadNamesForBlackList(mateClusterReadNames, readnameMap);
 		parseReadNamesForBlackList(splitClusterReadNames, readnameMap);
-		
+
 		//Step 4: parse selfchain mappings
 		parseReadNamesForSelfChain(mateClusterReadNames, readnameMap);
-		
+
 		//Step 5: parse inferred insert sizes
 		parseReadNamesForInsertSize(mateClusterReadNames, readnameMap);
 	}
-	
-	private void parseReadNamesForInsertSize(List<String> readNames,
+
+	protected void parseReadNamesForInsertSize(List<String> readNames,
 			Map<String, ReadName> map) {
-		
+
 		for (String readName : readNames){
 			ReadName read = map.get(readName);
-			
+
 			if (read != null){
 				this.insertSizes.add(read.insertSize);
 			}
-			
+
 		}
-		
+
 	}
 
-	private void parseReadNamesForSelfChain(List<String> readNames,
+	protected void parseReadNamesForSelfChain(List<String> readNames,
 			Map<String, ReadName> map) {
-		
+
 		for (String readName : readNames){
 			ReadName read = map.get(readName);
-			
+
 			if (read != null){
 				if (read.selfChainOverlapsMate()){
 					this.selfChainOverlap++;
@@ -348,17 +347,17 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 					}
 				}
 			}
-			
+
 		}
-		
+
 	}
 
-	private void parseReadNamesForBlackList(List<String> readNames,
+	protected void parseReadNamesForBlackList(List<String> readNames,
 			Map<String, ReadName> map) {
-		
+
 		for (String readName : readNames){
 			ReadName read = map.get(readName);
-			
+
 			if (read != null){
 				for (BlacklistAnnotation ann : read.getBlacklist()){
 					CollectionUtil.addKeyToCountMap(ann.component, this.blacklistAnchorCounts);
@@ -368,10 +367,10 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 				}
 			}
 		}
-		
+
 	}
 
-	private void parseReadNamesForRepMask(List<String> readNames, Map<String, ReadName> map, boolean parseMate) {
+	protected void parseReadNamesForRepMask(List<String> readNames, Map<String, ReadName> map, boolean parseMate) {
 		for (String readName : readNames){
 			ReadName read = map.get(readName);
 			if (read != null){
@@ -381,7 +380,7 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 					CollectionUtil.addKeyToCountMap(repClass, this.repMaskAnchor_counts);
 					CollectionUtil.addKeyToCountMap(repFamily, this.repFamilyAnchorCounts);
 				}
-				
+
 				if (parseMate){
 					for (RepMaskAnnotation repmask : read.getMateRepMaskAnnotation()){
 						String repClass = repmask.repeatClass;
@@ -393,10 +392,10 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 
 			}
 		}
-		
+
 	}
 
-	private void parseReadNamesForRefSeq(List<String> readNames, Map<String, ReadName> map) {
+	protected void parseReadNamesForRefSeq(List<String> readNames, Map<String, ReadName> map) {
 		for (String readName : readNames){
 			ReadName read = map.get(readName);
 			Set<String> tempSymbols = new HashSet<String>();
@@ -407,11 +406,11 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 						continue; // gene has already be counted, skip to the next one
 					}
 					CollectionUtil.addKeyToCountMap(symbol, this.refseqMateCounts); //keep track of the gene symbol counts
-					
+
 					if (readName.startsWith(SAMDefinitions.UNIQUE_UNIQUE_MAPPING)){
 						CollectionUtil.addKeyToCountMap(symbol, this.refSeqMateUUCounts ); // keep track of gene symbols for uu reads
 					}
-					
+
 				}
 				for (RefGeneAnnotation gene : read.getRefGeneAnnotation()){
 					String symbol = gene.geneSymbol;
@@ -422,9 +421,9 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 	}
 
 	public List<String> getReadNamesFromMateClusters(){
-		
+
 		List<String> readNames = new ArrayList<String>();
-		
+
 		if(this.hasLeftMateCluster()){
 			String names = this.left_cluster_sam_record.getAttribute(MobileDefinitions.SAM_TAG_READNAMES).toString();
 			List<String> leftReads = Arrays.asList(names.split(",", -1));
@@ -435,93 +434,93 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 			List<String> rightReads = Arrays.asList(names.split(",", -1));
 			readNames.addAll(rightReads);
 		}
-		
+
 		return readNames;
-		
-		
+
+
 	}
-	
+
 	public List<String> getReadNamesFromSplitClusters(){
-		List<String> readNames = new ArrayList<String>();		
+		List<String> readNames = new ArrayList<String>();
 		if (this.samrecord_splitcluster != null){
 			String names = this.samrecord_splitcluster.getAttribute(MobileDefinitions.SAM_TAG_READNAMES).toString();
 			readNames = Arrays.asList(names.split(",", -1));
 		}
 		return readNames;
 	}
-	
+
 	public void parseSAMRecordCluster(SAMRecord cluster) throws IllegalSAMPairException {
 		Boolean isSplitCluster;
 		String mobileHit;
 		mobileHit = cluster.getAttribute(MobileDefinitions.SAM_TAG_MOBILE_HIT).toString();
 		this.parseSampleCountTag(cluster.getAttribute(MobileDefinitions.SAM_TAG_SAMPLECOUNT).toString());
 
-		
+
 		for (String mobileMapping : mobileHit.split(";", -1)){
 			if (!mobileHit.equals("")){
 				this.mobile_mappings.add(mobileMapping);
 			}
 		}
-		
+
 		if (this.original_reference.equals("")){
 			this.original_reference = cluster.getReferenceName();
 		}else if(!this.original_reference.equals(cluster.getReferenceName())){
-			throw new IllegalSAMPairException("Could not add cluster to MobilePrediction. " + 
+			throw new IllegalSAMPairException("Could not add cluster to MobilePrediction. " +
 					"Clusters are not originating from same reference: " + cluster.getReferenceName()
 					+ "vs" + this.original_reference );
 		}
 
-		
-				
+
+
 		isSplitCluster = Boolean.parseBoolean(cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_CLUSTER).toString());
 		if (isSplitCluster){
 			parseSplitCluster(cluster);
 		}else{
 			parseMateCluster(cluster);
-		}		
+		}
 	}
-	
-	private void parseSampleCountTag(String tag){
-		
+
+	protected void parseSampleCountTag(String tag){
+
 		String[] pairs = tag.split(",", -1);
 		String sample;
 		int count;
 		int oldCount;
-		
-		
+
+
 		if (!"".equals(pairs[0])){
 			for (String pair : pairs){
 				String[] sampleCount = pair.split("=");
 				sample = sampleCount[0].trim();
 				count = Integer.parseInt(sampleCount[1]);
 				this.sample_names.add(sample);
-				
+
 				if (this.sample_counts.containsKey(sample)){
 					oldCount = this.sample_counts.get(sample);
-					this.sample_counts.put(sample, oldCount + count);				
+					this.sample_counts.put(sample, oldCount + count);
 				}else{
 					this.sample_counts.put(sample, count);
 				}
 			}
 		}
-		
+
 	}
-	
-	private void parseMateCluster(SAMRecord cluster){
+
+	protected void parseMateCluster(SAMRecord cluster){
 		String clusterHits;
 		String clusterLength;
-		
+
 		this.discordant_read_names.add(cluster.getReadName());
-		
+
 		clusterHits = cluster.getAttribute(MobileDefinitions.SAM_TAG_CLUSTER_HITS).toString();
 		clusterLength = cluster.getAttribute(MobileDefinitions.SAM_TAG_CLUSTER_LENGTH).toString();
-		
+
 		this.unique_hits += Integer.parseInt(cluster.getAttribute(MobileDefinitions.SAM_TAG_UNIQUE_HITS).toString());
 		this.multiple_hits += Integer.parseInt(cluster.getAttribute(MobileDefinitions.SAM_TAG_MULTIPLE_HITS).toString());
 		this.unmapped_hits += Integer.parseInt(cluster.getAttribute(MobileDefinitions.SAM_TAG_UNMAPPED_HITS).toString());
-		
+
 		this.mate_mobile_mapping = cluster.getAttribute(MobileDefinitions.SAM_TAG_MOBILE_HIT).toString();
-		
+
 		if(!cluster.getReadNegativeStrandFlag()){
 			this.left_cluster_sam_record = cluster;
 			this.left_cluster_length = Integer.parseInt(clusterLength);
@@ -536,14 +535,14 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 			this.right_mate_median_mapq = cluster.getMappingQuality();
 		}
 	}
-	
 
-	private void parseSplitCluster(SAMRecord cluster){
+
+	protected void parseSplitCluster(SAMRecord cluster){
 		String leftClippedHits;
 		String rightClippedHits;
 		String leftClippedMedianEnd;
 		String rightClippedMedianEnd;
-		
+
 		this.split_read_names.add(cluster.getReadName());
 
 		leftClippedHits = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_LEFTCLIPPED_HITS).toString();
@@ -552,7 +551,7 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 		if (Integer.parseInt(leftClippedMedianEnd) != 0){
 			this.right_aligned_split_border = Integer.parseInt(leftClippedMedianEnd) - 1;
 		}
-		
+
 		rightClippedHits = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_HITS).toString();
 		this.left_aligned_split_hits = Integer.parseInt(rightClippedHits); //right clipped reads are aligned to left of MEI
 		rightClippedMedianEnd = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_MEDIAN_END).toString();
@@ -564,20 +563,20 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 		this.rightclipped_same_fraction = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_FRAC_SAME_DISTANCE).toString();
 		this.clipped_avg_qual = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_CLIPPED_AVG_QUAL).toString();
 		this.clipped_avg_len = cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_AVG_CLIPPED_LEN).toString();
-		
+
 		//right and left are switches before and after assignment (=) operator, because rightclipped reads are left aligned!
 		this.left_aligned_polyA_hits = Integer.parseInt(cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_POLYA).toString());
 		this.left_aligned_polyT_hits = Integer.parseInt(cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_RIGHTCLIPPED_POLYT).toString());
 		this.right_aligned_polyA_hits = Integer.parseInt(cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_LEFTCLIPPED_POLYA).toString());
 		this.right_aligned_polyT_hits = Integer.parseInt(cluster.getAttribute(MobileDefinitions.SAM_TAG_SPLIT_LEFTCLIPPED_POLYT).toString());
 		this.samrecord_splitcluster = cluster;
-		
+
 	}
-	
+
 	public int getInsertionEstimate(){
 
 		int insertionEstimate = 0;
-		
+
 		//1st priority for estimating insertion for leftmost TSD
 		if (this.hasRightAlignedSplitCluster() && this.right_aligned_split_border != 0){
 			insertionEstimate = this.right_aligned_split_border;
@@ -601,11 +600,11 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 						(median_fragment_length - this.right_cluster_length) - sd_fragment_length)) / 2;
 			}
 		}
-		
-		return insertionEstimate;	
+
+		return insertionEstimate;
 	}
-	
-	private void createFeatures(){
+
+	protected void createFeatures(){
 		for (String feature : HEADER){
 			if (feature.equals(COLUMN_BORDER3)){
 				features.put(feature, Integer.toString(this.getRightPredictionBorder()));
@@ -677,31 +676,31 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 			}
 		}
 	}
-	
+
 	public String getOriginalReference(){
 		return this.original_reference;
 	}
-	
+
 	public Map<String, Integer> getSampleCounts(){
 		return this.sample_counts;
 	}
-	
+
 	public Set<String> getSampleNames(){
 		return this.sample_names;
 	}
-	
+
 	public String getSamplesNamesAsString(){
 		String sampleNames = this.sample_names.toString();
 		sampleNames = sampleNames.substring(1, sampleNames.length() - 1);
 		return sampleNames;
 	}
-	
+
 	public String getSampleCountsAsString(){
 		String sampleCount = this.sample_counts.toString();
 		sampleCount = sampleCount.substring(1, sampleCount.length() - 1);
 		return sampleCount;
 	}
-	
+
 	public int getLeftMateClusterLength(){
 		return this.left_cluster_length;
 	}
@@ -709,15 +708,15 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 	public int getRightMateClusterLength(){
 		return this.right_cluster_length;
 	}
-	
+
 	public int getRightMateClusterBorder(){ return this.right_mate_cluster_border;}
-	
+
 	public int getLeftMateClusterBorder(){
 		return this.left_mate_cluster_border;
 	}
-	
+
 	public int getRightPredictionBorder(){
-		
+
 //		if(this.getLeftTotalHits() >= 1 && this.getRightTotalHits() >= 1){
 //			return getHighestCoordinate();
 //		}else if(hasRightAlignedSplitCluster()){
@@ -728,7 +727,7 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 //			int insertEstimate = this.getInsertionEstimate();
 //			return (insertEstimate + (insertEstimate - this.left_mate_cluster_border));
 //		}
-		
+
 		if(this.getLeftTotalHits() >= 1 && this.getRightTotalHits() >= 1){
 			return getHighestCoordinate();
 		}else if(hasLeftAlignedSplitCluster()){
@@ -745,41 +744,41 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 			if(this.left_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
 				return (this.left_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS);
 			}
-			
+
 			return (this.left_mate_cluster_border + this.max_expected_cluster_size - this.left_cluster_length);
 		}
 	}
-	
+
 	public String hasTSD(){
 		if (this.hasLeftAlignedSplitCluster() && this.hasRightAlignedSplitCluster()){
 			if (this.right_aligned_split_border < this.left_aligned_split_border){
-				return "duplication";
+				return DUPLICATION;
 			}else if(this.right_aligned_split_border > this.left_aligned_split_border){
-				return "deletion";
+				return DELETION;
 			}else{
-				return "no_tsd";
+				return NO_TSD;
 			}
-			
+
 		}else if (this.hasLeftAlignedSplitCluster() && this.hasRightMateCluster()){
 			if (this.right_mate_cluster_border < this.left_aligned_split_border){
-				return "duplication";
+				return DUPLICATION;
 			}
 		}else if (this.hasRightAlignedSplitCluster() && this.hasLeftMateCluster()){
 			if (this.right_aligned_split_border < this.left_mate_cluster_border){
-				return "duplication";
+				return DUPLICATION;
 			}
 		}else if (this.hasLeftMateCluster() && this.hasRightMateCluster()){
 			if (this.right_mate_cluster_border < this.left_mate_cluster_border){
-				return "duplication";
+				return DUPLICATION;
 			}
-		}		
-		
-		return "unknown";
+		}
+
+		return UNKNOWN;
 	}
-	
-	private int getHighestCoordinate() {
+
+	protected int getHighestCoordinate() {
 		Vector<Integer> coordinates = new Vector<Integer>();
-		
+
 		if (this.hasLeftAlignedSplitCluster() && this.hasRightAlignedSplitCluster()){
 			coordinates.add(this.left_aligned_split_border);
 			coordinates.add(this.right_aligned_split_border);
@@ -794,11 +793,11 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 		Collections.sort(coordinates);
 		return coordinates.lastElement();
 	}
-	
+
 	public String getChromosome(){
 		return this.original_reference;
 	}
-	
+
 	public int getLeftPredictionBorder(){
 
 //		if (this.getLeftTotalHits() >= 1 && this.getRightTotalHits() >= 1){
@@ -828,8 +827,8 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 			return (this.right_mate_cluster_border - (this.max_expected_cluster_size - this.right_cluster_length));
 		}
 	}
-	
-	private int getLowestCoordinate(){
+
+	protected int getLowestCoordinate(){
 		Vector<Integer> coordinates = new Vector<Integer>();
 		
 		if (this.hasLeftAlignedSplitCluster() && this.hasRightAlignedSplitCluster()){
@@ -1217,9 +1216,352 @@ public class MobilePrediction implements Comparable<MobilePrediction> {
 			return false;
 		return true;
 	}
+}
 
-	@Override
-	public int compareTo(MobilePrediction otherPred) {
-		return Integer.compare(getInsertionEstimate(), otherPred.getInsertionEstimate());
+class DummyMobilePrediction extends MobilePrediction {
+
+	public final static int EXPECTED_DUPLICATION_LENGTH = 15;
+
+	public DummyMobilePrediction(
+			int left_mate_cluster_border,
+			int left_cluster_length,
+			int left_mate_hits,
+			int left_aligned_split_hits,
+			int left_aligned_split_border,
+			int right_mate_cluster_border,
+			int right_cluster_length,
+			int right_mate_hits,
+			int right_aligned_split_hits,
+			int right_aligned_split_border
+	) {
+		super(470, 35, 500);
+		this.left_mate_cluster_border = left_mate_cluster_border;
+		this.left_cluster_length = left_cluster_length;
+		this.left_mate_hits = left_cluster_length;
+		this.left_aligned_split_hits = left_aligned_split_hits;
+		this.left_aligned_split_border = left_aligned_split_border;
+		this.right_mate_cluster_border = right_mate_cluster_border;
+		this.right_cluster_length = right_cluster_length;
+		this.right_mate_hits = right_mate_hits;
+		this.right_aligned_split_hits = right_aligned_split_hits;
+		this.right_aligned_split_border = right_aligned_split_border;
+	}
+
+	public int _getLeftClusterBorder(){
+		if(hasLeftAlignedSplitCluster())
+			return left_aligned_split_border;
+		else if (hasLeftMateCluster())
+			return left_mate_cluster_border;
+		else return 0;
+	}
+	public int _getRightClusterBorder(){
+		if(hasRightAlignedSplitCluster())
+			return right_aligned_split_border;
+		else if (hasRightMateCluster())
+			return right_mate_cluster_border;
+		else return 0;
+	}
+
+	public boolean _hasLeftAndRightCluster(){
+		return (hasLeftAlignedSplitCluster() || hasLeftMateCluster())
+				&& (hasRightAlignedSplitCluster() || hasRightMateCluster());
+	}
+
+	public int _getTSDlength(){
+		return Math.abs(_getLeftClusterBorder() - _getRightClusterBorder());
+	}
+
+	private int _getSingleClusterInsertionEstimate(){
+
+		//When there are both left and right clusters, raise an exception
+		if(_hasLeftAndRightCluster())
+			throw new IllegalStateException("There are no single clusters on only the left and right side.");
+
+		//Just return the border for split clusters
+		if(this.hasLeftAlignedSplitCluster())
+			return left_aligned_split_border;
+		else if(this.hasRightAlignedSplitCluster())
+			return right_aligned_split_border;
+
+		//Correct the border for mate clusters if necessary
+		else if(hasLeftMateCluster())
+			if(this.left_cluster_length >= median_fragment_length + sd_fragment_length)
+				return left_mate_cluster_border;
+			else return (left_mate_cluster_border +
+					left_mate_cluster_border + (median_fragment_length - left_cluster_length) + sd_fragment_length) / 2;
+		else if(hasRightMateCluster())
+			if(right_cluster_length >= median_fragment_length + sd_fragment_length)
+				return right_mate_cluster_border;
+			else return (right_mate_cluster_border + (right_mate_cluster_border -
+					(median_fragment_length - right_cluster_length) - sd_fragment_length)) / 2;
+		else return 0;
+	}
+
+	public int _getInsertionEstimate(){
+		int insertionEstimate = 0;
+
+		//Left+right clusters: When a target site duplication is present, return the right border
+		//Otherwise return the left split border, right split border or for two mate clusters their middle
+		if(_hasLeftAndRightCluster())
+			if(hasTSD().equals(DUPLICATION))
+				insertionEstimate = _getRightClusterBorder();
+			else if(hasLeftAlignedSplitCluster())
+				insertionEstimate = left_aligned_split_border;
+			else if(hasRightAlignedSplitCluster())
+				insertionEstimate = right_aligned_split_border;
+			else
+				insertionEstimate = Math.round((this.left_mate_cluster_border + this.right_mate_cluster_border) / 2);
+
+			//Single clusters: Return only their border
+		else
+			insertionEstimate = _getSingleClusterInsertionEstimate();
+
+		return insertionEstimate;
+	}
+
+	public int _getEndInsertionEstimate(){
+		int endInsertionEstimate = 0;
+
+		//Left+right clusters: When a target site duplication is present, return the left border
+		//Otherwise return the right split border, left split border or for two mate clusters their middle
+		if(_hasLeftAndRightCluster())
+			if(hasTSD().equals(DUPLICATION))
+				endInsertionEstimate = _getLeftClusterBorder();
+			else if(hasRightAlignedSplitCluster())
+				endInsertionEstimate = right_aligned_split_border;
+			else if(hasLeftAlignedSplitCluster())
+				endInsertionEstimate = left_aligned_split_border;
+			else
+				endInsertionEstimate = Math.round((this.left_mate_cluster_border + this.right_mate_cluster_border) / 2);
+
+		//Single clusters: Return only their border
+		else
+			endInsertionEstimate = _getSingleClusterInsertionEstimate();
+
+		return endInsertionEstimate;
+	}
+
+	public int _getLeftPredictionBorder(){
+		int leftPredictionBorder = 0;
+
+		//For a left+right split cluster, return the insertion point
+		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
+			leftPredictionBorder = _getInsertionEstimate();
+
+			//For a left split + right mate cluster with duplication,
+			//the border is the mate cluster border increased up to the expected target site duplication length
+			//For a left mate + right split with duplication,
+			//the border is the that of the right split cluster
+			//In case there is no duplication, the lowest coordinate is taken
+		else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				int TSDlength = _getTSDlength();
+				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
+					leftPredictionBorder = right_mate_cluster_border - (EXPECTED_DUPLICATION_LENGTH - TSDlength);
+				else
+					leftPredictionBorder = right_mate_cluster_border;
+			} else
+				leftPredictionBorder = getLowestCoordinate();
+		} else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				leftPredictionBorder = right_aligned_split_border;
+			} else
+				leftPredictionBorder = getLowestCoordinate();
+		}
+
+		//For two mate clusters with duplication,
+		//the border is the mate cluster border increased up to half of expected target site duplication length
+		//Otherwise the lowest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				int TSDlength = _getTSDlength();
+				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
+					leftPredictionBorder = right_mate_cluster_border - (EXPECTED_DUPLICATION_LENGTH - TSDlength) / 2;
+				else
+					leftPredictionBorder = right_mate_cluster_border;
+			} else
+				leftPredictionBorder = getLowestCoordinate();
+		}
+
+		//For single clusters substract the fuzziness
+		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
+		else if(hasRightAlignedSplitCluster()){
+			leftPredictionBorder =  this.right_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasLeftAlignedSplitCluster()){
+			leftPredictionBorder =  this.left_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasLeftMateCluster()){
+			leftPredictionBorder =  this.left_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else{
+			if (this.right_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
+				leftPredictionBorder = this.right_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+			}
+			else
+				leftPredictionBorder =  (this.right_mate_cluster_border - (this.max_expected_cluster_size - this.right_cluster_length));
+		}
+
+		return leftPredictionBorder;
+	}
+
+	public int _getRightPredictionBorder(){
+		int rightPredictionBorder = 0;
+
+		//For a left+right split cluster, return the insertion point
+		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
+			rightPredictionBorder = _getInsertionEstimate();
+
+			//For a split + mate cluster with duplication,
+			//the border is the mate cluster border increased up to the expected target site duplication length
+			//Otherwise the highest coordinate is taken
+		else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				rightPredictionBorder = right_mate_cluster_border;
+			} else
+				rightPredictionBorder = getHighestCoordinate();
+		} else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				rightPredictionBorder = right_aligned_split_border;
+			} else
+				rightPredictionBorder = getHighestCoordinate();
+		}
+
+		//For two mate clusters with duplication,
+		//the border is the mate cluster border
+		//Otherwise the lowest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				rightPredictionBorder = right_mate_cluster_border;
+			} else
+				rightPredictionBorder = getHighestCoordinate();
+		}
+
+		//For single clusters add the fuzziness
+		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
+		else if(hasLeftAlignedSplitCluster()){
+			rightPredictionBorder = this.left_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasRightAlignedSplitCluster()){
+			rightPredictionBorder = this.right_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasRightMateCluster()){
+			rightPredictionBorder = this.right_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}
+		else{
+			if(this.left_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
+				rightPredictionBorder = (this.left_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS);
+			}
+			else
+				rightPredictionBorder = (this.left_mate_cluster_border + this.max_expected_cluster_size - this.left_cluster_length);
+		}
+
+		return rightPredictionBorder;
+	}
+
+	public int _getEndLeftPredictionBorder(){
+		int endLeftPredictionBorder = 0;
+
+		//For a left+right split cluster, return the end insertion point
+		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
+			endLeftPredictionBorder = _getEndInsertionEstimate();
+
+			//For a split + mate cluster with duplication,
+			//the border is the mate cluster border increased up to the expected target site duplication length
+			//Otherwise the lowest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				endLeftPredictionBorder = left_mate_cluster_border;
+			} else
+				endLeftPredictionBorder = getLowestCoordinate();
+		} else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				endLeftPredictionBorder = left_aligned_split_border;
+			} else
+				endLeftPredictionBorder = getLowestCoordinate();
+		}
+
+		//For two mate clusters with duplication,
+		//the border is the mate cluster border
+		//Otherwise the highest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				endLeftPredictionBorder = left_mate_cluster_border;
+			} else
+				endLeftPredictionBorder = getLowestCoordinate();
+		}
+
+		//For single clusters substract the fuzziness
+		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
+		else if (hasRightAlignedSplitCluster()){
+			endLeftPredictionBorder = this.right_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if (hasLeftAlignedSplitCluster()){
+			endLeftPredictionBorder = this.left_aligned_split_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if (hasLeftMateCluster()){
+			endLeftPredictionBorder = this.left_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else{
+			if (this.right_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
+				endLeftPredictionBorder = this.right_mate_cluster_border - SINGLE_CLUSTER_BORDER_FUZZINESS;
+			}
+			else
+				endLeftPredictionBorder = (this.right_mate_cluster_border - (this.max_expected_cluster_size - this.right_cluster_length));
+		}
+
+		return endLeftPredictionBorder;
+	}
+
+	public int _getEndRightPredictionBorder(){
+		int endRightPredictionBorder = 0;
+
+		//For a left+right split cluster, return the end insertion point
+		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
+			endRightPredictionBorder = _getEndInsertionEstimate();
+
+			//For a split + mate cluster with duplication,
+			//the border is the mate cluster border increased up to the expected target site duplication length
+			//Otherwise the highest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				int TSDlength = _getTSDlength();
+				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
+					endRightPredictionBorder = left_mate_cluster_border + (EXPECTED_DUPLICATION_LENGTH - TSDlength);
+				else
+					endRightPredictionBorder = left_mate_cluster_border;
+			} else
+				endRightPredictionBorder = getHighestCoordinate();
+		} else if(hasLeftAlignedSplitCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				endRightPredictionBorder = left_aligned_split_border;
+			} else
+				endRightPredictionBorder = getHighestCoordinate();
+		}
+
+		//For two mate clusters with duplication,
+		//the border is the mate cluster border increased up to half of expected target site duplication length
+		//Otherwise the highest coordinate is taken
+		else if(hasLeftMateCluster() && hasRightMateCluster()){
+			if(hasTSD().equals(DUPLICATION)){
+				int TSDlength = _getTSDlength();
+				if(TSDlength < EXPECTED_DUPLICATION_LENGTH)
+					endRightPredictionBorder = left_mate_cluster_border + (EXPECTED_DUPLICATION_LENGTH - TSDlength) / 2;
+				else
+					endRightPredictionBorder = left_mate_cluster_border;
+			} else
+				endRightPredictionBorder = getHighestCoordinate();
+		}
+
+		//For single clusters add the fuzziness
+		//unless the size of the right mate cluster is unexpectedly small. Then increase it to the expected size
+		else if(hasLeftAlignedSplitCluster()){
+			endRightPredictionBorder = this.left_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasRightAlignedSplitCluster()){
+			endRightPredictionBorder = this.right_aligned_split_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}else if(hasRightMateCluster()){
+			endRightPredictionBorder = this.right_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS;
+		}
+		else{
+			if(this.left_cluster_length >= this.max_expected_cluster_size - SINGLE_CLUSTER_BORDER_FUZZINESS){
+				endRightPredictionBorder = (this.left_mate_cluster_border + SINGLE_CLUSTER_BORDER_FUZZINESS);
+			}
+			else
+				endRightPredictionBorder = (this.left_mate_cluster_border + this.max_expected_cluster_size - this.left_cluster_length);
+		}
+
+		return endRightPredictionBorder;
 	}
 }
