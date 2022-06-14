@@ -26,7 +26,10 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 	private String mobileElement;	
 	private int insertionPoint;	
 	private int border5;	
-	private int border3;	
+	private int border3;
+	private int endInsertionPoint;
+	private int endBorder5;
+	private int endBorder3;
 	private String sample;	
 	private String sampleCounts;	
 	private String cluster5Length;	
@@ -51,6 +54,8 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 	private double clippedAvgQual;
 	private double clippedAvgLength;
 	private String tsd;
+	private int tsdLen;
+	private String tsdSeq;
 	private double vaf;
 
 	public String getChromosome() { return chromosome; }
@@ -83,7 +88,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 	
 	@Field(at=2, required=true)
 	public void setInsertionPoint(int insertionPoint) {
-		this.insertionPoint = insertionPoint + 1;
+		this.insertionPoint = insertionPoint;
 	}
 	
 	public int getBorder5() {
@@ -98,17 +103,47 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 	public int getBorder3() {
 		return border3;
 	}
-	
+
 	@Field(at=4, required=true)
 	public void setBorder3(int border3) {
 		this.border3 = border3;
 	}
-	
+
+	public int getEndInsertionPoint() {
+		if (this.endInsertionPoint < 1){
+			return 1;
+		}
+		return this.endInsertionPoint;
+	}
+
+	@Field(at=5, required=true)
+	public void setEndInsertionPoint(int endInsertionPoint) {
+		this.endInsertionPoint = endInsertionPoint;
+	}
+
+	public int getEndBorder5() {
+		return endBorder5;
+	}
+
+	@Field(at=6, required=true)
+	public void setEndBorder5(int endBorder5) {
+		this.endBorder5 = endBorder5;
+	}
+
+	public int getEndBorder3() {
+		return endBorder3;
+	}
+
+	@Field(at=7, required=true)
+	public void setEndBorder3(int endBorder3) {
+		this.endBorder3 = endBorder3;
+	}
+
 	public String getSample() {
 		return sample;
 	}
 	
-	@Field(at=6, required=true)
+	@Field(at=9, required=true)
 	public void setSample(String sample) {
 		this.sample = sample;
 	}
@@ -117,7 +152,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return sampleCounts;
 	}
 	
-	@Field(at=7, required=true)
+	@Field(at=10, required=true)
 	public void setSampleCounts(String sampleCounts) {
 		this.sampleCounts = sampleCounts;
 	}
@@ -126,7 +161,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return NAConverter.toInt(this.cluster5Length);
 	}
 	
-	@Field(at=8, required=true)
+	@Field(at=11, required=true)
 	public void setCluster5Length(String cluster5Length) {
 		this.cluster5Length = cluster5Length;
 	}
@@ -135,7 +170,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return NAConverter.toInt(this.cluster3Length);
 	}
 	
-	@Field(at=9, required=true)
+	@Field(at=12, required=true)
 	public void setCluster3Length(String cluster3Length) {
 		this.cluster3Length = cluster3Length;
 	}
@@ -144,7 +179,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return NAConverter.toInt(this.cluster5Hits);
 	}
 	
-	@Field(at=10, required=true)
+	@Field(at=13, required=true)
 	public void setCluster5Hits(String cluster5Hits) {
 		this.cluster5Hits = cluster5Hits;
 	}
@@ -153,7 +188,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return NAConverter.toInt(this.cluster3Hits);
 	}
 	
-	@Field(at=11, required=true)
+	@Field(at=14, required=true)
 	public void setCluster3Hits(String cluster3Hits) {
 		this.cluster3Hits = cluster3Hits;
 	}
@@ -162,7 +197,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return split5Hits;
 	}
 	
-	@Field(at=12, required=true)
+	@Field(at=15, required=true)
 	public void setSplit5Hits(int split5Hits) {
 		this.split5Hits = split5Hits;
 	}
@@ -171,7 +206,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return split3Hits;
 	}
 	
-	@Field(at=13, required=true)
+	@Field(at=16, required=true)
 	public void setSplit3Hits(int split3Hits) {
 		this.split3Hits = split3Hits;
 	}
@@ -180,7 +215,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return polyA5hits;
 	}
 	
-	@Field(at=14, required=true)
+	@Field(at=17, required=true)
 	public void setPolyA5hits(int polyA5hits) {
 		this.polyA5hits = polyA5hits;
 	}
@@ -189,7 +224,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return polyT5hits;
 	}
 	
-	@Field(at=15, required=true)
+	@Field(at=18, required=true)
 	public void setPolyT5hits(int polyT5hits) {
 		this.polyT5hits = polyT5hits;
 	}
@@ -198,7 +233,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return polyA3hits;
 	}
 	
-	@Field(at=16, required=true)
+	@Field(at=19, required=true)
 	public void setPolyA3hits(int polyA3hits) {
 		this.polyA3hits = polyA3hits;
 	}
@@ -207,7 +242,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return polyT3hits;
 	}
 	
-	@Field(at=17, required=true)
+	@Field(at=20, required=true)
 	public void setPolyT3hits(int polyT3hits) {
 		this.polyT3hits = polyT3hits;
 	}
@@ -216,7 +251,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return uUpairs;
 	}
 	
-	@Field(at=18, required=true)
+	@Field(at=21, required=true)
 	public void setuUpairs(int uUpairs) {
 		this.uUpairs = uUpairs;
 	}
@@ -225,7 +260,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return uMpairs;
 	}
 	
-	@Field(at=19, required=true)
+	@Field(at=22, required=true)
 	public void setuMpairs(int uMpairs) {
 		this.uMpairs = uMpairs;
 	}
@@ -234,7 +269,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return uXpairs;
 	}
 	
-	@Field(at=20, required=true)
+	@Field(at=23, required=true)
 	public void setuXpairs(int uXpairs) {
 		this.uXpairs = uXpairs;
 	}
@@ -243,7 +278,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return leftClippedMaxDist;
 	}
 
-	@Field(at=21, required=true)
+	@Field(at=24, required=true)
 	public void setLeftClippedMaxDist(int leftClippedMaxDist) {
 		this.leftClippedMaxDist = leftClippedMaxDist;
 	}
@@ -252,7 +287,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return rightClippedMaxDist;
 	}
 
-	@Field(at=22, required=true)
+	@Field(at=25, required=true)
 	public void setRightClippedMaxDist(int rightClippedMaxDist) {
 		this.rightClippedMaxDist = rightClippedMaxDist;
 	}
@@ -261,7 +296,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return leftClippedSamePos;
 	}
 
-	@Field(at=23, required=true)
+	@Field(at=26, required=true)
 	public void setLeftClippedSamePos(String leftClippedSamePos) {
 		this.leftClippedSamePos = leftClippedSamePos;
 	}
@@ -270,7 +305,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return rightClippedSamePos;
 	}
 
-	@Field(at=24, required=true)
+	@Field(at=27, required=true)
 	public void setRightClippedSamePos(String rightClippedSamePos) {
 		this.rightClippedSamePos = rightClippedSamePos;
 	}
@@ -280,7 +315,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return clippedAvgQual;
 	}
 	
-	@Field(at=25, required=true)
+	@Field(at=28, required=true)
 	public void setClippedAvgQual(double clippedAvgQual) {
 		this.clippedAvgQual = clippedAvgQual;
 	}
@@ -288,19 +323,29 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		return clippedAvgLength;
 	}
 	
-	@Field(at=26, required=true)
+	@Field(at=29, required=true)
 	public void setClippedAvgLength(double clippedAvgLength) {
 		this.clippedAvgLength = clippedAvgLength;
 	}
 	
-	public String getTsd() { return tsd; }
+	public String getTSD() { return tsd; }
 
-	@Field(at=27, required=true)
-	public void setTsd(String tsd) { this.tsd = tsd; }
+	@Field(at=30, required=true)
+	public void setTSD(String tsd) { this.tsd = tsd; }
+
+	public int getTSDlen() { return tsdLen; }
+
+	@Field(at=31, required=true)
+	public void setTSDlen(int tsdLen) { this.tsdLen = tsdLen; }
+
+	public String getTSDseq() { return tsdSeq; }
+
+	@Field(at=32, required=true)
+	public void setTSDseq(String tsdSeq) { this.tsdSeq = tsdSeq; }
 
 	public double getVAF() { return vaf; }
 
-	@Field(at=28, required=true)
+	@Field(at=33, required=true)
 	public void setVAF(double vaf) { this.vaf = vaf; }
 
 	//Other methods
@@ -316,6 +361,13 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 		}
 		return newBorder5;
 	}
+	public int getCorrectedEndBorder5(){
+		int newEndBorder5 = this.getEndBorder5();
+		if (newEndBorder5 <= 0){
+			newEndBorder5 = 1;
+		}
+		return newEndBorder5;
+	}
 	
 	/**
 	 * Sample counts with legal values for VCF format
@@ -328,7 +380,7 @@ public class MobsterRecord implements Comparable<MobsterRecord> {
 	public int getTotalPolyAReads(){
 		return this.getPolyA3hits() + this.getPolyA5hits() + this.getPolyT3hits() + this.getPolyT5hits();
 	}
-	
+
 	
 	public String toString(){
 		return this.chromosome + "\t" + this.border5 + "\t" +  this.border3 + "\t" +  this.mobileElement;

@@ -13,6 +13,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.converters.FileConverter;
+import org.umcn.me.util.ReferenceGenome;
 
 public class MobsterToVCF {
 
@@ -49,6 +50,8 @@ public class MobsterToVCF {
 		run(in, out);
 	}
 
+
+
 	public static void run(String inString, String outString) throws IOException{
 		List<MobsterRecord> records;
 		FileWriter fw = new FileWriter(outString);
@@ -62,6 +65,25 @@ public class MobsterToVCF {
 
 		for (MobsterRecord record : records){
 			MobsterRecordVCFWrapper vcfRecord = new MobsterRecordVCFWrapper(record);
+			bw.write(vcfRecord.toString());
+			bw.write("\n");
+		}
+		bw.close();
+	}
+
+	public static void run(String inString, String outString, ReferenceGenome referenceGenome) throws IOException{
+		List<MobsterRecord> records;
+		FileWriter fw = new FileWriter(outString);
+		BufferedWriter bw = new BufferedWriter(fw);
+
+		MobsterParser parser = new MobsterParser(new File(inString));
+		records = parser.parse();
+		Collections.sort(records);
+
+		bw.write(MobsterRecordVCFWrapper.VCFHEADER);
+
+		for (MobsterRecord record : records){
+			MobsterRecordVCFWrapper vcfRecord = new MobsterRecordVCFWrapper(record, referenceGenome);
 			bw.write(vcfRecord.toString());
 			bw.write("\n");
 		}

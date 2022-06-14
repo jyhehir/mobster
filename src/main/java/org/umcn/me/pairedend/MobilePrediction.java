@@ -11,6 +11,7 @@ import org.umcn.me.util.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.Ref;
 import java.util.*;
 
 public class MobilePrediction {
@@ -18,6 +19,7 @@ public class MobilePrediction {
 	protected static final int MIN_DISCORDANT_UX = 2;
 
 	protected String original_reference = "";
+	protected ReferenceGenome referenceGenome;
 
 	protected int median_fragment_length;
 	protected int sd_fragment_length;
@@ -44,7 +46,7 @@ public class MobilePrediction {
 
 	protected int max_expected_cluster_size;
 
-	
+
 	protected String leftclipped_max_distance = "-1";
 	protected String rightclipped_max_distance = "-1";
 	protected String leftclipped_same_fraction = "-1";
@@ -105,6 +107,9 @@ public class MobilePrediction {
 	public final static String COLUMN_INSERTPOINT = "Insert Point";
 	public final static String COLUMN_BORDER5 = "border5";
 	public final static String COLUMN_BORDER3 = "border3";
+	public final static String COLUMN_ENDINSERTPOINT = "End Insert Point";
+	public final static String COLUMN_ENDBORDER5 = "end border5";
+	public final static String COLUMN_ENDBORDER3 = "end border3";
 	public final static String COLUMN_MERGED = "merged";
 	public final static String COLUMN_CLUSTER5_LEN = "cluster5 length";
 	public final static String COLUMN_CLUSTER3_LEN = "cluster3 length";
@@ -127,19 +132,19 @@ public class MobilePrediction {
 	public final static String COLUMN_CLIPPED_AVG_QUAL = "clipped avg qual";
 	public final static String COLUMN_AVG_CLIPPED_LEN = "clipped avg length";
 	public final static String COLUMN_TSD = "target site duplication";
+	public final static String COLUMN_TSD_LEN = "target site duplication length";
+	public final static String COLUMN_TSD_SEQ = "target site duplication sequence";
 	public final static String COLUMN_SAMPLE = "sample";
 	public final static String COLUMN_SAMPLE_COUNT = "sample_counts";
 	protected static final String COLUMN_VAF = "variant allele fraction";
 
-	protected final static String[] HEADER = {COLUMN_REFERENCE, COLUMN_MOBILE, COLUMN_INSERTPOINT,
-	                                        COLUMN_BORDER5, COLUMN_BORDER3, COLUMN_MERGED, COLUMN_SAMPLE, COLUMN_SAMPLE_COUNT, COLUMN_CLUSTER5_LEN,
-	                                        COLUMN_CLUSTER3_LEN, COLUMN_CLUSTER5_HITS,
-	                                        COLUMN_CLUSTER3_HITS, COLUMN_SPLIT5_HITS, COLUMN_SPLIT3_HITS,
-	                                        COLUMN_POLYA5_HITS, COLUMN_POLYT5_HITS, COLUMN_POLYA3_HITS,
-	                                        COLUMN_POLYT3_HITS, COLUMN_UNIQUE_HITS, COLUMN_MULTIPLE_HITS, COLUMN_UNMAPPED_HITS,
-	                                        COLUMN_LEFTCLIPPED_MAX_DISTANCE, COLUMN_RIGHTCLIPPED_MAX_DISTANCE,
-	                                        COLUMN_LEFTCLIPPED_FRAC_DISTANCE, COLUMN_RIGHTCLIPPED_FRAC_DISTANCE,
-	                                        COLUMN_CLIPPED_AVG_QUAL, COLUMN_AVG_CLIPPED_LEN, COLUMN_TSD, COLUMN_VAF};
+	protected final static String[] HEADER = {COLUMN_REFERENCE, COLUMN_MOBILE, COLUMN_INSERTPOINT, COLUMN_BORDER5, COLUMN_BORDER3, COLUMN_ENDINSERTPOINT,
+											COLUMN_ENDBORDER5, COLUMN_ENDBORDER3, COLUMN_MERGED, COLUMN_SAMPLE, COLUMN_SAMPLE_COUNT,
+											COLUMN_CLUSTER5_LEN, COLUMN_CLUSTER3_LEN, COLUMN_CLUSTER5_HITS, COLUMN_CLUSTER3_HITS, COLUMN_SPLIT5_HITS,
+											COLUMN_SPLIT3_HITS, COLUMN_POLYA5_HITS, COLUMN_POLYT5_HITS, COLUMN_POLYA3_HITS, COLUMN_POLYT3_HITS,
+											COLUMN_UNIQUE_HITS, COLUMN_MULTIPLE_HITS, COLUMN_UNMAPPED_HITS, COLUMN_LEFTCLIPPED_MAX_DISTANCE, COLUMN_RIGHTCLIPPED_MAX_DISTANCE,
+	                                        COLUMN_LEFTCLIPPED_FRAC_DISTANCE, COLUMN_RIGHTCLIPPED_FRAC_DISTANCE, COLUMN_CLIPPED_AVG_QUAL, COLUMN_AVG_CLIPPED_LEN, COLUMN_TSD,
+											COLUMN_TSD_LEN, COLUMN_TSD_SEQ, COLUMN_VAF};
 
 	protected static final int MIN_INSERT_SIZE = 10000;
 
@@ -577,10 +582,14 @@ public class MobilePrediction {
 
 	protected void createFeatures(){
 		for (String feature : HEADER){
-			if (feature.equals(COLUMN_BORDER3)){
+			if(feature.equals(COLUMN_BORDER3)){
 				features.put(feature, Integer.toString(this.getRightPredictionBorder()));
-			}else if (feature.equals(COLUMN_BORDER5)){
-				 features.put(feature, Integer.toString(this.getLeftPredictionBorder()));
+			}else if (feature.equals(COLUMN_BORDER5)) {
+				features.put(feature, Integer.toString(this.getLeftPredictionBorder()));
+			} else if (feature.equals(COLUMN_ENDBORDER3)){
+				features.put(feature, Integer.toString(this.getEndRightPredictionBorder()));
+			}else if (feature.equals(COLUMN_ENDBORDER5)){
+				features.put(feature, Integer.toString(this.getEndLeftPredictionBorder()));
 			}else if (feature.equals(COLUMN_CLUSTER3_HITS)){
 				String cluster3Hits = (this.getRightTotalHits()== 0) ? "NA" : Integer.toString(this.getRightTotalHits());
 				features.put(feature, cluster3Hits);
@@ -598,6 +607,8 @@ public class MobilePrediction {
 				features.put(feature, cluster5Len);
 			}else if (feature.equals(COLUMN_INSERTPOINT)){
 				features.put(COLUMN_INSERTPOINT, Integer.toString(this.getInsertionEstimate()));
+			}else if (feature.equals(COLUMN_ENDINSERTPOINT)){
+				features.put(COLUMN_ENDINSERTPOINT, Integer.toString(this.getEndInsertionEstimate()));
 			}else if (feature.equals(COLUMN_MOBILE)){
 				features.put(feature, CollectionUtil.toString(this.mobile_mappings));
 			}else if (feature.equals(COLUMN_REFERENCE)){
@@ -624,6 +635,13 @@ public class MobilePrediction {
 				features.put(feature, this.clipped_avg_qual);
 			}else if (feature.equals(COLUMN_TSD)){
 				features.put(feature, this.hasTSD());
+			}else if (feature.equals(COLUMN_TSD_LEN)){
+				features.put(feature, Integer.toString(this.getTSDlength()));
+			}else if (feature.equals(COLUMN_TSD_SEQ)){
+				NucleotideSequence TSDseq = getTSDseq();
+				if(TSDseq != null)
+					features.put(COLUMN_TSD_SEQ, TSDseq.getSequence());
+				else features.put(feature, ".");
 			}else if (feature.equals(COLUMN_AVG_CLIPPED_LEN)){
 				features.put(feature, this.clipped_avg_len);
 			}else if (feature.equals(COLUMN_SAMPLE)){
@@ -905,6 +923,10 @@ public class MobilePrediction {
 	public String getVAF(){
 		return this.vaf;
 	}
+	
+	public void setReferenceGenome(ReferenceGenome referenceGenome){
+		this.referenceGenome = referenceGenome;
+	}
 
 	public String toGripsString(){
 		Set<String> overlappingRepClass = CollectionUtil.returnOverlappingKeysInMap(this.repMaskAnchor_counts, this.repMaskMate_counts);
@@ -1089,7 +1111,21 @@ public class MobilePrediction {
 	}
 
 	public int getTSDlength(){
-		return Math.abs(getLeftClusterBorder() - getRightClusterBorder());
+		if(!Objects.equals(hasTSD(), UNKNOWN))
+			return Math.abs(getLeftClusterBorder() - getRightClusterBorder());
+		else
+			return -1;
+	}
+
+	public NucleotideSequence getTSDseq() {
+		if(!hasTSD().equals(UNKNOWN) && !hasTSD().equals(NO_TSD) && this.referenceGenome != null)
+			try {
+				return referenceGenome.getSubSequenceAt(getChromosome(), getInsertionEstimate() + 1, getEndInsertionEstimate());
+			} catch (InvalidNucleotideSequenceException e) {
+				return null;
+			}
+		else
+			return null;
 	}
 
 	private int getSingleClusterInsertionEstimate(){
@@ -1133,7 +1169,7 @@ public class MobilePrediction {
 			else
 				insertionEstimate = Math.round((this.left_mate_cluster_border + this.right_mate_cluster_border) / 2);
 
-			//Single clusters: Return only their border
+		//Single clusters: Return only their border
 		else
 			insertionEstimate = getSingleClusterInsertionEstimate();
 
@@ -1282,9 +1318,9 @@ public class MobilePrediction {
 		if(hasLeftAlignedSplitCluster() && hasRightAlignedSplitCluster())
 			endLeftPredictionBorder = getEndInsertionEstimate();
 
-			//For a split + mate cluster with duplication,
-			//the border is the mate cluster border increased up to the expected target site duplication length
-			//Otherwise the lowest coordinate is taken
+		//For a split + mate cluster with duplication,
+		//the border is the mate cluster border increased up to the expected target site duplication length
+		//Otherwise the lowest coordinate is taken
 		else if(hasLeftMateCluster() && hasRightAlignedSplitCluster()){
 			if(hasTSD().equals(DUPLICATION)){
 				endLeftPredictionBorder = left_mate_cluster_border;

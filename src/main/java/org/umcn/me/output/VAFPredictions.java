@@ -24,7 +24,7 @@ public class VAFPredictions {
         if(samIndexPath == null)
             return predictions;
 
-        logger.info("Calculating VAF of predictions based on the maximum ratio of clipped + discordant / total reads within " + props.getProperty(MobileDefinitions.VAF_DETERMINATION_WINDOW) + "bp to the left and right of the insertion");
+        logger.info("Calculating VAF of predictions based on the maximum ratio of clipped + discordant / total reads within " + props.getProperty(MobileDefinitions.VAF_DETERMINATION_WINDOW) + " bp to the left and right of the insertion");
         for (MobilePrediction prediction : predictions) {
             int vafWindow = Integer.parseInt(props.getProperty(MobileDefinitions.VAF_DETERMINATION_WINDOW).trim());
 
@@ -34,8 +34,8 @@ public class VAFPredictions {
             SAMSilentReader samFile = new SAMSilentReader(sam, index);
 
             //Setup the borders for looking for the prediction
-            int leftInsBorder = prediction.getLeftPredictionBorder();
-            int rightInsBorder = prediction.getRightPredictionBorder();
+            int leftInsBorder = prediction.getInsertionEstimate();
+            int rightInsBorder = prediction.getEndInsertionEstimate();
 
             int leftOuterBorder = leftInsBorder - vafWindow;
             int rightOuterBorder = rightInsBorder + vafWindow;

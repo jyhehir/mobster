@@ -7,6 +7,7 @@ import org.umcn.me.pairedend.Mobster;
 import org.umcn.me.util.CollectionUtil;
 import org.umcn.me.util.MobileDefinitions;
 import org.umcn.me.util.ReadName;
+import org.umcn.me.util.ReferenceGenome;
 
 import java.io.*;
 import java.util.*;
@@ -86,6 +87,17 @@ public class SavePredictions {
 
         predictions = filter.getPredictions();
 
+        //When a reference genome has been provided, add it to the predictions so the TSD sequence can be determined
+        ReferenceGenome referenceGenome = null;
+        if(props.containsKey(MobileDefinitions.REFERENCE_GENOME_FILE)){
+            try{
+                referenceGenome = new ReferenceGenome(props.getProperty(MobileDefinitions.REFERENCE_GENOME_FILE));
+                for(MobilePrediction pred: predictions){
+                    pred.setReferenceGenome(referenceGenome);
+                }
+            } catch(IOException ignored){}
+        }
+
         //---Save output---
         if (grips_mode){
             logger.info("Starting GRIPS annotation...");
@@ -149,13 +161,13 @@ public class SavePredictions {
             logger.info("VCF output is enabled, converting generated files to VCF...");
             if(grips_mode) {
                 logger.info("Writing unfiltered predictions to: " + outPrefix + "_GRIPS_unfiltered.vcf");
-                MobsterToVCF.run(outPrefix + "_GRIPS_unfiltered.txt", outPrefix + "_GRIPS_unfiltered.vcf");
+                MobsterToVCF.run(outPrefix + "_GRIPS_unfiltered.txt", outPrefix + "_GRIPS_unfiltered.vcf", referenceGenome);
                 logger.info("Writing filtered GRIPS predictions to: " + outPrefix + "_GRIPS_predictons.vcf and " + outPrefix + "_GRIPS_MORECONFIDENT_predictions.vcf");
-                MobsterToVCF.run(outPrefix + "_GRIPS_predictons.txt", outPrefix + "_GRIPS_predictons.vcf");
-                MobsterToVCF.run(outPrefix + "_GRIPS_MORECONFIDENT_predictions.txt", outPrefix + "_GRIPS_MORECONFIDENT_predictions.vcf");
+                MobsterToVCF.run(outPrefix + "_GRIPS_predictons.txt", outPrefix + "_GRIPS_predictons.vcf", referenceGenome);
+                MobsterToVCF.run(outPrefix + "_GRIPS_MORECONFIDENT_predictions.txt", outPrefix + "_GRIPS_MORECONFIDENT_predictions.vcf", referenceGenome);
             } else{
                 logger.info("Writing filtered predictions to: " + outPrefix + "_predictions.vcf");
-                MobsterToVCF.run(outPrefix + "_predictions.txt", outPrefix + "_predictions.vcf");
+                MobsterToVCF.run(outPrefix + "_predictions.txt", outPrefix + "_predictions.vcf", referenceGenome);
             }
         }
     }

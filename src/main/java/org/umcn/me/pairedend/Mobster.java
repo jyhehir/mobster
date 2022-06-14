@@ -12,6 +12,7 @@ import org.umcn.me.output.VAFPredictions;
 import org.umcn.me.samexternal.SAMDefinitions;
 import org.umcn.me.samexternal.SAMSilentReader;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.ReferenceGenome;
 
 public final class Mobster {
 
@@ -224,10 +225,11 @@ public final class Mobster {
         System.out.println("A new properties file containing all the final properties will also be created with the output prefix.");
         System.out.println();
         System.out.println("\t-properties [properties]\tThis value is required. Path to the properties file.");
-        System.out.println(("\t-rdir [resources folder]\tThis value will override corresponding value in the properties file. Specify where the resources folder of mobster is installed."));
-        System.out.println("\t-in [input .bam file]\t\tThis value will override corresponding value in the properties file. Multiple BAM files may be specified if separated by a comma");
-        System.out.println("\t-out [output prefix]\t\tThis value will override corresponding value in the properties file.");
-        System.out.println(("\t-sn [sample name]\t\t\tThis value will override corresponding value in the properties file. Multiple sample names may be specified if separated by a comma"));
+        System.out.println(("\t-rdir [resources folder]\tThis value will override the corresponding value in the properties file. Specify where the resources folder of mobster is installed."));
+        System.out.println("\t-in [input .bam file]\t\tThis value will override the corresponding value in the properties file. Multiple BAM files may be specified if separated by a comma");
+        System.out.println("\t-out [output prefix]\t\tThis value will override the corresponding value in the properties file.");
+        System.out.println(("\t-sn [sample name]\t\t\tThis value will override the corresponding value in the properties file. Multiple sample names may be specified if separated by a comma"));
+        System.out.println(("\t-r [reference genome]\t\tThis value will override the corresponding value in the properties file. When provided, sequences will be determined for the target site duplication and the insertion position."));
         System.out.println(("\t-vcf\t\t\t\t\t\tIf this flag is given, the corresponding value in the properties file will be set to 'true'. Output the results of Mobster in VCF format in addition to the default format."));
         System.out.println(("\t--<PROPERTY> [value]\t\tThis value will override the corresponding value in the properties file."));
         System.out.println();
@@ -271,8 +273,8 @@ public final class Mobster {
                         sampleName = value;
                         props.put(MobileDefinitions.SAMPLE_NAME, sampleName);
                     }
-                    else if (argument.equalsIgnoreCase("-vcf")){
-                        props.put(MobileDefinitions.VCF, value);
+                    else if (argument.equalsIgnoreCase("-r")){
+                        props.put(MobileDefinitions.REFERENCE_GENOME_FILE, value);
                     }
                     else if (argument.equalsIgnoreCase("-rdir")){
                         props.put(MobileDefinitions.RESOURCES_DIR, value);
@@ -282,10 +284,8 @@ public final class Mobster {
                             && props.containsKey(argUpperCase)){
                         props.put(argUpperCase, value);
                     } else if(!argument.equals("-properties")){
-                        System.out.println(argument);
-
                         printUsage();
-                        logger.error("Invalid arguments. Please try again.");
+                        logger.error("Invalid argument: " + argument +". Please try again.");
                         System.exit(-1);
                     }
                 }
@@ -298,6 +298,16 @@ public final class Mobster {
                     props.put(MobileDefinitions.INFILE_INDEX, inFile.replace(".bam", ".bai"));
                 }else {
                     logger.info("Provided input file has no index file available. VAF determination will be disabled.");
+                }
+
+                //Check if the reference genome is indeed available and in the correct format. If not, sequence determination will be disabled.
+                if(props.containsKey(MobileDefinitions.REFERENCE_GENOME_FILE)){
+                    try{
+                        new ReferenceGenome(props.getProperty(MobileDefinitions.REFERENCE_GENOME_FILE));
+                    } catch(IOException e){
+                        System.out.println(props.getProperty(MobileDefinitions.REFERENCE_GENOME_FILE));
+                        logger.info(e.getMessage() + ". Determination of the sequence for the target site duplication and insertion position will be disabled.");
+                    }
                 }
 
                 //Check whether there is a correct number of samples
