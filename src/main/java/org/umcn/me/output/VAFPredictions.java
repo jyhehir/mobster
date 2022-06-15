@@ -35,10 +35,10 @@ public class VAFPredictions {
 
             //Setup the borders for looking for the prediction
             int leftInsBorder = prediction.getInsertionEstimate();
-            int rightInsBorder = prediction.getEndInsertionEstimate();
+            int rightInsBorder = prediction.getEndInsertionEstimate() + 1;
 
-            int leftOuterBorder = leftInsBorder - vafWindow;
-            int rightOuterBorder = rightInsBorder + vafWindow;
+            int leftOuterBorder = leftInsBorder - (vafWindow-1);
+            int rightOuterBorder = (rightInsBorder+1) + (vafWindow-1);
 
             //Calculate and setup the VAF
             double VAF = calculateVAF(prediction.getChromosome(), leftOuterBorder, leftInsBorder,
@@ -56,6 +56,14 @@ public class VAFPredictions {
         //Determine the ratios of the discordant/split reads and the total depth on the left and right of the insertion point
         double[] leftReadRatios = getReadRatios(referenceSeq, leftOuterBorder, leftInsBorder, samFile);
         double[] rightReadRatios = getReadRatios(referenceSeq, rightInsBorder, rightOuterBorder, samFile);
+
+        if(leftInsBorder == 1159582){
+            for(double ratio: leftReadRatios)
+                System.out.println(ratio);
+            System.out.println("----");
+            for(double ratio: rightReadRatios)
+                System.out.println(ratio);
+        }
 
         //Get the max ratio from both sides
         return getMaxReadRatio(leftReadRatios, rightReadRatios);
