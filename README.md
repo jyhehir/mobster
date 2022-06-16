@@ -1,3 +1,5 @@
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat-square)](http://bioconda.github.io/recipes/mobster/README.html)
+
 # mobster
 NGS tool for detecting MEI and gene retrotransposition events in WGS and WES data
 
