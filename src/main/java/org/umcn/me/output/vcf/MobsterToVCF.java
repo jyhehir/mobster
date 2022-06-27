@@ -6,6 +6,7 @@ import java.io.File;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,6 +15,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.converters.FileConverter;
 import org.umcn.me.util.ReferenceGenome;
+import sun.font.TrueTypeFont;
 
 public class MobsterToVCF {
 
@@ -61,13 +63,21 @@ public class MobsterToVCF {
 		records = parser.parse();
 		Collections.sort(records);
 
-		bw.write(MobsterRecordVCFWrapper.VCFHEADER);
-
+		String[] allSamples = new String[0];
 		for (MobsterRecord record : records){
-			MobsterRecordVCFWrapper vcfRecord = new MobsterRecordVCFWrapper(record);
+			String[] recordSamples = record.getSample().split(", ");
+			if(recordSamples.length > allSamples.length){
+				allSamples = recordSamples;
+			}
+		}
+
+		bw.write(MobsterRecordVCFWrapper.getHeader(allSamples));
+		for (MobsterRecord record : records){
+			MobsterRecordVCFWrapper vcfRecord = new MobsterRecordVCFWrapper(record, allSamples);
 			bw.write(vcfRecord.toString());
 			bw.write("\n");
 		}
+
 		bw.close();
 	}
 
@@ -80,13 +90,21 @@ public class MobsterToVCF {
 		records = parser.parse();
 		Collections.sort(records);
 
-		bw.write(MobsterRecordVCFWrapper.VCFHEADER);
-
+		String[] allSamples = new String[0];
 		for (MobsterRecord record : records){
-			MobsterRecordVCFWrapper vcfRecord = new MobsterRecordVCFWrapper(record, referenceGenome);
+			String[] recordSamples = record.getSample().split(", ");
+			if(recordSamples.length > allSamples.length){
+				allSamples = recordSamples;
+			}
+		}
+
+		bw.write(MobsterRecordVCFWrapper.getHeader(allSamples));
+		for (MobsterRecord record : records){
+			MobsterRecordVCFWrapper vcfRecord = new MobsterRecordVCFWrapper(record, allSamples, referenceGenome);
 			bw.write(vcfRecord.toString());
 			bw.write("\n");
 		}
+
 		bw.close();
 	}
 }

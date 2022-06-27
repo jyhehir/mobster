@@ -5,45 +5,64 @@ import org.apache.log4j.Logger;
 import org.omg.CORBA.DynAnyPackage.InvalidValue;
 import org.umcn.me.pairedend.MobilePrediction;
 import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.util.ArrayStats;
 import org.umcn.me.util.MobileDefinitions;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
-public class VAFPredictions {
+public class ReadCounts {
 
-    public static Logger logger = Logger.getLogger(VAFPredictions.class.getName());
+    public static Logger logger = Logger.getLogger(ReadCounts.class.getName());
+    public static boolean VAF = false;
 
     public static Vector<MobilePrediction> runFromProperties(Properties props, Vector<MobilePrediction> predictions) throws IOException {
 
-        //Don't predict the VAFs when no index file is available
+        //Don't predict the VAFs if the index files aren't available
         String samIndexPath = props.getProperty(MobileDefinitions.INFILE_INDEX);
-        if(samIndexPath == null)
-            return predictions;
+        VAF = samIndexPath != null;
 
-        logger.info("Calculating VAF of predictions based on the maximum ratio of clipped + discordant / total reads within " + props.getProperty(MobileDefinitions.VAF_DETERMINATION_WINDOW) + " bp to the left and right of the insertion");
+        logger.info("Determining the number of non-supporting reads within the clusters for each prediction");
+        if(VAF) logger.info("and calculating the VAF based on the maximum ratio of clipped + discordant / total reads within " + props.getProperty(MobileDefinitions.VAF_DETERMINATION_WINDOW) + " bp to the left and right of the insertion");
+        ArrayList<String> samples = new ArrayList<String>(Arrays.asList(props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0)));
+        String[] bams = props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0);
+        String[] indexes = props.getProperty(MobileDefinitions.INFILE_INDEX).split(MobileDefinitions.DEFAULT_SEP, 0);
+
         for (MobilePrediction prediction : predictions) {
+
+            //Setup the borders for looking for the VAF of the prediction
             int vafWindow = Integer.parseInt(props.getProperty(MobileDefinitions.VAF_DETERMINATION_WINDOW).trim());
-
-            //Load the bam file
-            File sam = new File(props.getProperty(MobileDefinitions.INFILE));
-            File index = new File(samIndexPath);
-            SAMSilentReader samFile = new SAMSilentReader(sam, index);
-
-            //Setup the borders for looking for the prediction
             int leftInsBorder = prediction.getInsertionEstimate();
             int rightInsBorder = prediction.getEndInsertionEstimate() + 1;
-
             int leftOuterBorder = leftInsBorder - (vafWindow-1);
             int rightOuterBorder = (rightInsBorder+1) + (vafWindow-1);
 
-            //Calculate and setup the VAF
-            double VAF = calculateVAF(prediction.getChromosome(), leftOuterBorder, leftInsBorder,
-                    rightInsBorder, rightOuterBorder, samFile);
-            prediction.setVAF(VAF);
+            //For every sample supporting the prediction, determine the number of non-supporting reads and predict the VAF if possible
+            Set<String> predictionSamples = prediction.getSampleNames();
+            for(String predictionSample: predictionSamples){
+                int samplePos = samples.indexOf(predictionSample);
+                String sampleName = samples.get(samplePos);
+                String sampleBam = bams[samplePos];
+                String sampleIndex = indexes[samplePos];
+
+                //Load the bam file
+                File sam = new File(sampleBam);
+                File index = new File(sampleIndex);
+                SAMSilentReader samFile = new SAMSilentReader(sam, index);
+
+                //Determine the non-supporting reads
+                int nonSupportingCount = calculateTotalReadCount(prediction, samFile) - prediction.getSampleCounts().get(sampleName);
+                prediction.setNonSupportingCount(sampleName, nonSupportingCount);
+
+                //Calculate the VAF, otherwise set it to '-1'
+                if(VAF){
+                    double VAF = calculateVAF(prediction.getChromosome(), leftOuterBorder, leftInsBorder,
+                            rightInsBorder, rightOuterBorder, samFile);
+                    prediction.setVAF(sampleName, VAF);
+                } else
+                    prediction.setVAF(sampleName, -1);
+            }
         }
 
         return predictions;
@@ -57,16 +76,21 @@ public class VAFPredictions {
         double[] leftReadRatios = getReadRatios(referenceSeq, leftOuterBorder, leftInsBorder, samFile);
         double[] rightReadRatios = getReadRatios(referenceSeq, rightInsBorder, rightOuterBorder, samFile);
 
-        if(leftInsBorder == 1159582){
-            for(double ratio: leftReadRatios)
-                System.out.println(ratio);
-            System.out.println("----");
-            for(double ratio: rightReadRatios)
-                System.out.println(ratio);
-        }
-
         //Get the max ratio from both sides
         return getMaxReadRatio(leftReadRatios, rightReadRatios);
+    }
+
+    //Function to calculate the total number of reads that entirely lie in the mate clusters
+    //and overlap the clipped positions of the split clusters
+    private static int calculateTotalReadCount(MobilePrediction prediction, SAMSilentReader samFile){
+        int totalReads = 0;
+        if(prediction.hasLeftMateCluster())
+            totalReads += getReadCount(prediction.getChromosome(), prediction.getLeftMateClusterBounderies()[0], prediction.getLeftMateClusterBounderies()[1], samFile, true);
+        if(prediction.hasRightMateCluster())
+            totalReads += getReadCount(prediction.getChromosome(), prediction.getRightMateClusterBounderies()[0], prediction.getRightMateClusterBounderies()[1], samFile, true);
+        if(prediction.hasLeftAlignedSplitCluster() || prediction.hasLeftAlignedSplitCluster())
+            totalReads += getReadCount(prediction.getChromosome(), prediction.getSplitClusterBounderies()[0], prediction.getSplitClusterBounderies()[1], samFile, false);
+        return totalReads;
     }
 
     //Function to retrieve the read ratio between the supporting (split/discordant) and total reads
@@ -108,7 +132,7 @@ public class VAFPredictions {
             }
 
             //Add the read to the total count
-            add(totalDepth, readStart, readEnd, 1);
+            ArrayStats.add(totalDepth, readStart, readEnd, 1);
 
             //Whenever the read is not a proper pair or it if is clipped add it to the supporting depth
             List<CigarElement> cigar = read.getCigar().getCigarElements();
@@ -122,7 +146,7 @@ public class VAFPredictions {
                 isRightClipped = false;
             }
             if(!read.getProperPairFlag() || isLeftClipped || isRightClipped) {
-                add(supportDepth, readStart, readEnd, 1);
+                ArrayStats.add(supportDepth, readStart, readEnd, 1);
             }
         }
         iter.close();
@@ -141,7 +165,7 @@ public class VAFPredictions {
         boolean noLeftRatio = false;
 
         try{
-            maxLeftRatio = max(leftReadRatios);
+            maxLeftRatio = ArrayStats.max(leftReadRatios);
             if(Double.isNaN(maxLeftRatio) || leftReadRatios.length == 1)
                 noLeftRatio = true;
         } catch(InvalidValue e){
@@ -152,7 +176,7 @@ public class VAFPredictions {
         boolean noRightRatio = false;
 
         try{
-            maxRightRatio = max(rightReadRatios);
+            maxRightRatio = ArrayStats.max(rightReadRatios);
             if(Double.isNaN(maxRightRatio) || rightReadRatios.length == 1)
                 noRightRatio = true;
         } catch(InvalidValue e){
@@ -170,27 +194,18 @@ public class VAFPredictions {
             return Math.max(maxLeftRatio, maxRightRatio);
     }
 
-    //Function to add a number to an array
-    static void add(int[] a, int start, int end, int num){
-        for(int i = start; i <= end; i++){
-            a[i] += num;
+    //Function to retrieve the total number of reads that completely fall within a window
+    private static int getReadCount(String referenceSeq, int start, int end, SAMSilentReader samFile, boolean contained){
+
+        //Loop over all reads in the window to count
+        int count = 0;
+        SAMRecordIterator iter = samFile.query(referenceSeq, start, end, contained);
+        while(iter.hasNext()) {
+            iter.next();
+            count += 1;
         }
-    }
+        iter.close();
 
-    //Function to get the maximum in an array
-    static double max(double[] a) throws InvalidValue {
-
-        if(a.length==0){
-            throw new InvalidValue("Array is empty");
-        }
-        double max = a[0];
-
-        for(int i=1; i < a.length; i++){
-            if(!Double.isNaN(a[i]) && (a[i] > max || Double.isNaN(max))){
-                max = a[i];
-            }
-        }
-
-        return max;
+        return count;
     }
 }

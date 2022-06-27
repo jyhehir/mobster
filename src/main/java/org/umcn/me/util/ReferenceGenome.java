@@ -14,10 +14,10 @@ public class ReferenceGenome {
 
     public ReferenceGenome(String refPath) throws IOException {
 
-        //Check if the reference exists
+        //Check if the reference exists/is readable
+        if(!FileValidation.fileValid(refPath))
+            throw new FileNotFoundException("The reference genome was not found or was not readable");
         File refFile = new File(refPath);
-        if(!refFile.exists())
-            throw new FileNotFoundException("The reference genome was not found");
 
         //If index doesn't exist at the same location as the reference, create it
         String indexPath = refPath.replaceFirst("\\.[a-z]+$",".fai");

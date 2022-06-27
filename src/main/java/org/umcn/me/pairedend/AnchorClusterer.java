@@ -150,7 +150,7 @@ public class AnchorClusterer {
 		
 		if (props.containsKey(MobileDefinitions.DISCORDANT_OVERLAP)){
 			overlap = Integer.parseInt(props.getProperty(MobileDefinitions.DISCORDANT_OVERLAP).trim());
-		}else{
+		} else{
 			overlap = overlap_default;
 		}
 		
@@ -250,9 +250,10 @@ public class AnchorClusterer {
 		
 		//Step 3: Make single & double cluster predictions out of the clusters
 		Vector<MobilePrediction> matePredictions;
-		
+
 		matePredictions = clusterMateClusters(clusterBam, new File(clusterBam.toString().replaceAll(".bam$", ".bai")),
 				overlap, maxdist);
+
 
 		//Step 4: do split clustering when available
 		if(splitAnchor != null){
@@ -445,10 +446,10 @@ public class AnchorClusterer {
 		
 		MobilePrediction m1 = labeledToMobile.get(r1);
 		MobilePrediction m2 = labeledToMobile.get(r2);
-		
+
 		Set<String> m1SplitIds = m1.getSplitClusterIds();		
 		Set<String> m2SplitIds = m2.getSplitClusterIds();
-		
+
 		//We can not merge MobilePredictions containing different split reads
 		if (m1SplitIds.size() >= 1 && m2SplitIds.size() >= 1 && ! m1SplitIds.equals(m2SplitIds)){
 			return false;
@@ -465,7 +466,6 @@ public class AnchorClusterer {
 		}
 		
 		return success;
-
 	}
 	
 	public static Options createCmdOptions(){
@@ -689,7 +689,7 @@ public class AnchorClusterer {
 						added = true;
 						break;
 					}
-				}else if(currentCluster.size() >= minReads){
+				} else if(currentCluster.size() >= minReads){
 					if (currentCluster.getHighestPercentageOfMateAlignmentsToSameChrosome(true) >= minPercentSameMateRefMapping
 							&& currentCluster.getNumberOfDifferentChromosomeMappingsOfMates(true) <= maxDiffMateMapping){
 						currentCluster.writeClusterToSAMWriter(outputSam, Integer.toString(c), usePrefixReference);
@@ -984,7 +984,7 @@ tyuasx	 * @throws IOException
 		for (MobilePrediction matePrediction : matePredictions){
 			String mobileHit = matePrediction.getMateMobileMapping();
 			int left = matePrediction.getLeftPredictionBorder(50);
-			int right = matePrediction.getRightPredictionBorder(50);
+			int right = matePrediction.getEndRightPredictionBorder(50);
 			
 			SAMRecordIterator iter = splitReader.query(matePrediction.getOriginalReference(), left, right, false);
 			MobilePrediction bestPrediction = null;
@@ -1067,10 +1067,10 @@ tyuasx	 * @throws IOException
 		}else{
 			return prediction2;
 		}
-		
-		
+
+
 	}
-	
+
 	/**
 	 * This function filters predictions when the prediction window overlaps with an annotated
 	 * mobile element stored in the parameter knownMEs.
@@ -1091,7 +1091,7 @@ tyuasx	 * @throws IOException
 	 * @return prediction vector of the same format as arg predictions. Only now with predictions
 	 * that do not overlap with elements kept in argument knownMEs.
 	 */
-	
+
 	public static Vector<MobilePrediction> filterKnownMEs(Map<String, HashMap<String, HashSet<String>>> knownMEs,
 			Vector<MobilePrediction> predictions){
 		String ref;
@@ -1105,19 +1105,19 @@ tyuasx	 * @throws IOException
 		int startKnown;
 		int endKnown;
 		boolean inKnownMe = false;
-		
+
 		Vector<MobilePrediction> filteredPredictions = new Vector<MobilePrediction>();
-		
+
 		for(MobilePrediction prediction : predictions){
 			ref = prediction.getOriginalReference();
 			//me = prediction.getMateMobileMapping();
 			border5 = prediction.getLeftPredictionBorder(FILTER_REGION);
-			border3 = prediction.getRightPredictionBorder(FILTER_REGION);
-			
+			border3 = prediction.getEndRightPredictionBorder(FILTER_REGION);
+
 			if(border5 > border3){
 				logger.warn("Safety border5 is bigger than safety border3!");
 			}
-			
+
 			for (String me : prediction.getMobileMappings()) {
 				if (knownMEs.containsKey(ref)
 						&& knownMEs.get(ref).containsKey(me)) {
@@ -1147,7 +1147,7 @@ tyuasx	 * @throws IOException
 				}
 			}
 			if(!inKnownMe){
-				filteredPredictions.add(prediction);				
+				filteredPredictions.add(prediction);
 			}else{
 				inKnownMe = false;
 			}
@@ -1159,12 +1159,12 @@ tyuasx	 * @throws IOException
 		return filteredPredictions;
 	}
 
-	
+
 	/**
 	 * This function reads in a RepeatMasker .out file and gets coordinates from the start
 	 * or end positions (based on index param) of repetitive elements from this file and stores
 	 * it in a HashMap.
-	 * 
+	 *
 	 * @return Map containing chromosomes as keys and HashMap as values, containing
 	 * mobile elements as keys and position start and position end as string values seperated by "-"
 	 * @throws IOException
@@ -1187,15 +1187,15 @@ tyuasx	 * @throws IOException
 		String endPos;
 		StringBuilder pos = new StringBuilder();
 		boolean header = true;
-		
+
+		if(!FileValidation.fileValid(repmask_file)){
+			logger.warn(repmask_file + ": does not exist, or is not readable");
+		}
 		File f = new File(repmask_file);
-		if (!f.exists() || !f.canRead())
-			logger.equals(repmask_file + ": does not exist, or is not readable");
-			
 		is = new FileInputStream(f);
-		
+
 		BufferedReader br = new BufferedReader(new InputStreamReader(is));
-		
+
 		while ((line = br.readLine()) != null){
 			if(!header){
 				split = line.split("\t");
@@ -1206,13 +1206,13 @@ tyuasx	 * @throws IOException
 				pos.append(startPos);
 				pos.append("-");
 				pos.append(endPos);
-				
+
 				if(element.equals("OTHER")){
 					element = "SVA";
 				}else if(element.startsWith("ERV")){
 					element = "HERV";
 				}
-				
+
 				if (!meMap.containsKey(chr)){
 					meMap.put(chr, new HashMap<String, HashSet<String>>());
 					meMap.get(chr).put(element, new HashSet<String>());
@@ -1232,11 +1232,11 @@ tyuasx	 * @throws IOException
 		br.close();
 		is.close();
 
-		
+
 		return meMap;
 	}
-	
-	
+
+
 }
 
 
