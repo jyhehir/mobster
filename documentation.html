@@ -98,13 +98,33 @@ After a few minutes there will be almost 3000 MEI predictions in <code>./Mobster
 					<h3>Usage</h3>
 					Before use, please check the properties file whether everything is set up correctly for your input BAM file (see below).<br><br>
 					
+					<h4>Before 2.5.0</h4>
+
 					<b>Single sample calling</b> using 8Gb of RAM and current working directory where MobileInsertions-&#60;version&gt;.jar is located:<br>
 					<code>java -Xmx8G -cp "./*" org.umcn.me.pairedend.Mobster -properties Mobster.properties -in input.bam -sn test_sample -out mobster_test</code><br><br>
 					
 					<b>Multiple sample calling</b> using 8Gb of RAM and current working directory where MobileInsertions-&#60;version&gt;.jar is located:<br>
 					<code>java -Xmx8G -cp "./*" org.umcn.me.pairedend.Mobster -properties Mobster.properties -in A1_child.bam,A1_father.bam,A1_mother.bam -sn A1_child,A1_father,A1_mother -out A1_trio_mobster</code><br>
 					Make sure that the bam files provided to the -in argument match the sample names provided to the -sn argument. BAM files and sample names should be comma separated.<br>
-					In addition Mobster can also be run on single BAM files which contain multiple samples as long as they have proper readgroup tags with a provided sample name per tag.
+					In addition Mobster can also be run on single BAM files which contain multiple samples as long as they have proper readgroup tags with a provided sample name per tag.<br><br>
+
+					<h4>After 2.5.0</h4>
+
+					<b>Single sample calling</b><br>using 8Gb of RAM and current working directory where MobileInsertions-&#60;version&gt;.jar is located:<br>
+					<code>java -Xmx8G -cp "./*" org.umcn.me.pairedend.Mobster -rdir &lt;path to resources folder&gt; -properties Mobster.properties -in input.bam -sn test_sample -vcf -r &lt;path to reference genome&gt; -out mobster_test</code><br><br>
+					
+					<b id="multi">Multiple sample calling</b><br>using 8Gb of RAM and current working directory where MobileInsertions-&#60;version&gt;.jar is located:<br>
+					<code>java -Xmx8G -cp "./*" org.umcn.me.pairedend.Mobster -rdir &lt;path to resources folder&gt; -properties Mobster.properties -in A1_child.bam,A1_father.bam,A1_mother.bam -sn A1_child,A1_father,A1_mother -vcf -r &lt;path to reference genome&gt; -out A1_trio_mobster</code><br>
+					Make sure that the bam files provided to the -in argument match the sample names provided to the -sn argument. BAM files and sample names should be comma separated.
+					In addition Mobster can also be run on single BAM files which contain multiple samples as long as they have proper readgroup tags with a provided sample name per tag.<br><br>
+
+					<b id="tumor">Tumor/normal paired calling by providing both the tumor and normal sample</b><br>using 100Gb of RAM and current working directory where MobileInsertions-&#60;version&gt;.jar is located:<br>
+					<code>java -Xmx100G -cp "./*" org.umcn.me.pairedend.Mobster -rdir &lt;path to resources folder&gt; -properties Mobster.properties -in tumor.bam,normal.bam -sn tumor,normal -ns normal -vcf -r &lt;path to reference genome&gt; -out tumor_normal</code><br>
+					Make sure that the tumor sample and normal sample provided to the -in argument match the sample names provided to the -sn argument and the normal sample name given by the -ns argument. BAM files and sample names should be comma separated.<br><br>
+					
+					<b>Tumor/normal paired calling by providing only the tumor sample and previously made predictions of the normal sample</b><br>using 50Gb of RAM and current working directory where MobileInsertions-&#60;version&gt;.jar is located:<br>
+					<code>java -Xmx50G -cp "./*" org.umcn.me.pairedend.Mobster -rdir &lt;path to resources folder&gt; -properties Mobster.properties -in tumor.bam -np normal.vcf -vcf -r &lt;path to reference genome&gt; -out tumor_normal</code><br>
+
 					<br>
 					<hr>
 					<h3>Properties file</h3>
@@ -115,11 +135,13 @@ After a few minutes there will be almost 3000 MEI predictions in <code>./Mobster
 					Other properties <b>worth checking</b> or setting are <code>READ_LENGTH</code>, <code>MULTIPLE_SAMPLE_CALLING</code> and <code>MULTIPLE_SAMPLE_CALLING_STRINGENT</code> (this value should normally be set to true to prevent high numbers of false positives)
 					,<code>READS_PER_CLUSTER</code> (recommended value = 1), <code>MINIMUM_MAPQ_ANCHOR</code> (in case <code>MAPPING_TOOL</code> is set to unspecified) and <code>REPEATMASK_FILE</code> (make sure the file is for the correct hg build).
 					<br><br>
-					
+					When performing tumor/normal paired calling, MINIMUM_NORMAL_SUPPORTING_READS or NORMAL_WINDOW are also worth checking out.
+					<br><br>
+
 					For more detailed explanation of <b>all</b> properties, see the table below. Properties are categorized as follows: <br><br>
 					<table border="0" cellspacing="3" cellpadding="3">
-<tr> <td bgcolor="rgb(240,228,66)">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>&nbsp;Properties relating to sequencing library such as mean fragment length</td> </tr>
 <tr> <td bgcolor="rgb(0,114,178)">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>&nbsp;Properties relating to input/output and processing</td> </tr>
+<tr> <td bgcolor="rgb(240,228,66)">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>&nbsp;Properties relating to sequencing library such as mean fragment length</td> </tr>
 <tr> <td bgcolor="rgb(0,158,115)">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>&nbsp;Properties relating to evidence needed for MEI calling</td> </tr>
 <tr> <td bgcolor="rgb(230,159,0)">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><td>&nbsp;Properties relating to clustering of MEI supporting reads</td> </tr>
 </table>
@@ -127,82 +149,100 @@ After a few minutes there will be almost 3000 MEI predictions in <code>./Mobster
 					
 <table class="table table-bordered">
 <thead><tr><th>Category</th><th>Property</th><th>Value type</th><th>Description</th></tr></thead><tbody>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>IN_FILE</td><td>String (Location)</td><td>Input BAM file(s) in which you want to predict MEIs. In case multiple BAM files are provided (separated with ','), multisample mode is automatically enabled. Note that the input BAM file can also be specified on the command line. When specified on command line this value will be ignored.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>SAMPLENAME</td><td>String</td><td>Name of the sample(s). Multiple samples must be separated with ','. Can also be provided over the command line, but command line value overrides the property value.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>OUT_FILE</td><td>String (Location)</td><td>Output prefix. Note that if output prefix is specified on the command line, that this value will be ignored.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>VCF_OUT</td><td>{true, false}</td><td>Whether the output file with the calls should be in VCF format in addition to the default .txt predictions file. The command line flag overrides this value.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>REFERENCE_GENOME_FILE</td><td>String (Location)</td><td>The location of the reference genome used when for the BAM file(s). Optional for VCF output for the REF column and for TSD sequence determination.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>RESOURCES_DIR</td><td>String (Location)</td><td>The resources folder. If specified, this is prepended to paths in PICARD_COLLECT_INSERT_SIZE_METRICS_JAR, REPEATMASK_FILE and MOBIOME_MAPPING_CMD. Can be overridden by the coressponding command line value.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>REPEATMASK_FILE</td><td>String (Location)</td><td>Location of the repeat mask file, in order to filter predictions which are indicative of a reference MEI.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>PREFIX_REFERENCE</td><td>{true, false}</td><td>Whether the chromosomes should be prepended with 'chr' if not present.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MULTIPLE_SAMPLE_CALLING</td><td>{true, false}</td><td>Whether to turn on multiple sample calling. Can be used when multiple bam files are specified as input or when one bam file contains multiple samples as specified through the sample name field in the @RG tag. If multiple bam files are specified as input, multiple sample calling will be turned on, even if the value of this property was set to false</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>NORMAL_PREDICTIONS</td><td>String (Location)</td><td>#Can be used to predict somatic MEIs if only the tumor file is provided instead of providing both a tumor and normal sample. If the file provided (.vcf or .txt ) contains Mobster's predictions of the normal sample, any new prediction in the tumor sample (provided through IN_FILE) near a prediction in this file will be removed.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>NORMAL_SAMPLE</td><td>String</td><td>Can be used to predict somatic MEIs if both a tumor and normal sample have been provided through IN_FILE and SAMPLENAME. The sample with the corresponding name among the provided sample names will be seen as the normal sample. The other sample will be seen as the tumor sample.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>VAF_DETERMINATION_WINDOW</td><td>Integer</td><td>#Up to how many bp should be considered to the left and to the right of the insertion to look for the variant allele fraction based on the ratio between the raw split + discordant reads and the total depth. It is recommended to set this a bit higher than the read depth (e.g. 200 for 150 bp paired reads).</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MAPPING_TOOL</td><td>{unspecified, bwa, mosaik}</td><td>The mapper which was used for the INPUT bam file. Chose unspecified when you are unsure which mapper was used. NOTE: use bwa only if the reads were aligned with bwa aln. When bwa mem was used, mapper should be unspecified.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>PAIRED_END</td><td>{true, false}</td><td>Deprecated property. Should always be true, single-end reads are not supported</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MOBIOME_MAPPING_CMD</td><td>String</td><td>The command which will be used for mobiome mapping. When using mosaik as mobiome mapper the -p parameter is interesting to speed up the mapping step. -p indicates the number of processors used for mapping.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MOBIOME_MAPPING_TOOL</td><td>{mosaik, bwa}</td><td>Mapping tool used for mobiome mapping. When changing this property you should modify the MOBIOME_MAPPING_CMD accordingly.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MAX_RECORDS_IN_RAM</td><td>Integer</td><td>Number of records which are held in memory. Increase this number if you have more RAM available. According to Picard's sourceforge a rule of thumb for reads of ~100bp is to set MAX_RECORDS_IN_RAM to be 250,000 reads per each GB given to the -Xmx parameter. This should also roughly apply to Mobster.</td></tr>
+ <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>TEMP_DIR</td><td>String (Location)</td><td>Directory to write temporary files to. Only needed if default tmp directory is too small.</td></tr>
  <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>USE_PICARD</td><td>{true, false}</td><td>Whether or not to use Picard to estimate the Insert Size metrics. This aids the determination of prediction borders, especially for events with only support from one side.</td></tr>
  <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>PICARD_COLLECT_INSERT_SIZE_METRICS_JAR</td><td>String (Location)</td><td>Location of Picard's CollectInsertSizeMetrics.jar. Will only be used when USE_PICARD is set to true.</td></tr>
- <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>MEAN_FRAGMENT_LENGTH</td><td>Integer</td><td>Mean fragment length of sequencing library. Not necessary to provide when USE_PICARD is set to true as Picard will estimate this value.</td></tr>
- <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>SD_FRAGMENT_LENGTH</td><td>Integer</td><td>Standard deviation of fragment length of sequencing library. Not necessary to provide when USE_PICARD is set to true as Picard will estimate this value.</td></tr>
- <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>LENGTH_99PROCENT_OF_FRAGMENTS</td><td>Integer</td><td>99 Percent of fragment lengths of sequencing library should be <= than this value. Not necessary to provide when USE_PICARD is set to true as Picard will estimate this value.</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>IN_FILE</td><td>String (Location)</td><td>Input BAM file. Note that Input BAM file can also be specified on the command line. When specified on command line this value will be ignored.</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>OUT_FILE</td><td>String (Location)</td><td>Output prefix. Note that if output prefix is specified on the command line, that this value will be ignored.</td></tr>
+ <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>MEAN_FRAGMENT_LENGTH</td><td>Integer</td><td>Mean fragment length of sequencing library. When used it will override the value predicted by Picard if USE_PICARD is set to true.</td></tr>
+ <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>SD_FRAGMENT_LENGTH</td><td>Integer</td><td>Standard deviation of fragment length of sequencing library.  When used it will override the value predicted by Picard if USE_PICARD is set to true.</td></tr>
+ <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>LENGTH_99PROCENT_OF_FRAGMENTS</td><td>Integer</td><td>99 Percent of fragment lengths of sequencing library should be <= than this value.  When used it will override the value predicted by Picard if USE_PICARD is set to true.</td></tr>
  <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>USE_READ_LENGTH</td><td>{true, false}</td><td>Whether or not to use read length to slightly improve the prediction windows of single cluster predictions.</td></tr>
  <tr><td bgcolor="rgb(240,228,66)">&nbsp;</td><td>READ_LENGTH</td><td>Integer</td><td>The read length. Will only be used if USE_READ_LENGTH is set to true.</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MULTIPLE_SAMPLE_CALLING</td><td>{true, false}</td><td>Whether to turn on multiple sample calling. Can be used when multiple bam files are specified as input or when one bam file contains multiple samples as specified through the sample name field in the @RG tag. If multiple bam files are specified as input, multiple sample calling will be turned on, even if the value of this property was set to false</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MULTIPLE_SAMPLE_CALLING_STRINGENT</td><td>{true, false}</td><td>Stringent mode: at least one sample needs to have >= MINIMUM_SUPPORTING_READS. When false the total of supporting reads for all samples should be >= MINIMUM_SUPPORTING_READS</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MAPPING_TOOL</td><td>{unspecified, bwa, mosaik}</td><td>The mapper which was used for the INPUT bam file. Chose unspecified when you are unsure which mapper was used. NOTE: use bwa only if the reads were aligned with bwa aln. When bwa mem was used, mapper should be unspecified.</td></tr>
-  <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_MAPQ_ANCHOR</td><td>Integer [def: 20]</td><td>MINIMUM_MAPQ_ANCHOR will only be used when MAPPING_TOOL is set to unspecified. It specifies at what MAPQ a read can be considered as an anchor for a potential MEI.</td></tr>
+ <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_SUPPORTING_READS</td><td>Integer</td><td>For a prediction to be kept: how many supporting reads should there be in total for the event (total of discordant supporting reads + clipped supporting reads).</td></tr>
+ <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_INITIAL_SPLIT_CLUSTER_READS</td><td>Integer</td><td>How many reads should there minimally be in a clipped cluster.</td></tr>
+ <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>READS_PER_CLUSTER</td><td>Integer</td><td>For a discordant cluster supporting a MEI event (either forward or reverse), how many reads should there at least be in the cluster to be kept.</td></tr>
+ <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_NORMAL_SUPPORTING_READS</td><td>Integer</td><td>#When a NORMAL_SAMPLE has been provided, this signifies the minimum number of supporting reads in the normal sample required to classify a prediction as 'germline' in the 'somatic' column of the .txt predictions file or the FILTER column of the .vcf predictions file. When a value of a predictions falls between 1 and this value, a prediction will get 'artifact' in the 'somatic' column and 'normal_artifact' in the FILTER column instead. When 0, it will always be classified as 'somatic' in the 'somatic' column and in the VCF file it will get a PASS in the FILTER column in addition to the SOMATIC tag in the FORMAT column.</td></tr>
+ <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>NORMAL_WINDOW</td><td>Integer</td><td>When NORMAL_PREDICTIONS has been provided and if a prediction in this file falls within these bounderies of a prediction, it is removed. The bounderies consist of this number of basepairs to the most left and most right position of the prediction.</td></tr>
+ <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MULTIPLE_SAMPLE_CALLING_STRINGENT</td><td>{true, false}</td><td>#Only if multisample mode has been enabled or a NORMAL_SAMPLE has been provided, can this Stringent mode be enabled: Stringent: for a prediction to be kept at least one sample needs to have >= MINIMUM_SUPPORTING_READS. When false the total of supporting reads for all samples should be >= MINIMUM_SUPPORTING_READS.</td></tr>
+ <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_MAPQ_ANCHOR</td><td>Integer [def: 20]</td><td>MINIMUM_MAPQ_ANCHOR will only be used when MAPPING_TOOL is set to unspecified. It specifies at what MAPQ a read can be considered as an anchor for a potential MEI.</td></tr>
  <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>USE_SPLIT</td><td>{true, false}</td><td>Whether mobster should try and search for clipped reads</td></tr>
  <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_CLIP_LENGTH</td><td>Integer</td><td>When searching for clipped reads, how long should the unmapped sequence at least be (bp)</td></tr>
  <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MAXIMUM_CLIP_LENGTH</td><td>Integer</td><td>If a clipped read is found with MINIMUM_CLIP_LENGTH, how long may the other end of the same read be MAXIMUM clipped?</td></tr>
  <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_AVG_QUALITY</td><td>Integer</td><td>If a clipped read is found with MINIMUM_CLIP_LENGTH, what should the minimum average base quality be of that read?</td></tr>
  <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_POLYA_LENGTH</td><td>Integer</td><td>How long should the poly A/T stretch minimally be in the clipped part of a read for it to be classified as a polyA/T tail. </td></tr>
  <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MAXIMUM_MISMATCHES_POLYA</td><td>Integer</td><td>How many times may there be a different nucleotide than A for a polyA stretch to be still classified as polyA tail or different from T for a polyT tail?</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MAX_RECORDS_IN_RAM</td><td>Integer</td><td>Number of records which are held in memory. Increase this number if you have more RAM available. According to Picard's sourceforge a rule of thumb for reads of ~100bp is to set MAX_RECORDS_IN_RAM to be 250,000 reads per each GB given to the -Xmx parameter. This should also roughly apply to Mobster.</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MOBIOME_MAPPING_CMD</td><td>String</td><td>The command which will be used for mobiome mapping. When using mosaik as mobiome mapper the -p parameter is interesting to speed up the mapping step. -p indicates the number of processors used for mapping.</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>SAMPLENAME</td><td>String</td><td>Name of sample, can also be provided over the command line. Command line value overrides the property value.</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>MOBIOME_MAPPING_TOOL</td><td>{mosaik, bwa}</td><td>Mapping tool used for mobiome mapping. When changing this property you should modify the MOBIOME_MAPPING_CMD accordingly.</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>PAIRED_END</td><td>{true, false}</td><td>Deprecated property. Should always be true, single-end reads are not supported</td></tr>
- <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>READS_PER_CLUSTER</td><td>Integer</td><td>For a discordant cluster supporting a MEI event (either forward or reverse), how many reads should there at least be in the cluster to be kept.</td></tr>
  <tr><td bgcolor="rgb(230,159,0)">&nbsp;</td><td>DISCORDANT_CLUSTERS_MAX_OVERLAP</td><td>Integer</td><td>For discordant clusters coming from both the 5' and 3' side of the same insertion, how many bp may the clusters overlap to join the clusters? (To allow for target site duplications).</td></tr>
  <tr><td bgcolor="rgb(230,159,0)">&nbsp;</td><td>DISCORDANT_CLUSTER_MAX_DISTANCE</td><td>Integer</td><td>How many bp may the clusters be away from each other to still join the clusters?</td></tr>
  <tr><td bgcolor="rgb(230,159,0)">&nbsp;</td><td>MAX_SPACING_OF_CLIPPED_READS</td><td>Integer</td><td>For clipped reads coming from one side of the insertion: how much spacing in bp may there be in between the clipped alignment ends in order to join these reads into one clipped cluster?</td></tr>
  <tr><td bgcolor="rgb(230,159,0)">&nbsp;</td><td>MAX_OVERLAP_OF_CLIPPED_CLUSTERS</td><td>Integer</td><td>For clusters of clipped reads coming from both the 5' and 3' side of the insertion: how many bp may they overlap in order to be joined?</td></tr>
  <tr><td bgcolor="rgb(230,159,0)">&nbsp;</td><td>MAX_DISTANCE_OF_CLIPPED_CLUSTERS</td><td>Integer</td><td>For clusters of clipped reads coming from both the 5' and 3' side of the insertion: how many bp may they be distanced in order to be joined?</td></tr>
  <tr><td bgcolor="rgb(230,159,0)">&nbsp;</td><td>NEIGHBORHOOD_WINDOW_BP</td><td>Integer</td><td>How far away may discordant reads be in order to be joined into one cluster?</td></tr>
- <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_SUPPORTING_READS</td><td>Integer</td><td>For a prediction to be kept: how many supporting reads should there be in total for the event (total of discordant supporting reads + clipped supporting reads).</td></tr>
- <tr><td bgcolor="rgb(0,158,115)">&nbsp;</td><td>MINIMUM_INITIAL_SPLIT_CLUSTER_READS</td><td>Integer</td><td>How many reads should there minimally be in a clipped cluster.</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>REPEATMASK_FILE</td><td>String (Location)</td><td>Location of the repeat mask file, in order to filter predictions which are indicative of a reference MEI.</td></tr>
- <tr><td bgcolor="rgb(0,114,178)">&nbsp;</td><td>TEMP_DIR</td><td>String (Location)</td><td>Directory to write temporary files to. Only needed if default tmp directory is too small.</td></tr>
+
 </tbody></table>
 					<br>
 					<hr>
 					<h3>Native output file format</h3>
-					MEI predictions will be outputted to <code>*_predictions.txt</code> which is a tab-delimited format using the following columns (the .txt file can be converted to VCF using <a href="downloads.html">MobsterToVCF</a>):
+					MEI predictions will be outputted to <code>*_predictions.txt</code> which is a tab-delimited format using the following columns. If VCF output has been enabled, the same information will also be outputted in VCF format with the following corresponding columns. When using an older version of Mobster (&lt;2.5.0), the .txt file can be converted to VCF using <a href="downloads.html">MobsterToVCF</a>):
 					<br>
 					<table class="table table-striped">
-<thead><tr><th>Column</th><th>Description</th></tr></thead><tbody>
- <tr><td>Chr</td><td> Reference chromosome in which predicted MEI has taken place</td></tr>
- <tr><td>Mobile Element</td><td> Predicted mobile superfamily (ALU, L1, SVA, HERVK)</td></tr>
- <tr><td>Insert Point</td><td> Predicted insertion coordinate</td></tr>
- <tr><td>border5</td><td> Leftmost coordinate for 'prediction window'</td></tr>
- <tr><td>border3</td><td> Rightmost coordinate for 'prediction window'. The predicted MEI has most likely been inserted somewhere within the prediction window.</td></tr>
- <tr><td>Merged</td><td> Whether in a second iteration round clusters have been merged for this prediction.</td></tr>
- <tr><td>Sample</td><td> Comma-seperated list of samples in which the event was called.</td></tr>
- <tr><td>sample_counts</td><td> Number of supporting reads per sample (should be the sum of cluster5 and cluster3 hits)</td></tr>
- <tr><td>cluster5 length</td><td> <code>(End position of rightmost supporting discordant pair anchor from anchors on the 5' of the insertion point/mapped on forward strand) - (Start position of leftmost supporting discordant pair anchor from anchors on the 5' of the insertion point/mapped on forward strand))</code>. A discordant pair anchor consists of an anchor which maps uniquely to the reference genome and a mate which maps to the mobiome. (Set to NA if there is no cluster5)</td></tr>
- <tr><td>cluster3 length</td><td> <code>(End position of rightmost supporting discordant pair anchor from anchors on the 3' of the insertion point/mapped on reverse strand)) - (Start position of leftmost supporting discordant pair anchor from anchors on the 3' of the insertion point/mapped on reverse strand)</code>. (Set to NA if there is no cluster3)</td></tr>
- <tr><td>cluster5 hits</td><td> Number of supporting anchors on the 5' of insertion point (Set to NA if there are no cluster5 hits). These hits include both the discordant and split supporting reads (split5).</td></tr>
- <tr><td>cluster3 hits</td><td> Number of supporting anchors on 3' of insertion point (Set to NA if there are no cluster3 hits). These hits include both the discordant and split supporting reads (split3).</td></tr>
- <tr><td>split5 hits</td><td> Number of split reads on 5' of insertion point, clipped on the right side. Clipped part should be mappable to mobiome or polyA/polyT.</td></tr>
- <tr><td>split3 hits</td><td> Number of split reads on the 3' of insertion point, clipped on the left side. Clipped part should be mappable to mobiome or polyA/polyT.</td></tr>
- <tr><td>polyA5 hits</td><td> Number of split5 reads with a polyA</td></tr>
- <tr><td>polyT5 hits</td><td> Number of split5 reads with a polyT</td></tr>
- <tr><td>polyA3 hits</td><td> Number of split3 reads with a polyA</td></tr>
- <tr><td>polyT3 hits</td><td> Number of split3 reads with a polyT</td></tr>
- <tr><td>original discordant unique</td><td> Of the supporting discordant pair anchors: how many anchors were in pairs mapped both to a unique site in the reference genome. Being discordant because of mapping orientation or insert size.</td></tr>
- <tr><td>original multiple</td><td> Of the supporting discordant pair anchors: how many anchors were in pairs in which the mate of the anchor mapped to multiple sites in the reference genome.</td></tr>
- <tr><td>original unmapped</td><td> Of the supporting discordant pair anchors: how many anchors were in pairs in which the mate of the anchor did not map to the reference genome.</td></tr>
- <tr><td>leftclipped max dist</td><td> The maximum distance between clipping positions of split3 reads (based on mapping)</td></tr>
- <tr><td>rightclipped max dist</td><td> The maximum distance between clipping positions split5 reads (based on mapping)</td></tr>
- <tr><td>leftclipped same pos</td><td> Fraction split3 reads with same clipping position (based on mapping)</td></tr>
- <tr><td>rightclipped same pos</td><td> Fraction of split5 reads with same clipping position (based on mapping)</td></tr>
- <tr><td>clipped avg qual</td><td> The mean base quality of the clipped subsequences. (-1 if there are no split reads)</td></tr>
- <tr><td>clipped avg length</td><td> The mean length of the clipped subsequences. (-1 if there are no split reads)</td></tr>
- <tr><td>target site duplication</td><td> Is there evidence for a target site duplication or deletion?</td></tr>
+<thead><tr><th>.txt value</th><th>.vcf value</th><th>&gt;=2.5.0</th><th>Description</th></tr></thead><tbody>
+ <tr><td>Chr</td><td>CHROM</td><td>No</td><td>Reference chromosome in which predicted MEI has taken place</td></tr>
+ <tr><td>Mobile Element</td><td>ALT or SVTYPE in INFO</td><td>No</td><td>Predicted mobile superfamily (ALU, L1, SVA, HERVK)</td></tr>
+ <tr><td>Insert Point</td><td>POS</td><td>No</td><td>Predicted insertion coordinate</td></tr>
+ <tr><td>border5</td><td>First value of CIPOS in INFO</td><td>No</td><td>Leftmost coordinate for 'prediction window' of the insertion point</td></tr>
+ <tr><td>border3</td><td>Second value of CIPOS in INFO</td><td>No</td><td>Rightmost coordinate for 'prediction window' of the insertion point.</td></tr>
+ <tr><td>End Insert Point</td><td>POS</td><td>Yes</td><td>Second predicted insertion coordinate. This differs from the normal insertion point if a target site duplication or deletion occurs.</td></tr>
+ <tr><td>end border5</td><td>First value of CIEND in INFO</td><td>Yes</td><td>Leftmost coordinate for 'prediction window' of the end insertion point</td></tr>
+ <tr><td>end border3</td><td>Second value of CIEND in INFO</td><td>Yes</td><td>Rightmost coordinate for 'prediction window' of the end insertion point. The predicted MEI has most likely been inserted somewhere with the outer values of all four borders.</td></t</td></tr>
+ <tr><td>Merged</td><td>N/A</td><td>No</td><td>Whether in a second iteration round clusters have been merged for this prediction.</td></tr>
+ <tr><td>Sample</td><td>Column names after FORMAT</td><td>No</td><td>Comma-seperated list of samples in which the event was called.</td></tr>
+ <tr><td>sample_counts</td><td>Second value of AD in FORMAT</td><td>No</td><td>Number of supporting reads per sample (should be the sum of cluster5 and cluster3 hits)</td></tr>
+ <tr><td>cluster5 length</td><td>First value of CLLEN</td><td>No</td><td><code>(End position of rightmost supporting discordant pair anchor from anchors on the 5' of the insertion point/mapped on forward strand) - (Start position of leftmost supporting discordant pair anchor from anchors on the 5' of the insertion point/mapped on forward strand))</code>. A discordant pair anchor consists of an anchor which maps uniquely to the reference genome and a mate which maps to the mobiome. (Set to NA if there is no cluster5)</td></tr>
+ <tr><td>cluster3 length</td><td>Second value of CLLEN</td><td>No</td><td><code>(End position of rightmost supporting discordant pair anchor from anchors on the 3' of the insertion point/mapped on reverse strand)) - (Start position of leftmost supporting discordant pair anchor from anchors on the 3' of the insertion point/mapped on reverse strand)</code>. (Set to NA if there is no cluster3)</td></tr>
+ <tr><td>cluster5 hits</td><td>First value of SUP</td><td>No</td><td>Number of supporting anchors on the 5' of insertion point (Set to NA if there are no cluster5 hits). These hits include both the discordant and split supporting reads (split5).</td></tr>
+ <tr><td>cluster3 hits</td><td>Second value of SUP</td><td>No</td><td>Number of supporting anchors on 3' of insertion point (Set to NA if there are no cluster3 hits). These hits include both the discordant and split supporting reads (split3).</td></tr>
+ <tr><td>split5 hits</td><td>Third value of SUP</td><td>No</td><td>Number of split reads on 5' of insertion point, clipped on the right side. Clipped part should be mappable to mobiome or polyA/polyT.</td></tr>
+ <tr><td>split3 hits</td><td>Fourth value of SUP</td><td>No</td><td>Number of split reads on the 3' of insertion point, clipped on the left side. Clipped part should be mappable to mobiome or polyA/polyT.</td></tr>
+ <tr><td>polyA5 hits</td><td>First value of POLYA</td><td>No</td><td>Number of split5 reads with a polyA</td></tr>
+ <tr><td>polyT5 hits</td><td>Second value of POLYA</td><td>No</td><td>Number of split5 reads with a polyT</td></tr>
+ <tr><td>polyA3 hits</td><td>Third value of POLYA</td><td>No</td><td>Number of split3 reads with a polyA</td></tr>
+ <tr><td>polyT3 hits</td><td>Fourth value of POLYA</td><td>No</td><td>Number of split3 reads with a polyT</td></tr>
+ <tr><td>original discordant unique</td><td>First value of ORIGIN</td><td>No</td><td>Of the supporting discordant pair anchors: how many anchors were in pairs mapped both to a unique site in the reference genome. Being discordant because of mapping orientation or insert size.</td></tr>
+ <tr><td>original multiple</td><td>Second value of ORIGIN</td><td>No</td><td>Of the supporting discordant pair anchors: how many anchors were in pairs in which the mate of the anchor mapped to multiple sites in the reference genome.</td></tr>
+ <tr><td>original unmapped</td><td>Third value of ORIGIN</td><td>No</td><td>Of the supporting discordant pair anchors: how many anchors were in pairs in which the mate of the anchor did not map to the reference genome.</td></tr>
+ <tr><td>leftclipped max dist</td><td>First value of CLIPPED</td><td>No</td><td>The maximum distance between clipping positions of split3 reads (based on mapping)</td></tr>
+ <tr><td>rightclipped max dist</td><td>Second value of CLIPPED</td><td>No</td><td>The maximum distance between clipping positions split5 reads (based on mapping)</td></tr>
+ <tr><td>leftclipped same pos</td><td>Third value of CLIPPED</td><td>No</td><td>Fraction split3 reads with same clipping position (based on mapping)</td></tr>
+ <tr><td>rightclipped same pos</td><td>Fourth value of CLIPPED</td><td>No</td><td>Fraction of split5 reads with same clipping position (based on mapping)</td></tr>
+ <tr><td>clipped avg qual</td><td>Fifth value of CLIPPED</td><td>No</td><td>The mean base quality of the clipped subsequences. (-1 if there are no split reads)</td></tr>
+ <tr><td>clipped avg length</td><td>Sixth value of CLIPPED</td><td>No</td><td>The mean length of the clipped subsequences. (-1 if there are no split reads)</td></tr>
+ <tr><td>target site duplication</td><td>TSD in INFO</td><td>No</td><td>Is there evidence for a target site duplication or deletion?</td></tr>
+ <tr><td>target site duplication length</td><td>TSDLEN in INFO</td><td>Yes</td><td>The length in bp of the target site duplication or deletion</td></tr>
+ <tr><td>target site duplication sequence</td><td>TSDSEQ in INFO</td><td>Yes</td><td>The sequence  of the target site duplication or deletion</td></tr>
+ <tr><td>variant allele fraction</td><td>AF in FORMAT</td><td>Yes</td><td>The sequence of the target site duplication or deletion</td></tr>
+ <tr><td>somatic</td><td>FILTER and SOMATIC in INFO</td><td>Yes</td><td>This column is only present when tumor/normal calling is enabled. For .txt file it is 'somatic' and for the .vcf file it is 'PASS' in FILTER and 'SOMATIC' in INFO if the MEI occurs exclusively in the tumor sample. When both a normal and tumor sample has been provided and the MEI occurs in both it is 'germline' in this column and FILTER. If the MEI does not have enough supporting reads in the normal sample it will be 'artifact' in this column and 'normal_artifact' in FILTER.</td></tr>
+
 </tbody></table>
 					<br>
 					<hr>
 					<h3>Converting to VCF</h3>
-					You can convert the <code>*_predictions.txt</code> file to VCF using <a href="downloads.html">MobsterToVCF</a>.<br>
+					When using a version of Mobster before 2.5.0, you can convert the <code>*_predictions.txt</code> file to VCF using <a href="downloads.html">MobsterToVCF</a>.<br>
 					<code> java -jar MobsterVCF-&#60;version&gt;.jar -file &lt;input_file&gt; -out &#60;output_vcf&gt; </code>
 					<br>
 					<hr>
@@ -265,8 +305,3 @@ Now filter out known reference MEIs using your own scripts or for instance conve
 		<script src="assets/js/bootstrap.min.js"></script>
   </body>
 </html>
-<br>
-					<hr>
-					<h3>Converting to VCF</h3>
-					You can convert the <code>*_predictions.txt</code> file to VCF using <a href="downloads.html">MobsterToVCF</a>.<br>
-					<code> java -jar MobsterVCF-&#60;version&gt;.jar -file &lt;input_file&gt; -out &#60;output_vcf&gt; </code>
