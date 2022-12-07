@@ -78,13 +78,11 @@ If a relatively high percentage of reads are unmapped or discordantly mapped, th
 statistics of mapping using Picard or samtools and then remove the appropriate read groups from your BAM file.
 					<hr>
 					<h4>Q3. Can I do multiple sample calling / trio analysis with Mobster?</h4>
-					Yes, you can. For instance if you would like to do a trio analysis, you would invoke Mobster as followed:<br>
-					<code>java -Xmx8G -cp "./*" org.umcn.me.pairedend.Mobster -properties Mobster_latest.properties -in A1_child.bam,A1_father.bam,A1_mother.bam -sn A1_child,A1_father,A1_mother -out A1_trio_mobster</code><br>
-					Make sure that the bam files provided to the -in argument match the sample names provided to the -sn argument. BAM files and sample names should be comma separated.<br>
-					In addition Mobster can also be run on single BAM files which contain multiple samples as long as they have proper readgroup tags with a provided sample name per tag.
+					Yes, you can. See <a href="documentation.html#multi">Documentation</a>.
 					<hr>
 					<h4>Q4. I want to convert Mobsters predictions to VCF, is this possible?</h4>
-					Yes, this is easy to do with the tool <a href="https://github.com/jyhehir/mobster/raw/develop/resources/MobsterVCF/MobsterVCF-0.0.1-SNAPSHOT.jar">MobsterToVCF</a>
+					Yes, if using a Mobster version prior to 2.5.0 this can be done with the tool <a href="https://github.com/jyhehir/mobster/raw/develop/resources/MobsterVCF/MobsterVCF-0.0.1-SNAPSHOT.jar">MobsterToVCF</a>.<br>
+					Otherwise, use the <code>-vcf</code> tag on the command line.
 					<hr>
 					<h4>Q5. How can I increase the speed of the mobilome mapping step</h4>
 					An easy way to increase the mobilome mapping speed is to modify the property <code>MOBIOME_MAPPING_CMD</code> in the properties file used for Mobster.
@@ -114,7 +112,9 @@ statistics of mapping using Picard or samtools and then remove the appropriate r
 					<hr>
 					<h4>Q9. I would like to update the version of repBase used to filter known reference MEI's from the predictions.</h4>
 					Due to licence restrictions we are unable to redistribute the refBase file. You can download a new version from <a href="https://www.girinst.org/server/RepBase/index.php">RepBase</a>, and update the property <code>REPEATMASK_FILE=</code>
-
+					<hr>
+					<h4>Q10. Can I do somatic mobile element insertion calling for tumor/normal paired samples</h4>
+					Yes, see <a href="documentation.html#tumor">Documentation</a>.<br><br>
 				</div>
 			</div>
 			<!-- /.row -->
