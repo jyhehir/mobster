@@ -11,10 +11,13 @@ import org.umcn.me.util.*;
 
 import java.util.*;
 
+import static java.lang.Math.abs;
+
 public class MobilePrediction {
 
 	protected static final int MIN_DISCORDANT_UX = 2;
 
+	protected Properties props;
 	protected String original_reference = "";
 	protected ReferenceGenome reference_genome;
 	protected boolean output_somatic = false;
@@ -159,20 +162,21 @@ public class MobilePrediction {
 
 	protected static Map<String, String> features = new HashMap<String, String>();
 
-	public MobilePrediction(int mfl, int sd, int maxExpectedClusterSize){
+	public MobilePrediction(Properties props, int mfl, int sd, int maxExpectedClusterSize){
 		this.median_fragment_length = mfl;
 		this.sd_fragment_length = sd;
 		this.max_expected_cluster_size = maxExpectedClusterSize;
+		this.props = props;
 	}
 
-	public MobilePrediction(int mfl, int sd, int maxExpectedClusterSize, SAMRecord cluster) throws IllegalSAMPairException{
-		this(mfl, sd, maxExpectedClusterSize);
+	public MobilePrediction(Properties props, int mfl, int sd, int maxExpectedClusterSize, SAMRecord cluster) throws IllegalSAMPairException{
+		this(props, mfl, sd, maxExpectedClusterSize);
 		parseSAMRecordCluster(cluster);
 	}
 
-	public MobilePrediction(int mfl, int sd, int maxExpectedClusterSize, SAMRecord cluster1, SAMRecord cluster2)
+	public MobilePrediction(Properties props, int mfl, int sd, int maxExpectedClusterSize, SAMRecord cluster1, SAMRecord cluster2)
 			throws IllegalSAMPairException{
-		this(mfl, sd, maxExpectedClusterSize, cluster1);
+		this(props, mfl, sd, maxExpectedClusterSize, cluster1);
 		parseSAMRecordCluster(cluster2);
 	}
 
@@ -180,7 +184,7 @@ public class MobilePrediction {
 
 		boolean success = false;
 
-		overlap = - Math.abs(overlap);//make sure overlap is negative
+		overlap = - abs(overlap);//make sure overlap is negative
 
 
 		//dont merge mobile predictions of different families
@@ -584,6 +588,7 @@ public class MobilePrediction {
 	}
 
 	protected void createFeatures(){
+		ArrayList<String> allSamples = new ArrayList<String>(Arrays.asList(props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP,0)));
 		for (String feature : HEADER){
 			if(feature.equals(COLUMN_BORDER3)){
 				features.put(feature, Integer.toString(this.getRightPredictionBorder()));
@@ -648,9 +653,13 @@ public class MobilePrediction {
 			}else if (feature.equals(COLUMN_AVG_CLIPPED_LEN)){
 				features.put(feature, this.clipped_avg_len);
 			}else if (feature.equals(COLUMN_SAMPLE)){
-				String sampleNames = this.sample_names.toString();
-				sampleNames = sampleNames.substring(1, sampleNames.length() - 1);
-				features.put(feature, sampleNames);
+				ArrayList<String> sampleNamesListToPrint = new ArrayList<String>();
+				for(String sample: allSamples)
+					if(this.sample_names.contains(sample))
+						sampleNamesListToPrint.add(sample);
+				String sampleNamesToPrint = sampleNamesListToPrint.toString();
+				sampleNamesToPrint = sampleNamesToPrint.substring(1, sampleNamesToPrint.length() - 1);
+				features.put(feature, sampleNamesToPrint);
 			}else if (feature.equals(COLUMN_POLYA3_HITS)){
 				features.put(feature, Integer.toString(this.right_aligned_polyA_hits));
 			}else if (feature.equals(COLUMN_POLYT3_HITS)){
@@ -660,16 +669,29 @@ public class MobilePrediction {
 			}else if (feature.equals(COLUMN_POLYT5_HITS)){
 				features.put(feature, Integer.toString(this.left_aligned_polyT_hits));
 			}else if (feature.equals(COLUMN_SAMPLE_COUNT)){
-				String sampleCount = this.sample_counts.toString();
-				sampleCount = sampleCount.substring(1, sampleCount.length() - 1);
-				features.put(feature, sampleCount);
+				ArrayList<String> sampleCountsListToPrint = new ArrayList<String>();
+				for(String sample: allSamples)
+					if(this.sample_counts.containsKey(sample))
+						sampleCountsListToPrint.add(sample + "=" + this.sample_counts.get(sample));
+				String sampleCountsToPrint = sampleCountsListToPrint.toString();
+				sampleCountsToPrint = sampleCountsToPrint.substring(1, sampleCountsToPrint.length() - 1);
+				features.put(feature, sampleCountsToPrint);
 			} else if (feature.equals(COLUMN_NON_SUPPORTING_SAMPLE_COUNT)){
-				String sampleNonSupportingCount = this.non_supporting_sample_counts.toString();
-				sampleNonSupportingCount = sampleNonSupportingCount.substring(1, sampleNonSupportingCount.length() - 1);
-				features.put(feature, sampleNonSupportingCount);
+				ArrayList<String> sampleNonSupportingCountsListToPrint = new ArrayList<String>();
+				for(String sample: allSamples)
+					if(this.non_supporting_sample_counts.containsKey(sample))
+						sampleNonSupportingCountsListToPrint.add(sample + "=" + this.non_supporting_sample_counts.get(sample));
+				String sampleNonSupportingCountsToPrint = sampleNonSupportingCountsListToPrint.toString();
+				sampleNonSupportingCountsToPrint = sampleNonSupportingCountsToPrint.substring(1, sampleNonSupportingCountsToPrint.length() - 1);
+				features.put(feature, sampleNonSupportingCountsToPrint);
 			} else if(feature.equals(COLUMN_VAF)) {
-				String sampleVAFstring = this.sample_vafs.toString();
-				features.put(feature, sampleVAFstring.substring(1, sampleVAFstring.length() - 1));
+				ArrayList<String> sampleVAFsListToPrint = new ArrayList<String>();
+				for(String sample: allSamples)
+					if(this.sample_vafs.containsKey(sample))
+						sampleVAFsListToPrint.add(sample + "=" + this.sample_vafs.get(sample));
+				String sampleVAFsToPrint = sampleVAFsListToPrint.toString();
+				sampleVAFsToPrint = sampleVAFsToPrint.substring(1, sampleVAFsToPrint.length() - 1);
+				features.put(feature, sampleVAFsToPrint);
 			} else if(feature.equals(COLUMN_SOMATIC)){
 				if(this.output_somatic)
 					features.put(feature, this.somatic);
@@ -1135,7 +1157,7 @@ public class MobilePrediction {
 
 	public int getTSDlength(){
 		if(!Objects.equals(hasTSD(), UNKNOWN))
-			return Math.abs(getLeftClusterBorder() - getRightClusterBorder());
+			return abs(getLeftClusterBorder() - getRightClusterBorder());
 		else
 			return -1;
 	}
@@ -1234,8 +1256,6 @@ public class MobilePrediction {
 	}
 
 	public int getLeftPredictionBorder(){
-		if(max_expected_cluster_size == 1333)
-			logger.error("ERROR!");
 		int leftPredictionBorder = 0;
 
 		//For a left+right split cluster, return the insertion point
@@ -1517,7 +1537,7 @@ public class MobilePrediction {
 		return true;
 	}
 
-	public void determineSomatic(Properties props) {
+	public void determineSomatic() {
 
 		//Check whether a normal predictions file has been provided, then the output is automatically somatic
 		if (props.containsKey(MobileDefinitions.NORMAL_PREDICTIONS)
@@ -1612,5 +1632,44 @@ public class MobilePrediction {
 		}
 
 		return bounderies;
+	}
+
+	public int getSplitToMateClusterDistance() {
+
+		int splitClusterNum = 0;
+		if(hasLeftAlignedSplitCluster()) splitClusterNum++;
+		if(hasRightAlignedSplitCluster()) splitClusterNum++;
+
+		int mateClusterNum = 0;
+		if(hasLeftMateCluster()) mateClusterNum++;
+		if(hasRightMateCluster()) mateClusterNum++;
+
+		if(splitClusterNum == 0 || mateClusterNum == 0)
+			throw new IllegalStateException("There are no split AND mate clusters");
+
+		int insertPos = getInsertionEstimate();
+		int insertEnd = getEndInsertionEstimate();
+
+		if(splitClusterNum == 2){
+			switch(hasTSD()){
+				case DUPLICATION:
+					return ((hasLeftMateCluster()? abs(insertEnd - left_mate_cluster_border) : 0)
+							+ (hasRightMateCluster()? abs(right_mate_cluster_border - insertPos) : 0))
+							/ mateClusterNum;
+				case DELETION:
+					return ((hasLeftMateCluster()? abs(insertPos - left_mate_cluster_border) : 0)
+							+ (hasRightMateCluster()? abs(right_mate_cluster_border - insertEnd) : 0))
+							/ mateClusterNum;
+				case NO_TSD:
+					return ((hasLeftMateCluster()? abs(insertPos - left_mate_cluster_border) : 0)
+							+ (hasRightMateCluster()? abs(right_mate_cluster_border - insertPos) : 0))
+							/ mateClusterNum;
+			}
+		}
+
+		return ((hasLeftMateCluster()? abs(insertPos - left_mate_cluster_border) : 0)
+					+ (hasRightMateCluster()? abs(right_mate_cluster_border - insertPos) : 0))
+					/ mateClusterNum;
+
 	}
 }

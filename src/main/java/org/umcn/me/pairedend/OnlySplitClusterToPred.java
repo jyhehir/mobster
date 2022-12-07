@@ -2,12 +2,14 @@ package org.umcn.me.pairedend;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
 import java.util.Vector;
 
 import org.umcn.me.samexternal.IllegalSAMPairException;
 
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
+import org.umcn.me.util.MobileDefinitions;
 
 import static org.umcn.me.output.SavePredictions.writePredictionsToFile;
 
@@ -19,7 +21,9 @@ public class OnlySplitClusterToPred {
 		
 		for (SAMRecord record : inBAM){
 			try {
-				MobilePrediction prediction = new MobilePrediction(468, 34, 500, record);
+				Properties props = new Properties();
+				props.put(MobileDefinitions.SAMPLE_NAME, "ClusterRefacV4_0.1mmYESSplitBWA_splitclustersV2");
+				MobilePrediction prediction = new MobilePrediction(props, 468, 34, 500, record);
 				if (prediction.getLeftTotalHits() + prediction.getRightTotalHits() >= 2){
 					predictions.add(prediction);
 				}

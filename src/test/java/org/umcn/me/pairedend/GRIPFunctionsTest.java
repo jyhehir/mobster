@@ -1,6 +1,7 @@
 package org.umcn.me.pairedend;
 
 import java.io.File;
+import java.util.Properties;
 import java.util.Vector;
 
 import net.sf.samtools.SAMRecord;
@@ -9,6 +10,7 @@ import org.apache.log4j.BasicConfigurator;
 import org.umcn.me.output.FilterPredictions;
 import org.umcn.me.samexternal.IllegalSAMPairException;
 import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.util.MobileDefinitions;
 import org.umcn.me.util.SimpleRegion;
 
 import junit.framework.TestCase;
@@ -96,7 +98,9 @@ public class GRIPFunctionsTest extends TestCase {
 		
 		for (SAMRecord rec : reader){
 			try {
-				preds.add(new MobilePrediction(400, 100, 700, rec));
+				Properties props = new Properties();
+				props.put(MobileDefinitions.SAMPLE_NAME, fileToRead);
+				preds.add(new MobilePrediction(props, 400, 100, 700, rec));
 			} catch (IllegalSAMPairException e) {
 				e.printStackTrace();
 				fail();

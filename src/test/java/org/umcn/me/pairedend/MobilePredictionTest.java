@@ -2,6 +2,14 @@ package org.umcn.me.pairedend;
 
 import junit.framework.TestCase;
 import org.junit.Test;
+import org.umcn.me.output.FilterPredictions;
+import org.umcn.me.util.MobileDefinitions;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
+import java.util.Vector;
+import java.util.logging.Filter;
 
 public class MobilePredictionTest extends TestCase {
 
@@ -1042,11 +1050,74 @@ public class MobilePredictionTest extends TestCase {
         assertEquals(edge2_dup_left_dis, prediction.getEndInsertionEstimate());
         assertEquals(edge2_dup_left_dis - edge2_dup_right_dis < 15? edge2_dup_left_dis + (15 - (edge2_dup_left_dis - edge2_dup_right_dis))/2 :  edge2_dup_left_dis, prediction.getEndRightPredictionBorder());
     }
+
+
+    @Test
+    public void testFilterKnownME(){
+        DummyMobilePrediction prediction = new DummyMobilePrediction(
+                0,
+                0,
+                0,
+                42,
+                153222343,
+
+                0,
+                0,
+                0,
+                0,
+                153222307,
+                "ALU",
+                "chr2"
+        );
+        Vector<MobilePrediction> predictions = new Vector<>();
+        predictions.add(prediction);
+
+        Properties props = new Properties();
+        props.put(MobileDefinitions.REPEAT_MASK_FILE, "repmask/alu_l1_herv_sva_other_grch38_ucsc.rpmsk");
+        props.put(MobileDefinitions.RESOURCES_DIR, "/Users/ramonvanamerongen/surfdrive/Major research project/programs/mobster2/mobster/resources/");
+
+        FilterPredictions filterPredictions = new FilterPredictions(predictions);
+        try {
+            filterPredictions.loadKnownMEs(props);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        filterPredictions.filterKnownMEs();
+        System.out.println(filterPredictions.getPredictions().size());
+        assertEquals(0, filterPredictions.getPredictions().size());
+    }
 }
+
+
 
 class DummyMobilePrediction extends MobilePrediction {
 
     public final static int EXPECTED_DUPLICATION_LENGTH = 15;
+    private static Properties props;
+
+    static {
+        props = new Properties();
+        props.put(MobileDefinitions.SAMPLE_NAME, "test");
+    }
+
+    public DummyMobilePrediction(
+            int left_mate_cluster_border,
+            int left_cluster_length,
+            int left_mate_hits,
+            int left_aligned_split_hits,
+            int left_aligned_split_border,
+            int right_mate_cluster_border,
+            int right_cluster_length,
+            int right_mate_hits,
+            int right_aligned_split_hits,
+            int right_aligned_split_border,
+            String me,
+            String chrom
+    ) {
+        this(left_mate_cluster_border, left_cluster_length, left_mate_hits, left_aligned_split_hits, left_aligned_split_border, right_mate_cluster_border, right_cluster_length, right_mate_hits, right_aligned_split_hits, right_aligned_split_border);
+        this.mobile_mappings.add(me);
+        this.original_reference = chrom;
+    }
 
     public DummyMobilePrediction(
             int left_mate_cluster_border,
@@ -1060,7 +1131,8 @@ class DummyMobilePrediction extends MobilePrediction {
             int right_aligned_split_hits,
             int right_aligned_split_border
     ) {
-        super(470, 35, 500);
+
+        super(props, 470, 35, 500);
         this.left_mate_cluster_border = left_mate_cluster_border;
         this.left_cluster_length = left_cluster_length;
         this.left_mate_hits = left_cluster_length;

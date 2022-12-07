@@ -60,7 +60,7 @@ public class AnchorClusterer {
 	
 	private static final int FILTER_REGION = 90;
 	private static final String VERSION;
-	
+
 	private static int mean_frag_size = 470;
 	private static int sd_frag_size = 35;
 	private static int percentile_99_fragment = 500;
@@ -115,7 +115,7 @@ public class AnchorClusterer {
 		
 		//TMP
 		//MEMORY
-		
+
 		File anchor;
 		File anchorIndex;
 		File clusterBam;
@@ -443,7 +443,7 @@ public class AnchorClusterer {
 	
 	private static boolean mergeMobilePredictions(RegionWithLabel r1, RegionWithLabel r2,
 			Map<RegionWithLabel, MobilePrediction> labeledToMobile, int overlapdef, int maxdist){
-		
+
 		MobilePrediction m1 = labeledToMobile.get(r1);
 		MobilePrediction m2 = labeledToMobile.get(r2);
 
@@ -463,6 +463,16 @@ public class AnchorClusterer {
 		}
 		if (success){
 			labeledToMobile.put(r2, m1);
+		}
+		// If the merge is not successful AND the split clusters are completely equal,
+		// only preserve the prediction with the closest distance to the predicted end and start insertion positions
+		else if ( !m1.equals(m2) && m1SplitIds.size() >= 1 && m2SplitIds.size() >= 1 && m1SplitIds.equals(m2SplitIds)) {
+			logger.warn("Predictions that cannot be merged have the same split cluster, so the one whose mate clusters are the furthest away will be removed");
+			if(m1.getSplitToMateClusterDistance() <= m2.getSplitToMateClusterDistance()){
+				labeledToMobile.put(r2, m1);
+			} else {
+				labeledToMobile.put(r1, m2);
+			}
 		}
 		
 		return success;
@@ -954,7 +964,7 @@ tyuasx	 * @throws IOException
 				if(clusterMate.getReadNegativeStrandFlag() && mobileFamily.equals(mobileFamilyMate)
 						&& clusterMate.getAlignmentStart() >= end - overlap){
 
-					prediction = new MobilePrediction(mean_frag_size, sd_frag_size, percentile_99_fragment, cluster, clusterMate);
+					prediction = new MobilePrediction(mobster_properties, mean_frag_size, sd_frag_size, percentile_99_fragment, cluster, clusterMate);
 					alreadyClustered.add(clusterMate.getReadName());
 					alreadyClustered.add(cluster.getReadName());
 	
@@ -966,7 +976,7 @@ tyuasx	 * @throws IOException
 		
 		//If no double cluster was found add the 5'end or 3'end single cluster
 		if(!alreadyClustered.contains(cluster.getReadName())){
-			prediction = new MobilePrediction(mean_frag_size, sd_frag_size, percentile_99_fragment, cluster);
+			prediction = new MobilePrediction(mobster_properties, mean_frag_size, sd_frag_size, percentile_99_fragment, cluster);
 		}
 		
 		return prediction;
@@ -980,7 +990,7 @@ tyuasx	 * @throws IOException
 		
 		Set<String> alreadyClusteredReadNames = new HashSet<String>();
 		SAMFileReader splitReader = new SAMSilentReader(splitClusterBam, splitclusterIndex);
-				
+
 		for (MobilePrediction matePrediction : matePredictions){
 			String mobileHit = matePrediction.getMateMobileMapping();
 			int left = matePrediction.getLeftPredictionBorder(50);
@@ -991,7 +1001,7 @@ tyuasx	 * @throws IOException
 			int splitClustersInArea = 0;
 			while (iter.hasNext()){
 				splitClustersInArea++;
-				MobilePrediction currentPrediction = new MobilePrediction(0, 0, 0, iter.next());
+				MobilePrediction currentPrediction = new MobilePrediction(mobster_properties, 0, 0, 0, iter.next());
 				if(currentPrediction.getMobileMappings().contains(mobileHit)){
 					bestPrediction = highestConfidenceSplitPrediction(bestPrediction, currentPrediction);
 				}
@@ -1017,7 +1027,7 @@ tyuasx	 * @throws IOException
 		int soloSplitClusters = 0;
 		for (SAMRecord rec : splitReader2){
 			if (!alreadyClusteredReadNames.contains(rec.getReadName())){
-				MobilePrediction pred = new MobilePrediction(0, 0, 0, rec);
+				MobilePrediction pred = new MobilePrediction(mobster_properties, 0, 0, 0, rec);
 				if(pred.hasLeftAlignedSplitCluster() && pred.hasRightAlignedSplitCluster() && pred.hasOneOrZeroHomoPolymerMappings()){
 					matePredictions.add(pred);
 					soloSplitClusters++;

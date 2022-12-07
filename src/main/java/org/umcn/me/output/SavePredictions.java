@@ -102,7 +102,7 @@ public class SavePredictions {
         //When normal/tumor calling has been enabled or a normal predictions file has been provided, determine for every prediction whether it is somatic or not
         if(output_somatic)
             for(MobilePrediction prediction: predictions)
-                prediction.determineSomatic(props);
+                prediction.determineSomatic();
 
         //When a reference genome has been provided, add it to the predictions so the TSD sequence can be determined
         ReferenceGenome referenceGenome = null;

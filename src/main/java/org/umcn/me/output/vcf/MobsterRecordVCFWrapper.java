@@ -115,7 +115,7 @@ public class MobsterRecordVCFWrapper implements VCFFunctions {
 		else {
 			try {
 				return Character.toString(this.referenceGenome.getBaseAt(getChromosome(), getPosition()));
-			} catch (InvalidNucleotideSequenceException e) {
+			} catch (Exception e) {
 				System.out.println(e.toString());
 				return ".";
 			}
@@ -134,15 +134,18 @@ public class MobsterRecordVCFWrapper implements VCFFunctions {
 
 	@Override
 	public String getFilter() {
-		switch(this.record.getSomatic()){
-			case MobilePrediction.GERMLINE:
-				return "germline";
-			case MobilePrediction.ARTIFACT:
-				return "normal_artifact";
-			case MobilePrediction.SOMATIC:
-				return "PASS";
-			default:
-				return "PASS";
+		if(this.record.getSomatic() == null)
+			return "PASS";
+		else
+			switch(this.record.getSomatic()){
+				case MobilePrediction.GERMLINE:
+					return "germline";
+				case MobilePrediction.ARTIFACT:
+					return "normal_artifact";
+				case MobilePrediction.SOMATIC:
+					return "PASS";
+				default:
+					return "PASS";
 		}
 	}
 		   

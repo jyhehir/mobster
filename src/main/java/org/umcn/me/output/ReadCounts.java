@@ -84,6 +84,9 @@ public class ReadCounts {
     //and overlap the clipped positions of the split clusters
     private static int calculateTotalReadCount(MobilePrediction prediction, SAMSilentReader samFile){
         int totalReads = 0;
+        if(prediction.getInsertionEstimate() == 125370301){
+            System.out.println("R:" + prediction.getRightMateClusterBounderies()[0] + "-" + prediction.getRightMateClusterBounderies()[1]);
+        }
         if(prediction.hasLeftMateCluster())
             totalReads += getReadCount(prediction.getChromosome(), prediction.getLeftMateClusterBounderies()[0], prediction.getLeftMateClusterBounderies()[1], samFile, true);
         if(prediction.hasRightMateCluster())
