@@ -46,6 +46,11 @@ public abstract class MobileDefinitions {
 	public static final String INFILE_INDEX = "IN_FILE_INDEX";
 	public static final String RESOURCES_DIR = "RESOURCES_DIR";
 	public static final String OUTFILE = "OUT_FILE";
+	public static final String REFERENCE_GENOME_FILE = "REFERENCE_GENOME_FILE";
+	public static final String NORMAL_PREDICTIONS = "NORMAL_PREDICTIONS";
+	public static final String NORMAL_SAMPLE = "NORMAL_SAMPLE";
+	public static final String NORMAL_TUMOR_CALLING = "NORMAL_TUMOR_CALLING";
+	public static final String MINIMUM_NORMAL_SUPPORTING_READS = "MINIMUM_NORMAL_SUPPORTING_READS";
 	public static final String VCF = "VCF_OUT";
 	public static final String MAPPING_TOOL = "MAPPING_TOOL";
 	public static final String USE_SPLIT = "USE_SPLIT";
@@ -125,5 +130,4 @@ public abstract class MobileDefinitions {
 	public static final String GRIPS_SKIP_UU_EXCLUSION = "GRIPS_SKIP_UU_EXCLUSION"; 
 	
 	public static final String CLEANUP_FILES = "CLEANUP";
-
 }

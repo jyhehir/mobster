@@ -1,17 +1,21 @@
 package org.umcn.me.pairedend;
 
-import java.io.*;
-import java.util.Properties;
-import java.util.Vector;
-
-import net.sf.picard.sam.ValidateSamFile;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.omg.CORBA.DynAnyPackage.InvalidValue;
 import org.umcn.me.output.SavePredictions;
-import org.umcn.me.output.VAFPredictions;
+import org.umcn.me.output.vcf.MobsterToVCF;
 import org.umcn.me.samexternal.SAMDefinitions;
-import org.umcn.me.samexternal.SAMSilentReader;
+import org.umcn.me.util.ArrayStats;
+import org.umcn.me.util.FileValidation;
 import org.umcn.me.util.MobileDefinitions;
+import org.umcn.me.util.ReferenceGenome;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Properties;
+import java.util.Vector;
 
 public final class Mobster {
 
@@ -79,10 +83,7 @@ public final class Mobster {
             //Cluster the supporting reads to find the MEI predictions
             Vector<MobilePrediction> predictions = AnchorClusterer.runFromProperties(props);
 
-            //Predict AF for the predictions
-            predictions = VAFPredictions.runFromProperties(props, predictions);
-
-            //Filter and save the predictions
+            //Filter, determine VAF and whether it is somatic/germline (if enabled) and save the predictions
             SavePredictions.runFromProperties(props, predictions);
 
         } catch (IOException e) {
@@ -93,45 +94,63 @@ public final class Mobster {
 
     // note that this is conditional, i.e. only if user requires this
     private static void configureAndRunPicard(final Properties props) throws IOException {
-        //NOTE if multiple BAM Files are provided, only the insert size is investigated of the 1st BAM
-        String picardCommand = "java -Xmx4g -jar " + resourcesDir + props.getProperty(MobileDefinitions.PICARD_COLLECT_INSERT_METRICS) +
-                " VALIDATION_STRINGENCY=LENIENT HISTOGRAM_FILE=" + props.getProperty(MobileDefinitions.OUTFILE).trim() + "_hist.pdf" +
-                " INPUT=" + props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP,0)[0] + " OUTPUT=" + props.getProperty(MobileDefinitions.OUTFILE).trim() + "_insertstats" +
-                " STOP_AFTER=50000000";
+        String[] sampleBAMs = props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP,0);
+        String[] sampleNames = props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP,0);
 
-        execUnixCommand(picardCommand);
+        //The insert size statistics are averaged over all BAMs
+        double[] medians = new double[sampleBAMs.length];
+        int[] means = new int[sampleBAMs.length];
+        int[] sds = new int[sampleBAMs.length];
+        double[] percentiles99 = new double[sampleBAMs.length];
 
-        //Values are on line 8
-        //[0 = MEDIAN] [4 = MEAN] [17=99percentile]
-        BufferedReader br = new BufferedReader(new FileReader(props.getProperty(MobileDefinitions.OUTFILE) + "_insertstats"));
-        String line;
-        boolean read = false;
-        double median;
+        logger.info("Determining insert size metrics of the sample(s) using picard...");
+        for(int i = 0; i < sampleBAMs.length; i++){
+            String sampleBAM = sampleBAMs[i].trim();
+            String sampleName = sampleNames[i].trim();
+            logger.info("Running picard on: " + sampleBAM);
+            String picardCommand = "java -Xmx4g -jar " + resourcesDir + props.getProperty(MobileDefinitions.PICARD_COLLECT_INSERT_METRICS) +
+                    " VALIDATION_STRINGENCY=LENIENT HISTOGRAM_FILE=" + props.getProperty(MobileDefinitions.OUTFILE).trim() + "_" + sampleName + "_hist.pdf" +
+                    " INPUT=" + sampleBAM + " OUTPUT=" + props.getProperty(MobileDefinitions.OUTFILE).trim() + "_" + sampleName + "_insertstats" +
+                    " STOP_AFTER=50000000";
+
+            execUnixCommand(picardCommand);
+
+            //Values are on line 8
+            //[0 = MEDIAN] [4 = MEAN] [17=99percentile]
+            BufferedReader br = new BufferedReader(new FileReader(props.getProperty(MobileDefinitions.OUTFILE).trim() + "_" + sampleName + "_insertstats"));
+            String line;
+            boolean read = false;
+            while ((line = br.readLine()) != null){
+                if(read){
+                    String[] split = line.split("\t", -1);
+                    medians[i] = Double.parseDouble(split[0]);
+                    means[i] = (int) Double.parseDouble(split[4]);
+                    percentiles99[i] = Double.parseDouble(split[17]);
+                    sds[i] = (int) Double.parseDouble(split[5]);
+                    break;
+                } else if(line.startsWith("MEDIAN_INSERT")){
+                    read = true;
+                }
+            }
+
+            br.close();
+        }
         int mean = 0;
-        double percentile99 = 0;
         int clustermax = 0;
         int sd = 0;
-
-        while ((line = br.readLine()) != null){
-            if(read){
-                String[] split = line.split("\t", -1);
-                median = Double.parseDouble(split[0]);
-                mean = (int) Double.parseDouble(split[4]);
-                percentile99 = Double.parseDouble(split[17]);
-                clustermax = (int) (median + percentile99);
-                sd = (int) Double.parseDouble(split[5]);
-
-                break;
-            }else if(line.startsWith("MEDIAN_INSERT")){
-                read = true;
+        double median = 0;
+        double percentile99 = 0;
+        try{
+            mean = ArrayStats.mean(means);
+            sd = ArrayStats.mean(sds);
+            median = ArrayStats.mean(medians);
+            percentile99 = ArrayStats.mean(percentiles99);
+            clustermax = (int) (median + percentile99);
+        } catch (InvalidValue ignored) {} finally {
+            if (mean == 0 || clustermax == 0 || sd == 0){
+                logger.error("Could not parse the PICARD CollectInsertSizeMetrics successfully");
+                System.exit(-1);
             }
-        }
-
-        br.close();
-
-        if (mean == 0 || clustermax == 0 || sd == 0){
-            logger.error("Could not parse the PICARD CollectInsertSizeMetrics successfully");
-            System.exit(-1);
         }
 
         if (props.containsKey(MobileDefinitions.USE_READ_LENGTH) &&
@@ -139,9 +158,15 @@ public final class Mobster {
             clustermax = clustermax - Integer.parseInt(props.getProperty(MobileDefinitions.READ_LENGTH).trim());
         }
 
-        props.put(MobileDefinitions.LENGTH_99PROCENT_OF_FRAGMENTS, Integer.toString(clustermax));
-        props.put(MobileDefinitions.MEAN_FRAGMENT_LENGTH, Integer.toString(mean));
-        props.put(MobileDefinitions.SD_FRAGMENT_LENGTH, Integer.toString(sd));
+        //Only if no valid value was provided, will the picard insert statistics be used
+        if(!props.containsKey(MobileDefinitions.LENGTH_99PROCENT_OF_FRAGMENTS) || !ArrayStats.isNumeric((String) props.get(MobileDefinitions.LENGTH_99PROCENT_OF_FRAGMENTS)))
+            props.put(MobileDefinitions.LENGTH_99PROCENT_OF_FRAGMENTS, Integer.toString(clustermax));
+        if(!props.containsKey(MobileDefinitions.MEAN_FRAGMENT_LENGTH)  || !ArrayStats.isNumeric((String) props.get(MobileDefinitions.MEAN_FRAGMENT_LENGTH)))
+            props.put(MobileDefinitions.MEAN_FRAGMENT_LENGTH, Integer.toString(mean));
+        if(!props.containsKey(MobileDefinitions.SD_FRAGMENT_LENGTH) || !ArrayStats.isNumeric((String) props.get(MobileDefinitions.SD_FRAGMENT_LENGTH)))
+            props.put(MobileDefinitions.SD_FRAGMENT_LENGTH, Integer.toString(sd));
+
+        logger.info("Insert size metrics to be used are MEAN_FRAGMENT_LENGTH=" + props.getProperty(MobileDefinitions.MEAN_FRAGMENT_LENGTH) + ", SD_FRAGMENT_LENGTH=" + props.getProperty(MobileDefinitions.SD_FRAGMENT_LENGTH)  + " and LENGTH_99PROCENT_OF_FRAGMENTS=" + props.getProperty(MobileDefinitions.LENGTH_99PROCENT_OF_FRAGMENTS) );
     }
 
     private static void extractPotentialMEIReads(final Properties props) throws IOException {
@@ -218,18 +243,21 @@ public final class Mobster {
         System.out.println("Author: Djie Tjwan Thung");
         System.out.println();
         System.out.println("Predict non-reference Mobile Element Insertion (MEI) events using one properties file.");
-        System.out.println("Only the properties file is required, but it is advisable to also provide the other single dash ('-[argument]') arguments.");
+        System.out.println("Only the properties file is required, but it is advisable to also provide the other single dash ('-[argument]') arguments if applicable.");
         System.out.println("These other arguments will override the default properties in the properties file.");
         System.out.println("In addition, any property as listed in the default properties file can also be overridden by providing it as a double dash argument ('--USE_PICARD [value]').");
-        System.out.println("A new properties file containing all the final properties will also be created with the output prefix.");
+        System.out.println("A new properties file containing all the overridden properties will also be created with the output prefix.");
         System.out.println();
-        System.out.println("\t-properties [properties]\tThis value is required. Path to the properties file.");
-        System.out.println(("\t-rdir [resources folder]\tThis value will override corresponding value in the properties file. Specify where the resources folder of mobster is installed."));
-        System.out.println("\t-in [input .bam file]\t\tThis value will override corresponding value in the properties file. Multiple BAM files may be specified if separated by a comma");
-        System.out.println("\t-out [output prefix]\t\tThis value will override corresponding value in the properties file.");
-        System.out.println(("\t-sn [sample name]\t\t\tThis value will override corresponding value in the properties file. Multiple sample names may be specified if separated by a comma"));
-        System.out.println(("\t-vcf\t\t\t\t\t\tIf this flag is given, the corresponding value in the properties file will be set to 'true'. Output the results of Mobster in VCF format in addition to the default format."));
-        System.out.println(("\t--<PROPERTY> [value]\t\tThis value will override the corresponding value in the properties file."));
+        System.out.println("\t-properties [properties]\t\tThis value is required. Path to the properties file.");
+        System.out.println(("\t-rdir [resources folder]\t\tSpecify where the resources folder of mobster is installed."));
+        System.out.println("\t-in [input .bam file]\t\t\tMultiple BAM files may be specified if separated by a comma.");
+        System.out.println("\t-out [output prefix]\t\t\tPrefix for the output files.");
+        System.out.println("\t-sn [sample name]\t\t\t\tMultiple sample names may be specified if separated by a comma. When tumor/normal paired samples are given, the normal sample should be specified with '-ns'.");
+        System.out.println("\t-r [reference genome]\t\t\tWhen provided, sequences will be determined for the target site duplication and the insertion position.");
+        System.out.println("\t-np [normal predictions file]\tCan be used to predict somatic MEIs if only the tumor file is provided instead of providing both a tumor and normal sample. If the file provided (.vcf or .txt ) contains Mobster's predictions of the normal sample, any new prediction in the tumor sample (provided through '-in') near a prediction in this file will be removed.");
+        System.out.println("\t-ns [normal sample name]\t\t#Can be used to predict somatic MEIs if both a tumor and normal sample have been provided through '-in' and '-sn'. The sample with the corresponding name among the provided sample names will be seen as the normal sample. The other sample will be seen as the tumor sample.");
+        System.out.println("\t-vcf\t\t\t\t\t\t\tIf this flag is given, the results of Mobster are outputted in VCF format in addition to the default format.");
+        System.out.println(("\t--<PROPERTY> [value]\t\t\tThis value will override the corresponding value in the properties file."));
         System.out.println();
         System.out.println("Default mapping tool: " + SAMDefinitions.MAPPING_TOOL_UNSPECIFIED);
         System.out.println();
@@ -254,7 +282,7 @@ public final class Mobster {
 
                     //First check for flags
                     if(argument.equalsIgnoreCase("-vcf")){
-                        props.put(MobileDefinitions.VCF, true);
+                        props.put(MobileDefinitions.VCF, "true");
                         continue;
                     }
 
@@ -271,34 +299,36 @@ public final class Mobster {
                         sampleName = value;
                         props.put(MobileDefinitions.SAMPLE_NAME, sampleName);
                     }
-                    else if (argument.equalsIgnoreCase("-vcf")){
-                        props.put(MobileDefinitions.VCF, value);
+                    else if (argument.equalsIgnoreCase("-r")){
+                        props.put(MobileDefinitions.REFERENCE_GENOME_FILE, value);
+                    }
+                    else if (argument.equalsIgnoreCase("-np")){
+                        props.put(MobileDefinitions.NORMAL_PREDICTIONS, value);
                     }
                     else if (argument.equalsIgnoreCase("-rdir")){
                         props.put(MobileDefinitions.RESOURCES_DIR, value);
                     }
-                    //When a property present in the default properties is provided, it is overridden.
-                    else if(argument.startsWith("--")
-                            && props.containsKey(argUpperCase)){
+                    else if (argument.equalsIgnoreCase("-ns")){
+                        props.put(MobileDefinitions.NORMAL_SAMPLE, value);
+                    }
+                    //When preceded by '--' it is presumed to be a property and it is overridden.
+                    else if(argument.startsWith("--")){
+                        if(props.containsKey(argUpperCase))
+                            logger.info("The property \"" + argUpperCase + "\" has been set to \"" + value + "\" from \"" + props.get(argUpperCase) + "\"");
+                        else
+                            logger.info("The property \"" + argUpperCase + "\" has been set to \"" + argUpperCase + "\" but was not yet present in the properties file.");
                         props.put(argUpperCase, value);
-                    } else if(!argument.equals("-properties")){
-                        System.out.println(argument);
 
+                    } else if(!argument.equals("-properties")){
                         printUsage();
-                        logger.error("Invalid arguments. Please try again.");
+                        logger.error("Invalid argument: \"" + argument +"\". Please try again.");
                         System.exit(-1);
                     }
                 }
 
-                //Check if the provided BAM file has an index file
-                //If not VAF determination will be disabled
-                if(new File(inFile+".bai").isFile()){
-                    props.put(MobileDefinitions.INFILE_INDEX, inFile+".bai");
-                } else if(new File(inFile.replace(".bam", ".bai")).isFile()){
-                    props.put(MobileDefinitions.INFILE_INDEX, inFile.replace(".bam", ".bai"));
-                }else {
-                    logger.info("Provided input file has no index file available. VAF determination will be disabled.");
-                }
+                //Write the current properties to a file
+                String output = props.getProperty(MobileDefinitions.OUTFILE) + "_Mobster.properties";
+                props.store(new FileOutputStream(output), "");
 
                 //Check whether there is a correct number of samples
                 if (props.getProperty(MobileDefinitions.SAMPLE_NAME).split(MobileDefinitions.DEFAULT_SEP, 0).length !=
@@ -311,9 +341,37 @@ public final class Mobster {
                     props.put(MobileDefinitions.MULTIPLE_SAMPLE_CALLING, "true");
                 }
 
+                //Check if the provided sample BAMs file have an index file
+                //If not VAF determination will be disabled
+                boolean noBamIndex = false;
+                if(props.containsKey(MobileDefinitions.INFILE_INDEX)) {
+                    if (props.getProperty(MobileDefinitions.INFILE_INDEX).split(MobileDefinitions.DEFAULT_SEP, 0).length !=
+                            props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0).length) {
+                        logger.warn("The number of samples does not equal the number of provided BAM index files. VAF determination will be disabled.");
+                        props.remove(MobileDefinitions.INFILE_INDEX);
+                    }
+                } else {
+                    ArrayList<String> indexFiles = new ArrayList<String>();
+                    for(String sampleFile: props.getProperty(MobileDefinitions.INFILE).split(MobileDefinitions.DEFAULT_SEP, 0)){
+                        if(FileValidation.fileValid(sampleFile+".bai")){
+                            indexFiles.add(sampleFile+".bai");
+                        } else if(FileValidation.fileValid((sampleFile.replace(".bam", ".bai")))){
+                            indexFiles.add(sampleFile.replace(".bam", ".bai"));
+                        }else{
+                            noBamIndex = true;
+                            break;
+                        }
+                    }
+                    if(noBamIndex){
+                        logger.warn("Not all input files have a readable index file available. VAF determination will be disabled.");
+                        props.remove(MobileDefinitions.INFILE_INDEX);
+                    } else{
+                        props.put(MobileDefinitions.INFILE_INDEX, String.join(",", indexFiles));
+                    }
+                }
+
                 //When a resources directory has been provided, either in the properties file or on the command line,
                 //it is checked whether it actually exists and an optional '/' is appended.
-                //In both cases, the final properties are written to a file
                 if(props.containsKey(MobileDefinitions.RESOURCES_DIR)){
                     resourcesDir = props.getProperty(MobileDefinitions.RESOURCES_DIR);
 
@@ -331,19 +389,41 @@ public final class Mobster {
                         props.put(MobileDefinitions.RESOURCES_DIR, resourcesDir);
                     }
 
-                    //Write the current properties to a file
-                    String output = props.getProperty(MobileDefinitions.OUTFILE) + "_Mobster.properties";
-                    props.store(new FileOutputStream(output), "");
-
                 } //Otherwise resourcesDir is set to an empty string
                 else {
-                    //Write the current properties to a file
-                    String output = props.getProperty(MobileDefinitions.OUTFILE) + "_Mobster.properties";
-                    props.store(new FileOutputStream(output), "");
-
-                    //Do not write the empty resourcesDir to a properties file
                     resourcesDir = "";
                     props.put(MobileDefinitions.RESOURCES_DIR, resourcesDir);
+                }
+
+                //Check if the reference genome is indeed available and in the correct format. If not, sequence determination will be disabled.
+                if(props.containsKey(MobileDefinitions.REFERENCE_GENOME_FILE)){
+                    try{
+                        new ReferenceGenome(props.getProperty(MobileDefinitions.REFERENCE_GENOME_FILE));
+                    } catch(IOException e){
+                        logger.warn(e.getMessage() + ". Determination of the sequence for the target site duplication and insertion position will be disabled.");
+                    }
+                }
+
+                //Check if predictions of a normal sample are provided. If not, filtering by normal predictions will be disabled.
+                if(props.containsKey(MobileDefinitions.NORMAL_PREDICTIONS) && !FileValidation.fileValid(props.getProperty(MobileDefinitions.NORMAL_PREDICTIONS)))
+                    logger.warn("The provided normal predictions file is not available or unreadable. Filtering by this file will be disabled.");
+                else
+                    logger.info("The provided normal predictions file will be used to filter the current somatic insertions.");
+
+                //Check if 2 BAMs have been provided in case tumor insertion calling is set to true and if the name of the normal sample is present
+                if(props.containsKey(MobileDefinitions.NORMAL_SAMPLE)){
+                    String normalSampleName = props.getProperty(MobileDefinitions.NORMAL_SAMPLE);
+                    if(sampleName.split(",").length != 2){
+                        logger.warn("Less or more than 2 samples have been provided. Combined normal/tumor calling will be disabled.");
+                        props.put(MobileDefinitions.NORMAL_TUMOR_CALLING, "false");
+                    } else { props.put(MobileDefinitions.NORMAL_TUMOR_CALLING, "true"); }
+                    if(!Arrays.asList(sampleName.split(",")).contains(normalSampleName)){
+                        logger.warn("The provided name for the normal sample is not present among the other sample names. Combined normal/tumor calling will be disabled.");
+                        props.put(MobileDefinitions.NORMAL_TUMOR_CALLING, "false");
+                    } else { props.put(MobileDefinitions.NORMAL_TUMOR_CALLING, "true"); }
+
+                    if("true".equals(props.getProperty(MobileDefinitions.NORMAL_TUMOR_CALLING)))
+                        logger.info("Two samples and normal sample name detected. Combined normal/tumor calling is enabled.");
                 }
             } else {
                 printUsage();

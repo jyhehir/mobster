@@ -4,9 +4,7 @@ import org.apache.log4j.Logger;
 import org.umcn.me.output.vcf.MobsterToVCF;
 import org.umcn.me.pairedend.MobilePrediction;
 import org.umcn.me.pairedend.Mobster;
-import org.umcn.me.util.CollectionUtil;
-import org.umcn.me.util.MobileDefinitions;
-import org.umcn.me.util.ReadName;
+import org.umcn.me.util.*;
 
 import java.io.*;
 import java.util.*;
@@ -22,6 +20,7 @@ public class SavePredictions {
     private static String sample = "";
     private static boolean vcf_out = false;
     private static int min_total_hits = 5;
+    private static boolean output_somatic = false;
 
     static{
         Properties prop = new Properties();
@@ -48,9 +47,13 @@ public class SavePredictions {
         if (props.containsKey(MobileDefinitions.VCF) && "true".equals(props.getProperty(MobileDefinitions.VCF).toLowerCase())){
             vcf_out = true;
         }
-
+        if ( (props.containsKey(MobileDefinitions.NORMAL_TUMOR_CALLING) && "true".equals(props.getProperty(MobileDefinitions.NORMAL_TUMOR_CALLING).toLowerCase())) ||
+                (props.containsKey(MobileDefinitions.NORMAL_PREDICTIONS) && FileValidation.fileValid(props.getProperty(MobileDefinitions.NORMAL_PREDICTIONS)) )) {
+            output_somatic = true;
+        }
 
         //---Start filtering---
+        logger.info("Start filtering...");
         FilterPredictions filter = new FilterPredictions(props, predictions);
 
         //Remove overlapping predictions
@@ -68,11 +71,18 @@ public class SavePredictions {
         }
 
         //Remove predictions that have not enough supporting hits
-        logger.info("Start filtering...");
+        logger.info("Filter: will remove predictions with less than " + min_total_hits + " supporting hits" + props.getProperty(MobileDefinitions.NORMAL_PREDICTIONS));
         filter.filterByMinTotalHits(min_total_hits);
+
+        //When a valid normal predictions file has been provided, remove predictions that also occur in this file
+        if(props.containsKey(MobileDefinitions.NORMAL_PREDICTIONS) && FileValidation.fileValid(props.getProperty(MobileDefinitions.NORMAL_PREDICTIONS))) {
+            logger.info("Filter: will remove overlapping predictions in normal predictions file: " + props.getProperty(MobileDefinitions.NORMAL_PREDICTIONS));
+            filter.filterByNormalMEs(props);
+        }
 
         //When grips is disabled, remove predictions that overlap known MEIs
         if (!grips_mode){
+            logger.info("Filter: will remove predictions that overlap known MEs: ");
             filter.filterKnownMEs(props);
         }
 
@@ -82,9 +92,28 @@ public class SavePredictions {
             logger.info("Filtering GRIPS for max source genes: " + maxSourceGenes);
             filter.reducePredictionsBasedOnSource(maxSourceGenes);
         }
-        logger.info("End of filtering...");
 
         predictions = filter.getPredictions();
+        logger.info("End of filtering...");
+
+        //Determine the non-supporting read counts and the VAF for the predictions
+        predictions = ReadCounts.runFromProperties(props, predictions);
+
+        //When normal/tumor calling has been enabled or a normal predictions file has been provided, determine for every prediction whether it is somatic or not
+        if(output_somatic)
+            for(MobilePrediction prediction: predictions)
+                prediction.determineSomatic();
+
+        //When a reference genome has been provided, add it to the predictions so the TSD sequence can be determined
+        ReferenceGenome referenceGenome = null;
+        if(props.containsKey(MobileDefinitions.REFERENCE_GENOME_FILE) && FileValidation.fileValid(props.getProperty(MobileDefinitions.REFERENCE_GENOME_FILE))){
+            try{
+                referenceGenome = new ReferenceGenome(props.getProperty(MobileDefinitions.REFERENCE_GENOME_FILE));
+                for(MobilePrediction pred: predictions){
+                    pred.setReferenceGenome(referenceGenome);
+                }
+            } catch(IOException ignored){}
+        }
 
         //---Save output---
         if (grips_mode){
@@ -141,7 +170,7 @@ public class SavePredictions {
             writeGRIPSToFile(outPrefix + "_GRIPS_MORECONFIDENT_predictions.txt", predictions, commentHeader, true);
         }else{
             logger.info("Writing filtered predictions to: " + outPrefix + "_predictions.txt");
-            writePredictionsToFile(outPrefix + "_predictions.txt", predictions, commentHeader, sample);
+            writePredictionsToFile(outPrefix + "_predictions.txt", predictions, commentHeader, sample, output_somatic);
         }
 
         //When the VCF property is true, convert the predictions file(s) to vcf
@@ -149,13 +178,13 @@ public class SavePredictions {
             logger.info("VCF output is enabled, converting generated files to VCF...");
             if(grips_mode) {
                 logger.info("Writing unfiltered predictions to: " + outPrefix + "_GRIPS_unfiltered.vcf");
-                MobsterToVCF.run(outPrefix + "_GRIPS_unfiltered.txt", outPrefix + "_GRIPS_unfiltered.vcf");
+                MobsterToVCF.run(outPrefix + "_GRIPS_unfiltered.txt", outPrefix + "_GRIPS_unfiltered.vcf", referenceGenome);
                 logger.info("Writing filtered GRIPS predictions to: " + outPrefix + "_GRIPS_predictons.vcf and " + outPrefix + "_GRIPS_MORECONFIDENT_predictions.vcf");
-                MobsterToVCF.run(outPrefix + "_GRIPS_predictons.txt", outPrefix + "_GRIPS_predictons.vcf");
-                MobsterToVCF.run(outPrefix + "_GRIPS_MORECONFIDENT_predictions.txt", outPrefix + "_GRIPS_MORECONFIDENT_predictions.vcf");
+                MobsterToVCF.run(outPrefix + "_GRIPS_predictons.txt", outPrefix + "_GRIPS_predictons.vcf", referenceGenome);
+                MobsterToVCF.run(outPrefix + "_GRIPS_MORECONFIDENT_predictions.txt", outPrefix + "_GRIPS_MORECONFIDENT_predictions.vcf", referenceGenome);
             } else{
                 logger.info("Writing filtered predictions to: " + outPrefix + "_predictions.vcf");
-                MobsterToVCF.run(outPrefix + "_predictions.txt", outPrefix + "_predictions.vcf");
+                MobsterToVCF.run(outPrefix + "_predictions.txt", outPrefix + "_predictions.vcf", referenceGenome);
             }
         }
     }
@@ -185,14 +214,16 @@ public class SavePredictions {
     }
 
     public static void writePredictionsToFile(String outString, Vector<MobilePrediction> predictions, String comment, String sampleName){
+        writePredictionsToFile(outString, predictions, comment, sampleName, false);
+    }
+    public static void writePredictionsToFile(String outString, Vector<MobilePrediction> predictions, String comment, String sampleName, boolean somaticOutput){
         try {
             PrintWriter outFile = new PrintWriter(new FileWriter(outString), true);
             outFile.print(comment);
 
-            outFile.print(MobilePrediction.getHeader() + "\n");
+            outFile.print(MobilePrediction.getHeader(somaticOutput) + "\n");
 
             for(MobilePrediction pred : predictions){
-                //pred.setSampleName(sampleName);
                 outFile.print(pred + "\n");
             }
 

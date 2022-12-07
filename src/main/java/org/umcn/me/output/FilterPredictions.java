@@ -1,7 +1,10 @@
 package org.umcn.me.output;
 
 import org.apache.log4j.Logger;
+import org.umcn.me.output.vcf.MobsterParser;
+import org.umcn.me.output.vcf.MobsterRecord;
 import org.umcn.me.pairedend.MobilePrediction;
+import org.umcn.me.util.FileValidation;
 import org.umcn.me.util.MobileDefinitions;
 import org.umcn.me.util.SimpleRegion;
 
@@ -13,10 +16,12 @@ public class FilterPredictions {
     public static Logger logger = Logger.getLogger(FilterPredictions.class.getName());
     private boolean multiple_sample_calling = false;
     private boolean filter_by_read_counts_single_sample = false;
-    private static final int FILTER_REGION = 90;
+    private static final int KNOWN_ME_FILTER_REGION = 90;
     private static String repmask_file = "../resources/hg19_alul1svaerv.txt";
     private Vector<MobilePrediction> predictions;
     private Map<String, HashMap<String, HashSet<String>>> knownMEs;
+    public Map<String, List<MobsterRecord>> normalMEs;
+    private String normalPredictionsFile;
 
     public FilterPredictions(Vector<MobilePrediction> predictions){
         this.predictions = predictions;
@@ -74,6 +79,28 @@ public class FilterPredictions {
         this.predictions = copy_preds;
     }
 
+
+    /**
+     * This function filters predictions when the prediction window overlaps with an annotated
+     * mobile element stored in the parameter knownMEs.
+     * @param knownMEs - Chromosomes as key
+     *                 - Dictionary as value: with mobile element super family as key
+     *                        and position start (0-based inclusive) and position end (0-based exclusive)
+     *                        as sting value. Start and end are seperated by -
+     * @param predictions Vector containing vector of predictions. Each prediction is a string with on
+     * index 0: reference chromosome for MEI
+     * index 1: mobile family for MEI
+     * index 2: estimated insert point
+     * index 3: border5 prediction window
+     * index 4: border3 prediction window
+     * index 5: cluster length of forward cluster (NA if not present)
+     * index 6: cluster length of reverse cluster (NA if not present)
+     * index 7: number of supporting reads for forward cluster (NA if not present)
+     * index 8: number of supporting reads for reverse cluster (NA if not present)
+     * @return prediction vector of the same format as arg predictions. Only now with predictions
+     * that do not overlap with elements kept in argument knownMEs.
+     */
+
     public void filterKnownMEs(Properties props) throws IOException {
         loadKnownMEs(props);
         filterKnownMEs();
@@ -97,8 +124,8 @@ public class FilterPredictions {
         for(MobilePrediction prediction : predictions){
             ref = prediction.getOriginalReference();
             //me = prediction.getMateMobileMapping();
-            border5 = prediction.getLeftPredictionBorder(FILTER_REGION);
-            border3 = prediction.getRightPredictionBorder(FILTER_REGION);
+            border5 = prediction.getLeftPredictionBorder(KNOWN_ME_FILTER_REGION);
+            border3 = prediction.getEndRightPredictionBorder(KNOWN_ME_FILTER_REGION);
 
             if(border5 > border3){
                 logger.warn("Safety border5 is bigger than safety border3!");
@@ -177,10 +204,9 @@ public class FilterPredictions {
             repmask_file = props.getProperty(MobileDefinitions.RESOURCES_DIR) + props.getProperty(MobileDefinitions.REPEAT_MASK_FILE).trim();
         }
 
-        File f = new File(repmask_file);
-        if (!f.exists() || !f.canRead())
+        if (!FileValidation.fileValid(repmask_file))
             logger.equals(repmask_file + ": does not exist, or is not readable");
-
+        File f = new File(repmask_file);
         is = new FileInputStream(f);
 
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
@@ -222,6 +248,94 @@ public class FilterPredictions {
         is.close();
 
         this.knownMEs = meMap;
+    }
+
+    public void loadNormalMEs(Properties props) throws IOException {
+
+        this.normalPredictionsFile = props.getProperty(MobileDefinitions.NORMAL_PREDICTIONS);
+
+        MobsterParser parser = new MobsterParser(new File(normalPredictionsFile));
+        List<MobsterRecord> records = parser.parse();
+        Collections.sort(records);
+
+        this.normalMEs = new HashMap<String, List<MobsterRecord>>();
+        for(MobsterRecord record: records){
+            String chr = record.getChromosome();
+            if(!this.normalMEs.containsKey(chr))
+                this.normalMEs.put(chr, new ArrayList<MobsterRecord>());
+            this.normalMEs.get(chr).add(record);
+        }
+    }
+
+    public void filterByNormalMEs(Properties props) throws IOException {
+        loadNormalMEs(props);
+        filterByNormalMEs();
+    }
+
+    public void filterByNormalMEs(){
+
+        String ref;
+        //String me;
+        int border5;
+        int border3;
+        int alu = 0;
+        int sva = 0;
+        int l1 = 0;
+        int herv = 0;
+        int startNormal;
+        int endNormal;
+        boolean inNormalMe = false;
+
+        Vector<MobilePrediction> filteredPredictions = new Vector<MobilePrediction>();
+
+        for(MobilePrediction prediction : predictions){
+            ref = prediction.getOriginalReference();
+            border5 = prediction.getLeftPredictionBorder(KNOWN_ME_FILTER_REGION);
+            border3 = prediction.getEndRightPredictionBorder(KNOWN_ME_FILTER_REGION);
+
+            if(border5 > border3){
+                logger.warn("Safety border5 is bigger than safety border3!");
+            }
+            for (String me : prediction.getMobileMappings()) {
+                if (normalMEs.containsKey(ref)) {
+                    for (MobsterRecord normalME : normalMEs.get(ref)) {
+                        startNormal = normalME.getBorder5();
+                        endNormal = normalME.getEndBorder3();
+                        if ((border5 >= startNormal && border5 <= endNormal)
+                                || (border3 >= startNormal && border3 <= endNormal)
+                                || (border5 <= startNormal && border3 >= endNormal)) {
+                            inNormalMe = true;
+                            if (me.equals("ALU")) {
+                                alu += 1;
+                            } else if (me.equals("SVA")) {
+                                sva += 1;
+                            } else if (me.equals("L1")) {
+                                l1 += 1;
+                            } else if (me.equals("HERV")) {
+                                herv += 1;
+                            }
+                            break;
+                        }
+                    }
+                    if(inNormalMe){
+                        break;
+                    }
+                }
+            }
+            if(!inNormalMe){
+                filteredPredictions.add(prediction);
+            } else{
+                inNormalMe = false;
+            }
+        }
+
+        logger.info("filtered alu: " + alu);
+        logger.info("filtered sva: " + sva);
+        logger.info("filtered l1: " + l1);
+        logger.info("filtered herv (hervk): " + herv);
+        logger.info("that are already present in the normal predictions file: " + normalPredictionsFile);
+
+        this.predictions = filteredPredictions;
     }
 
 

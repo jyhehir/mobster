@@ -239,7 +239,7 @@ public class PotentialMEIReadFinder {
 			}
 
 			if (tool.equals(SAMDefinitions.MAPPING_TOOL_UNSPECIFIED)){
-				logger.info("Using mapq of: " + min_anchor_mapq +  "for defining anchors");
+				logger.info("Using mapq of: " + min_anchor_mapq +  " for defining anchors");
 			}
 		}
 	}

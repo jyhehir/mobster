@@ -1,6 +1,6 @@
 package org.umcn.me.output.vcf;
 
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,19 +20,39 @@ public class MobsterParser {
 	
 	
 	
-	public List<MobsterRecord> parse(){
+	public List<MobsterRecord> parse() throws IOException {
 		
 		List<MobsterRecord> records = new ArrayList<MobsterRecord>();
-		
-		BeanReader in = this.getBeanReader();
-		Object record = null;
-		in.skip(1); //Skip the header
-		while ((record = in.read()) != null){
-			MobsterRecord mobsterRec = (MobsterRecord) record;
-			records.add(mobsterRec);
+
+		if(this.file.toString().endsWith(".vcf")) {
+			try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(this.file)))){
+
+				String line;
+				String samples = "";
+				while ((line = br.readLine()) != null) {
+					if (line.startsWith("#")) {
+						if(line.startsWith("#CHROM"))
+							samples = line
+									.replace("#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT\t", "")
+									.trim().replace("\t", " ,");
+						continue;
+					}
+					MobsterRecord mobsterRec = MobsterRecord.fromVCF(line, samples);
+					records.add(mobsterRec);
+				}
+			}
 		}
-		in.close();
-		
+		else{
+			BeanReader in = this.getBeanReader();
+			Object record = null;
+			in.skip(1); //Skip the header
+			while ((record = in.read()) != null){
+				MobsterRecord mobsterRec = (MobsterRecord) record;
+				records.add(mobsterRec);
+			}
+			in.close();
+		}
+
 		return records;
 	}
 	

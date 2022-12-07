@@ -57,7 +57,7 @@ public class CollectionUtil {
 		for (MobilePrediction pred : preds){
 			c++;
 			int start = pred.getLeftPredictionBorder() + 1 - insecurity;
-			int end = pred.getRightPredictionBorder() + insecurity;
+			int end = pred.getEndRightPredictionBorder() + insecurity;
 			
 			if (start < 1){
 				start = 1;

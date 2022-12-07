@@ -14,10 +14,10 @@ public class ReferenceGenome {
 
     public ReferenceGenome(String refPath) throws IOException {
 
-        //Check if the reference exists
+        //Check if the reference exists/is readable
+        if(!FileValidation.fileValid(refPath))
+            throw new FileNotFoundException("The reference genome was not found or was not readable");
         File refFile = new File(refPath);
-        if(!refFile.exists())
-            throw new FileNotFoundException("The reference genome was not found");
 
         //If index doesn't exist at the same location as the reference, create it
         String indexPath = refPath.replaceFirst("\\.[a-z]+$",".fai");
@@ -96,11 +96,11 @@ public class ReferenceGenome {
     }
 
     public char getBaseAt(String chr, long position) throws InvalidNucleotideSequenceException {
-        return getSubSequenceAt(chr, position, position).getSequence().charAt(0);
+        return getSubSequenceAt(chr, position, position).getSequence().toUpperCase().charAt(0);
     }
 
     public NucleotideSequence getSubSequenceAt(String chr, long start, long stop) throws InvalidNucleotideSequenceException {
-        return new NucleotideSequence(new String(reference.getSubsequenceAt(chr, start, stop).getBases(), StandardCharsets.UTF_8));
+        return new NucleotideSequence(new String(reference.getSubsequenceAt(chr, start, stop).getBases(), StandardCharsets.UTF_8).toUpperCase());
     }
 }
 
